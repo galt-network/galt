@@ -1,0 +1,24 @@
+(ns user
+  (:require
+    [clj-reload.core :as reload]
+    [galt.main]
+    [galt.core.system]))
+
+(alter-var-root #'*warn-on-reflection* (constantly true))
+
+(reload/init
+  {:no-reload '#{user}})
+
+(defn go! []
+  (reload/reload))
+
+(comment
+  (go!)
+  (galt.main/start-system! :dev)
+  (keys @galt.main/running-system)
+  (require '[galt.members.domain.user-repository :refer [list-users]])
+  (require '[galt.members.adapters.db-user-repository :refer [new-db-user-repository]])
+
+  (list-users
+    (new-db-user-repository (get-in @galt.main/running-system [:donut.system/instances :storage :db])))
+  *e)

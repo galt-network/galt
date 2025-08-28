@@ -1,0 +1,2 @@
+-- CREATE ROLE galt PASSWORD 'galtpass' NOSUPERUSER CREATEDB INHERIT LOGIN;
+CREATE DATABASE ${migratus.database} WITH OWNER ${migratus.user};

@@ -1,0 +1,22 @@
+.navbar {
+  --bulma-navbar-background-color: #ffd600;
+}
+
+.notification-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000; /* Ensures it stays on top */
+  width: 300px; /* Adjust as needed */
+}
+
+.notification {
+  transform: translateY(100px); /* Start off-screen (below) */
+  opacity: 0; /* Start invisible */
+  transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+}
+
+.notification.is-visible {
+  transform: translateY(0); /* Slide up to visible position */
+  opacity: 1; /* Fully visible */
+}

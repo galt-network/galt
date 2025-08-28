@@ -1,0 +1,3 @@
+DROP TABLE users CASCADE;
+--;;
+DROP EXTENSION IF EXISTS "uuid-ossp";
