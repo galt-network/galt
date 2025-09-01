@@ -13,6 +13,7 @@
     [galt.groups.adapters.db-group-repository :as group-repository]
     [galt.members.adapters.db-user-repository :as db-user-repository]
     [clojure.java.io]
+    [clj-uuid]
     [clojure.edn])
   (:import
    [com.zaxxer.hikari HikariDataSource]))
@@ -66,7 +67,7 @@
              {:content-response (partial file-storage/content-response (get-in opts [::ds/config]))
               :store-content (partial file-storage/store-content (get-in opts [::ds/config]))})
            :config
-           {:storage-root "resources/uploads"
+           {:storage-root (ds/ref [:env :file-storage-root])
             :root-url (ds/ref [:env :galt-root-url])}}}
     :app
     {:reitit-middleware
@@ -85,7 +86,8 @@
                                :generate-name name-generator/generate
                                :file-storage (get-in opts [::ds/config :file-storage])
                                :reitit-middleware (get-in opts [::ds/config :reitit-middleware])
-                               :galt-url (get-in opts [::ds/config :galt-url])}]
+                               :galt-url (get-in opts [::ds/config :galt-url])
+                               :uuid clj-uuid/v7}]
                (routes/handler (routes/router route-deps))))
            :config
            {:group-repo (ds/ref [:storage :group])
@@ -113,6 +115,11 @@
   [_]
   (println ">>> starting :dev system")
   (ds/system :base {[:env] (get-config "config/dev-galt.edn")}))
+
+(defmethod ds/named-system :staging
+  [_]
+  (println ">>> starting :staging system")
+  (ds/system :base {[:env] (get-config "config/staging-galt.edn")}))
 
 (defmethod ds/named-system :prod
   [_]

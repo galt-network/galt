@@ -1,25 +1,20 @@
 (ns galt.members.adapters.handlers
   (:require
     [galt.core.adapters.sse-helpers :refer [with-sse send! close!]]
+    [galt.core.adapters.link-generator :refer [link-for-route]]
     [starfederation.datastar.clojure.adapter.http-kit :refer [->sse-response on-open]]
     [galt.members.use-cases.create-lightning-user :refer [new-create-lightning-user]]
-    [galt.members.domain.user-repository :refer [find-user-by-id list-users]]
-    [galt.groups.domain.group-repository :as gr]
-    [galt.members.adapters.views :as views]))
+    [galt.members.domain.user-repository :refer [find-user-by-id]]
+    [galt.members.adapters.views :as views]
+    [galt.members.adapters.view-models :as view-models]
+    [reitit.core]))
 
 (defn show-members-list
-  [{:keys [render layout user-repo group-repo]} _req]
-  (let [users (list-users user-repo)
-        add-groups (fn [user]
-                     (assoc user :groups (gr/find-groups-by-member group-repo (:users/id user))))
-        add-user (fn [user]
-                   (assoc user :user {:name (:users/name user)
-                                      :href (str "https://dev.galt.is/members/" (:users/id user))}))
-        model {:column-titles [["Name" :user] ["Member Since" :users/created-at] :groups]
-               :users (->> users
-                           (map add-user ,,,)
-                           (map add-groups ,,,))}
-        content (views/members-list model)]
+  [{:keys [render layout] :as deps} req]
+  (let [model-deps (merge
+                     {:link-for-route (partial link-for-route req)}
+                     (select-keys deps [:user-repo :group-repo]))
+        content (views/members-list (view-models/members-model model-deps req))]
     {:status 200 :body (render (layout content))}))
 
 (defn show-my-profile
@@ -37,6 +32,10 @@
         content [:div.content [:strong (:users/name user)]]]
     {:status 200
      :body (render (layout content))}))
+
+(defn edit-my-profile
+  [deps req]
+  (let []))
 
 (defn show-login
   [{:keys [layout render]} req]
@@ -87,6 +86,7 @@
                       :user-pub-key (:key params)
                       :signed-challenge (:sig params)}
         [status result] (new-create-lightning-user deps login-params)
+        ; TODO: see why logging-in doesn't work in staging
         logged-in-user-id (get-in result [:user :users/id])
         original-session-id (:galt-session-id params)
         view-model ((:update-layout-model deps) (assoc-in req [:session :user-id] logged-in-user-id))]

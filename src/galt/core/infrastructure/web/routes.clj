@@ -39,10 +39,12 @@
                       :get (with-deps-layout groups/new-group)
                       :middleware [:auth]}]
       ["/groups/:id" {:id :groups
+                      :name :groups/show-group
                       :conflicting true
                       :get (with-deps-layout groups/show-group)
                       :put (with-deps-layout groups/update-group)}]
       ["/groups/:id/edit" {:id :groups
+                           :name :groups/edit-group
                            :get (with-deps-layout groups/edit-group)}]
       ["/members" {:id :members
                    :get (with-deps-layout members/show-members-list)}]
@@ -50,6 +52,8 @@
                       :conflicting true
                       :get (with-deps-layout members/show-my-profile)
                       :middleware [:auth]}]
+      ["/members/me/edit" {:id :members
+                           :get (with-deps-layout members/edit-my-profile)}]
       ["/members/login" {:id :login
                          :conflicting true
                          :get (with-deps-layout members/show-login)
@@ -69,6 +73,7 @@
                                                (assoc ,,, :verify-signature verify-signature))
                                            members/lnurl-auth-callback)}]
       ["/members/:id" {:id :members
+                       :name :members/show-profile
                        :conflicting true
                        :get (with-deps-layout members/show-profile)}]
       ["/files" {:post (partial core-handlers/store-file deps)}]

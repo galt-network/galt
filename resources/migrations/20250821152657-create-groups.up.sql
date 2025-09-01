@@ -2,6 +2,7 @@ CREATE TABLE groups (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name VARCHAR(255) NOT NULL,
   description TEXT NOT NULL,
+  avatar TEXT,
   created_at timestamp default current_timestamp
 );
 --;;

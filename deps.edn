@@ -19,6 +19,7 @@
   party.donut/system {:mvn/version "1.0.257"}
   org.clojure/core.match {:mvn/version "1.1.0"}
   org.clojure/core.async {:mvn/version "1.8.741"}
+  org.clojure/spec.alpha {:mvn/version "0.5.238"} ; https://clojure.github.io/spec.alpha/
   buddy/buddy {:mvn/version "2.0.0"}
   ; https://github.com/dm3/clojure.java-time
   ; https://dm3.github.io/clojure.java-time/java-time.html
@@ -26,6 +27,10 @@
   org.bitcoinj/bitcoinj-core {:mvn/version "0.17"}
   org.bouncycastle/bcprov-jdk18on {:mvn/version "1.81"}
   clj.qrgen/clj.qrgen {:mvn/version "0.4.0"}
+  camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.3"}
+
+  ; To get lexically ordered UUID (v7)
+  danlentz/clj-uuid {:mvn/version "0.2.0"} ; https://github.com/danlentz/clj-uuid
 
   ; Database libraries. Latest versions from 2025-08-13
   com.zaxxer/HikariCP {:mvn/version "7.0.1"} ; https://github.com/brettwooldridge/HikariCP
@@ -44,7 +49,7 @@
 
  :aliases
  {:repl {:extra-paths ["dev"]
-         :extra-deps  {org.clojure/clojure         {:mvn/version "1.12.1"}
+         :extra-deps  {org.clojure/clojure         {:mvn/version "1.12.2"}
                        io.github.tonsky/clj-reload {:mvn/version "0.9.8"}}}
   :dev {:extra-paths ["test"]
         :extra-deps {}}

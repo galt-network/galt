@@ -6,8 +6,6 @@
     [java.io File]
     [java.nio.file Files StandardCopyOption]))
 
-(io/file (io/resource "uploads") "hello.txtx")
-
 (defn content-response
   [config file-path]
   (ring.util.response/file-response file-path {:root (:storage-root config)}))

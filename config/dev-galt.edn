@@ -1,2 +1,3 @@
 {:galt-root-url "https://dev.galt.is"
+ :file-storage-root "resources/uploads"
  :web-server-port 8081}

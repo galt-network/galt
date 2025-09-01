@@ -36,8 +36,7 @@
 
 (defn group-model
   [{:keys [group-repo galt-url]} _req & [group-id]]
-  (let [group-id (parse-uuid group-id)
-        group (gr/find-group-by-id group-repo group-id)
+  (let [group (gr/find-group-by-id group-repo group-id)
         founded-at (.toLocalDateTime (:groups/created_at group))
         members (gr/list-members group-repo group-id {:limit 5})]
     {:name (:groups/name group)

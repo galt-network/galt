@@ -14,10 +14,21 @@
   (d*/patch-signals! sse (->json signals))
   sse)
 
-(defn send-notification [sse message]
+(defn notification
+  [text class]
+  [:div#notification-container
+   [:div {:class [:notification class] :data-class-is-visible "$notification-visible"}
+    [:button.delete {:data-on-click "$notification-visible = false"}]
+    [:p text]]])
+
+(defn send-notification [sse message & [class]]
+  ; TODO Figure out how to do this more cleanly with datastar
+  (if (= class :is-danger)
+    (send-signals sse {:notification-is-danger true})
+    (send-signals sse {:notification-is-success true}))
   (send-signals sse {:notification-text message :notification-visible true})
-  (Thread/sleep 3000)
-  (send-signals sse {:notification-text "" :notification-visible false}))
+  (Thread/sleep 5000)
+  (send-signals sse {:notification-visible false}))
 
 (defn send-cljs [sse forms]
   (let [script-id (str (random-uuid))
@@ -31,17 +42,16 @@
   (str "console.log('calling history.pushState', '" url "');"
        "history.pushState({url: '" url "'}, null, '" url "');"))
 
-(defn send! [sse type data & [navigated-url]]
+(defn send! [sse type data & [extra]]
   (case type
     :html (do
             (send-html sse data)
-            (println ">>> sending push-state script" (push-state navigated-url))
-            (when navigated-url (d*/execute-script! sse (push-state navigated-url)))
+            (when extra (d*/execute-script! sse (push-state extra)))
             sse)
     :signals (send-signals sse data)
     :js (d*/execute-script! sse data)
     :cljs (send-cljs sse data)
-    :notification (send-notification sse data)))
+    :notification (send-notification sse data extra)))
 
 (defn with-sse
   "Passes the callback send-html function after SSE connection has been opened.

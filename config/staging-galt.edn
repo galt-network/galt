@@ -1,0 +1,3 @@
+{:galt-root-url "https://staging.galt.is"
+ :file-storage-root "/home/madis/www/staging.galt.is/uploads"
+ :web-server-port 8083}

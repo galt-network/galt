@@ -40,12 +40,28 @@
   [model]
   [:div#app-container
    (navbar (model :navbar))
+   [:section.is-medium {:style {:margin "3rem"} }
+    (content (model :content))]
+   [:div#notification-container
+     [:div {:class [:notification :is-success]
+            :data-class-is-visible "$notification-visible"
+            :data-class-is-danger "$notification-is-danger"
+            :data-class-is-success "$notification-is-success"}
+      [:button.delete {:data-on-click "$notification-visible = false"}]
+      [:p {:data-text "$notification-text"}]]]])
+
+#_ (defn app-container
+  [model]
+  [:div#app-container
+   (navbar (model :navbar))
    [:section.hero.is-medium
     [:div.hero-body
      (content (model :content))]]
-   [:div.notification-container
+   [:div#notification-container
      [:div {:class [:notification :is-success]
-            :data-class-is-visible "$notification-visible"}
+            :data-class-is-visible "$notification-visible"
+            :data-class-is-danger "$notification-is-danger"
+            :data-class-is-success "$notification-is-success"}
       [:button.delete {:data-on-click "$notification-visible = false"}]
       [:p {:data-text "$notification-text"}]]]])
 

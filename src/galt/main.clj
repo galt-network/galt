@@ -22,8 +22,10 @@
 (def running-system (atom nil))
 
 (defn start-system!
-  ([] (start-system! :prod))
-  ([name] (reset! running-system (system/start! name))))
+  ([] (start-system! (keyword (System/getenv "GALT_ENV"))))
+  ([name]
+   (println "Starting GALT system" name)
+   (reset! running-system (system/start! name))))
 
 (defn stop-system! []
   (when @running-system (system/stop! @running-system))
@@ -33,7 +35,7 @@
   (stop-system!))
 
 (defn after-ns-reload []
-  (start-system! (keyword (System/getenv "GALT_ENV"))))
+  (start-system!))
 
 (defn -main [& args]
   ; (reset! nrepl-server (start-nrepl! {:port 7888}))

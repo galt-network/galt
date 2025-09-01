@@ -2,7 +2,7 @@
   --bulma-navbar-background-color: #ffd600;
 }
 
-.notification-container {
+div#notification-container {
   position: fixed;
   bottom: 20px;
   right: 20px;

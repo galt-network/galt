@@ -18,6 +18,8 @@
   (keys @galt.main/running-system)
   (require '[galt.members.domain.user-repository :refer [list-users]])
   (require '[galt.members.adapters.db-user-repository :refer [new-db-user-repository]])
+  (require '[clj-uuid])
+  (clj-uuid/v7)
 
   (list-users
     (new-db-user-repository (get-in @galt.main/running-system [:donut.system/instances :storage :db])))

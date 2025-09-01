@@ -13,9 +13,7 @@
 
 (defn group-tags
   [groups]
-  (let [tags (map (fn [g]
-                    [:a {:href (str "https://dev.galt.is/groups/" (:groups/id g))} [:span.tag (:groups/name g)]])
-                  groups)
+  (let [tags (map (fn [g] [:a {:href (:href g)} [:span.tag (:name g)]]) groups)
         groups-to-show 4
         remaining-count (- (count tags) groups-to-show)
         more-text (str "And " remaining-count " more...")]

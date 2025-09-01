@@ -43,7 +43,6 @@
 
 (defn generate-lnurl
   [base-url & [query-params]]
-  (println ">> generating lnurl" base-url)
   (let [k1 (generate-k1)
         k1-hex (encoding/hex-encode k1)
         callback-url (add-query-params base-url (merge {:tag "login" :k1 k1-hex} query-params))
