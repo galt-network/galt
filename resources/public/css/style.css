@@ -20,3 +20,8 @@ div#notification-container {
   transform: translateY(0); /* Slide up to visible position */
   opacity: 1; /* Fully visible */
 }
+
+div.dropdown-item:hover {
+  background-color: #f5f5f5;
+  color: #0a0a0a;
+}

@@ -1,0 +1,13 @@
+DROP INDEX IF EXISTS idx_cities_country_code;
+--;;
+DROP INDEX IF EXISTS idx_cities_cities_name;
+--;;
+DROP INDEX IF EXISTS idx_countries_iso2;
+--;;
+DROP INDEX IF EXISTS idx_countries_name;
+--;;
+DROP EXTENSION IF EXISTS pg_trgm;
+--;;
+DROP INDEX IF EXISTS idx_countries_lower_name_trgm;
+--;;
+DROP INDEX IF EXISTS idx_cities_lower_name_trgm;

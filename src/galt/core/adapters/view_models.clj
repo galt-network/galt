@@ -31,4 +31,5 @@
     {:page-title page-title
      :path (get-in req [:reitit.core/match :path])
      :navbar (navbar-model deps req)
+     :head-tags []
      :content [:div "Empty"]}))

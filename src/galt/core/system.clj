@@ -8,10 +8,10 @@
     [galt.core.infrastructure.web.server :as web.server]
     [galt.core.infrastructure.disk-file-storage :as file-storage]
     [galt.groups.adapters.handlers]
-    ; [galt.core.adapters.db-access :as db-access]
     [galt.core.adapters.postgres-db-access :refer [new-db-access]]
     [galt.groups.adapters.db-group-repository :as group-repository]
     [galt.members.adapters.db-user-repository :as db-user-repository]
+    [galt.locations.adapters.pg-location-repository :as pg-location-repository]
     [clojure.java.io]
     [clj-uuid]
     [clojure.edn])
@@ -61,6 +61,12 @@
            :config
            {:db-access (ds/ref [:storage :db-access])}}
 
+     :location
+     #::ds{:start
+           (fn [opts] (pg-location-repository/new-location-repository (get-in opts [::ds/config :db-access])))
+           :config
+           {:db-access (ds/ref [:storage :db-access])}}
+
      :file-storage
      #::ds{:start
            (fn [opts]
@@ -82,6 +88,7 @@
            (fn [opts]
              (let [route-deps {:group-repo (get-in opts [::ds/config :group-repo])
                                :user-repo (get-in opts [::ds/config :user-repo])
+                               :location-repo (get-in opts [::ds/config :location-repo])
                                :db-access (get-in opts [::ds/config :db-access])
                                :generate-name name-generator/generate
                                :file-storage (get-in opts [::ds/config :file-storage])
@@ -92,6 +99,7 @@
            :config
            {:group-repo (ds/ref [:storage :group])
             :user-repo (ds/ref [:storage :user])
+            :location-repo (ds/ref [:storage :location])
             :db-access (ds/ref [:storage :db-access])
             :file-storage (ds/ref [:storage :file-storage])
             :reitit-middleware (ds/ref [:app :reitit-middleware])

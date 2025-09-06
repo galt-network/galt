@@ -11,7 +11,7 @@
                      (assoc user
                             :groups
                             (map (fn [g] {:name (:groups/name g)
-                                          :href (link-for-route :groups/show-group {:id (:groups/id g)})})
+                                          :href (link-for-route :groups/by-id {:id (:groups/id g)})})
                                  (gr/find-groups-by-member group-repo (:users/id user)))))
         add-user (fn [user]
                    (assoc user :user {:name (:users/name user)

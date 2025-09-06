@@ -4,7 +4,9 @@
     [galt.core.adapters.db-access :refer [query in-transaction]]
     [galt.groups.domain.entities.group :refer [map->Group]]
     [galt.core.adapters.db-result-transformations :refer [transform-row defaults ->local-date-time]]
-    [galt.groups.domain.entities.group-membership :refer [map->GroupMembership]]))
+    [galt.groups.domain.entities.group-membership :refer [map->GroupMembership]]
+    [camel-snake-kebab.extras :as cske]
+    [camel-snake-kebab.core :as csk]))
 
 
 (def group-spec
@@ -12,12 +14,16 @@
    :groups/name defaults
    :groups/description defaults
    :groups/avatar defaults
-   :groups/created_at [(first defaults) ->local-date-time]})
+   :groups/created_at [(first defaults) ->local-date-time]
+   :groups/location_id defaults})
 
 (def group-membership-spec
   {:group_memberships/member_id defaults
    :group_memberships/group_id defaults
    :group_memberships/role [(first defaults) keyword]})
+
+(defn keys->snake-case [map]
+  (cske/transform-keys csk/->snake_case_keyword map))
 
 (defrecord DbGroupRepository [db-access]
   GroupRepository
@@ -25,14 +31,18 @@
     (in-transaction
       db-access
       (fn [query]
+        (println ">>> GroupRepository add-group GROUP" (keys->snake-case group))
         (query {:insert-into [:groups]
-                :columns [:id :name :avatar :description]
-                :values [[(:id group) (:name group) (:avatar group) (:description group)]]})
+                :values [group]})
         (query {:insert-into [:group_memberships]
                 :columns [:group_id :member_id :role]
                 :values [[(:id group) founder-id "founder"]]})
         ; TODO return groups.domain.entities.group/Group
-        (first (query {:select [:*] :from [:groups] :where [:= :id (:id group)]})))))
+        (->> {:select [:*] :from [:groups] :where [:= :id (:id group)]}
+            query
+            first
+            (transform-row group-spec)
+            map->Group))))
 
   (find-group-by-id [_ id]
     (->> {:select [:*] :from [:groups] :where [:= :id id] :limit 1}
@@ -52,10 +62,10 @@
                               [:= :group_memberships.member_id founder-id]
                               [:= :group_memberships.role "founder"]]}))
 
-  (update-group [_ id name description]
+  (update-group [_ group]
     (query db-access {:update [:groups]
-                      :set {:name name :description description}
-                      :where [:= :id id]}))
+                      :set group
+                      :where [:= :id (:id group)]}))
 
   (add-to-group [_ group-id member-id role]
     (query db-access {:insert-into [:group-memberships]
@@ -89,7 +99,11 @@
          (query db-access ,,,)
          (first ,,,)
          (transform-row group-membership-spec ,,,)
-         (map->GroupMembership ,,,))))
+         (map->GroupMembership ,,,)))
+
+  (delete-group [_ group-id]
+    (query db-access {:delete-from [:groups]
+                      :where [:= :id group-id]})))
 
 (def last-db (atom nil))
 

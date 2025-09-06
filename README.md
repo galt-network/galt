@@ -17,13 +17,18 @@
 1. (local) Build a uberjar `clj -T:build uber`
 2. (local) Copy it to the destination server: `scp target/galt-0.1.1-standalone.jar galt.is:~/www/galt.is`
 3. Remote env setup
-  - create a database user: `CREATE ROLE galt PASSWORD 'galtpass' NOSUPERUSER CREATEDB INHERIT LOGIN;`
+  - create a database user: `CREATE ROLE galt PASSWORD 'galtpass' WITH SUPERUSER CREATEDB INHERIT LOGIN;`
+    - _superuser is needed for some DB migrations that add extensions (e.g. cube, earthdistance)_
   - env variables needed: `MIGRATUS_DATABASE`, `MIGRATUS_USER`, `MIGRATUS_PASSWORD`
   - export env variables: `set -a && source .env && set +a`
-3. (remote) Run the database migrations
+4. (remote) Import geographical data (cities, countries)
+  - source: https://github.com/dr5hn/countries-states-cities-database/tree/master/psql
+  - countries: `psql -d postgresql://galt:galtpass@localhost:5432/galt_dev -f countries.sql`
+  - cities: `psql -d postgresql://galt:galtpass@localhost:5432/galt_dev -f cities.sql`
+5. (remote) Run the database migrations
   - just the first time: `java -jar galt-0.1.1-standalone.jar init`
   - every time (when database changes) `java -jar galt-0.1.1-standalone.jar migrate`
-4. (remote) Run the web server: `java -jar target/galt-0.1.1-standalone.jar`
+6. (remote) Run the web server: `java -jar target/galt-0.1.1-standalone.jar`
 
 ## Architecture
 

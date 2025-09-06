@@ -50,21 +50,6 @@
       [:button.delete {:data-on-click "$notification-visible = false"}]
       [:p {:data-text "$notification-text"}]]]])
 
-#_ (defn app-container
-  [model]
-  [:div#app-container
-   (navbar (model :navbar))
-   [:section.hero.is-medium
-    [:div.hero-body
-     (content (model :content))]]
-   [:div#notification-container
-     [:div {:class [:notification :is-success]
-            :data-class-is-visible "$notification-visible"
-            :data-class-is-danger "$notification-is-danger"
-            :data-class-is-success "$notification-is-success"}
-      [:button.delete {:data-on-click "$notification-visible = false"}]
-      [:p {:data-text "$notification-text"}]]]])
-
 (def history-js
   "function galt_historyHandler(event) {
      let historyLink = document.getElementById('galt-history');
@@ -93,7 +78,10 @@
               :src "https://cdn.jsdelivr.net/gh/starfederation/datastar@main/bundles/datastar.js"}]
     [:script {:src "https://kit.fontawesome.com/cb70718952.js" :crossorigin "anonymous"}]
     [:script {:src "https://cdn.jsdelivr.net/npm/scittle@0.7.27/dist/scittle.js"}]
-    [:script {:src "/assets/galt_js_helpers.js"}]]
+    [:script {:src "https://cdn.jsdelivr.net/npm/scittle@0.7.27/dist/scittle.nrepl.js"}]
+    [:script "var SCITTLE_NREPL_WEBSOCKET_PORT = 1340;"]
+    [:script {:src "/assets/galt_js_helpers.js"}]
+    (reverse (into (list) (:head-tags model)))]
    [:body
     (app-container model)
     [:a {:id "galt-history" :href (:path model) :data-on-click "@get(el.href)"}]

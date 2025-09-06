@@ -33,7 +33,7 @@
 (comment
   (migratus/init init-config)
 
-  (migratus/create config "create-groups")
+  (migratus/create config "create-locations")
 
   ;apply pending migrations
   (migratus/migrate config)

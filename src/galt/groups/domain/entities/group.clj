@@ -13,7 +13,7 @@
 (s/def ::group
   (s/keys :req-un [::id ::name ::avatar ::description ::created-at]))
 
-(defrecord Group [id name description created-at])
+(defrecord Group [id name description created-at location-id])
 
 (defn new-group
   [{:keys [id name description avatar created-at]}]
@@ -24,8 +24,7 @@
   (def valid-group {:name "Clojure" :description "Functional programming"})
   (def invalid-group1 {:name "Cloj" :description "Fun"}) ; Too short
 
-  (println "Valid group:" (s/valid? ::group valid-group)) ; true
-  (println "Invalid group1:" (s/valid? ::group invalid-group1)) ; false
-
+  (s/valid? ::group valid-group)
+  (s/valid? ::group invalid-group1)
   (s/explain ::group invalid-group1)
   )

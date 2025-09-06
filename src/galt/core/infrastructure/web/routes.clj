@@ -5,6 +5,7 @@
     [galt.core.infrastructure.web.middleware :as middleware]
     [galt.core.infrastructure.bitcoin.bouncy-castle-verify :refer [verify-signature]]
     [galt.core.adapters.handlers :as core-handlers]
+    [galt.core.adapters.location :as location]
     [galt.core.views.layout :as layout]
     [galt.groups.adapters.handlers :as groups]
     [galt.members.adapters.handlers :as members]
@@ -31,18 +32,21 @@
      [["/" {:id :home
             :get (with-deps-layout core-handlers/view-landing)}]
       ["/groups" {:id :groups
+                  :name :groups
                   :get (with-deps-layout groups/list-groups)
                   :post {:handler (with-deps-layout groups/create-group)
                          :middleware [:auth]}}]
       ["/groups/new" {:id :groups
+                      :name :groups/new
                       :conflicting true
                       :get (with-deps-layout groups/new-group)
                       :middleware [:auth]}]
       ["/groups/:id" {:id :groups
-                      :name :groups/show-group
+                      :name :groups/by-id
                       :conflicting true
                       :get (with-deps-layout groups/show-group)
-                      :put (with-deps-layout groups/update-group)}]
+                      :put (with-deps-layout groups/update-group)
+                      :delete (with-deps-layout groups/delete-group)}]
       ["/groups/:id/edit" {:id :groups
                            :name :groups/edit-group
                            :get (with-deps-layout groups/edit-group)}]
@@ -76,21 +80,27 @@
                        :name :members/show-profile
                        :conflicting true
                        :get (with-deps-layout members/show-profile)}]
+      ["/locations/search-cities" {:name :locations/cities
+                                   :get (partial location/search-cities route-deps)}]
+      ["/locations/coordinates" {:name :locations/coordinates
+                                 :get (partial location/coordinates route-deps)}]
       ["/files" {:post (partial core-handlers/store-file deps)}]
       ["/files/*path" {:get (partial core-handlers/serve-file deps)}]
-      ["/assets/*" (-> (rr/create-resource-handler)
-                       (wrap-cors ,,,
-                                  :access-control-allow-origin #".*"
-                                  :access-control-allow-methods [:get])
-                       (wrap-content-type ,,, {:mime-types {"cljs" "application/x-scittle"}}))]]
+      ["/assets/*" {:name :assets
+                    :handler (-> (rr/create-resource-handler)
+                                 (wrap-cors ,,,
+                                            :access-control-allow-origin #".*"
+                                            :access-control-allow-methods [:get])
+                                 (wrap-content-type ,,, {:mime-types {"cljs" "application/x-scittle"}}))}]]
      {:reitit.middleware/registry (:reitit-middleware deps)})))
 
 (defn handler [router]
   (-> (rr/ring-handler router nil {:middleware [{:name :logging
                                                  :description "Telemere reitit/ring logging"
                                                  :wrap middleware/wrap-with-logger}]})
-      wrap-multipart-params
+      middleware/wrap-method-override
       wrap-keyword-params
       wrap-params
+      wrap-multipart-params
       (middleware/wrap-add-galt-session ,,, galt-session-atom)
       (wrap-session ,,, {:store (memory/memory-store galt-session-atom)})))

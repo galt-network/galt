@@ -6,6 +6,17 @@
     [clojure.string :as str]
     ))
 
+(defn wrap-method-override
+  "Adds support for PUT, DELETE and PATCH methods via _method POST(<form>) parameter"
+  [handler]
+  (fn [request]
+    (if (= :post (:request-method request))
+      (let [override-method (get-in request [:params :_method])]
+        (if (and override-method (#{"PUT" "DELETE" "PATCH"} (str/upper-case override-method)))
+          (handler (assoc request :request-method (keyword (str/lower-case override-method))))
+          (handler request)))
+      (handler request))))
+
 (defn wrap-auth
   [login-url handler]
   (fn [request]
@@ -66,7 +77,6 @@
        (try
          (let [response (handler request)]
            (reset! last-response response)
-           (println ">>> response status" (:status response))
            (tel/log! (finalize-log-data {:data {:status (:status response)}}))
            response)
          (catch Exception ex

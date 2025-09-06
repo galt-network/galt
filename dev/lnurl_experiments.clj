@@ -24,6 +24,4 @@
         hrp "lnurl"
         encoded (encode-bech32 hrp url)
         decoded (decode-bech32 encoded hrp)]
-    (println "Original:" url)
-    (println "Encoded:" encoded)
-    (println "Re-decoded:" decoded)))
+    [encoded decoded]))

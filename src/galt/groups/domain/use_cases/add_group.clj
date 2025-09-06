@@ -2,11 +2,14 @@
   (:require
     [clojure.spec.alpha :as s]
     [galt.groups.domain.entities.group :as entities.group]
-    [galt.groups.domain.group-repository :as gr :refer [add-group]]))
+    [galt.groups.domain.group-repository :as gr :refer [add-group]]
+    [galt.locations.domain.location-repository :as lr]))
+
+(def max-group-per-member 100)
 
 (defn within-group-creation-limits?
   [{:keys [group-repo]} {:keys [founder-id]}]
-  (>= 3 (count (gr/find-groups-by-founder-id group-repo founder-id))))
+  (>= max-group-per-member (count (gr/find-groups-by-founder-id group-repo founder-id))))
 
 (defn active-member?
   [{:keys [member-repo]} group-creation]
@@ -30,20 +33,22 @@
 (s/def ::founder-id uuid?)
 (s/def ::name string?)
 (s/def ::description string?)
-(s/def ::command (s/keys :req-un [::founder-id ::name ::description]))
+(s/def ::location map?)
+(s/def ::command (s/keys :req-un [::founder-id ::name ::description ::location]))
 
-(defn new-add-group-use-case
-  [deps]
-  (fn [command]
-    (s/assert ::command command)
-    (let [validation-errors (validate-all deps requirements command)
-          group-repo (:group-repo deps)
-          uuid (:uuid deps)
-          founder-id (:founder-id command)
-          group-fields (-> command
-                           (select-keys ,,, [:name :description :avatar])
-                           (assoc ,,, :id (uuid)))
-          group (entities.group/new-group group-fields)]
-      (if (empty? validation-errors)
-        [:ok (add-group group-repo founder-id group) nil]
-        [:error nil validation-errors]))))
+(defn add-group-use-case
+  [{:keys [group-repo location-repo uuid] :as deps} command]
+  (s/assert ::command command)
+  (let [group-params (dissoc command :location)
+        location-params (:location command)
+        validation-errors (validate-all deps requirements group-params)
+        founder-id (:founder-id command)
+        group-fields (-> command
+                         (select-keys ,,, [:name :description :avatar])
+                         (assoc ,,, :id (uuid)))
+        created-location (lr/add-location location-repo location-params)
+        group (assoc group-fields :location-id (:id created-location))
+        created-group (add-group group-repo founder-id group)]
+    (if (empty? validation-errors)
+      [:ok created-group nil]
+      [:error nil validation-errors])))

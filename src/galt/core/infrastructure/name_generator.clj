@@ -75,9 +75,4 @@
   (hash-to-index "hello long text" 1000)
   (take 10 (read-word-list "english_nouns.txt"))
   (type (read-file "english_nouns.txt"))
-  (println "Name for Claudia's public key is" (generate "02938409582743085209348075928347059827340958720394875"))
-  (println "Name for Madis's public key is" (generate "298347982374982374lakjshdlkfjhalkdsjh"))
-  (println "Name for Madis's public key is" (generate "abcde12345"))
-  (let [inputs ["user1" "user2" "user1" "test" "randomness" "things" "madis" "Madis"]]
-      (doseq [input inputs]
-        (println (format "Input: %s, Name: %s" input (generate input))))))
+  (generate "02938409582743085209348075928347059827340958720394875"))
