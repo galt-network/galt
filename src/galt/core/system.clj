@@ -4,8 +4,15 @@
     [galt.core.infrastructure.database :as database]
     [galt.core.infrastructure.web.middleware :as middleware]
     [galt.core.infrastructure.name-generator :as name-generator]
-    [galt.core.infrastructure.web.routes :as routes]
+    [galt.core.views.layout :as layout] ; TODO see if can be removed
+    [galt.core.infrastructure.web.helpers :as web-helpers] ; TODO see if can be removed
+    [galt.core.infrastructure.web.routes :as core.routes]
     [galt.core.infrastructure.web.server :as web.server]
+    [galt.members.external.routes]
+    [galt.groups.external.routes]
+    [galt.locations.external.routes]
+    [galt.invitations.external.routes]
+    [reitit.ring]
     [galt.core.infrastructure.disk-file-storage :as file-storage]
     [galt.groups.adapters.handlers]
     [galt.core.adapters.postgres-db-access :refer [new-db-access]]
@@ -18,6 +25,8 @@
   (:import
    [com.zaxxer.hikari HikariDataSource]))
 
+
+(defonce galt-session-atom (atom {}))
 
 (defn get-config
   ([]
@@ -74,7 +83,10 @@
               :store-content (partial file-storage/store-content (get-in opts [::ds/config]))})
            :config
            {:storage-root (ds/ref [:env :file-storage-root])
-            :root-url (ds/ref [:env :galt-root-url])}}}
+            :root-url (ds/ref [:env :galt-root-url])}}
+     :galt-session
+     #::ds{:start
+           (fn [_] galt-session-atom)}}
     :app
     {:reitit-middleware
      #::ds{:start
@@ -83,21 +95,26 @@
                    login-url (str galt-url "/members/login")]
                {:auth (partial middleware/wrap-auth login-url)}))
            :config {:galt-url (ds/ref [:env :galt-root-url])}}
-     :route-handler
+     :route-deps
      #::ds{:start
            (fn [opts]
-             (let [route-deps {:group-repo (get-in opts [::ds/config :group-repo])
-                               :user-repo (get-in opts [::ds/config :user-repo])
-                               :location-repo (get-in opts [::ds/config :location-repo])
-                               :db-access (get-in opts [::ds/config :db-access])
-                               :generate-name name-generator/generate
-                               :file-storage (get-in opts [::ds/config :file-storage])
-                               :reitit-middleware (get-in opts [::ds/config :reitit-middleware])
-                               :galt-url (get-in opts [::ds/config :galt-url])
-                               :uuid clj-uuid/v7}]
-               (routes/handler (routes/router route-deps))))
+             (let [galt-session (get-in opts [::ds/config :galt-session])]
+               {:app-container layout/app-container
+                :render web-helpers/render-html
+                :with-layout web-helpers/with-layout
+                :galt-session galt-session
+                :group-repo (get-in opts [::ds/config :group-repo])
+                :user-repo (get-in opts [::ds/config :user-repo])
+                :location-repo (get-in opts [::ds/config :location-repo])
+                :db-access (get-in opts [::ds/config :db-access])
+                :generate-name name-generator/generate
+                :file-storage (get-in opts [::ds/config :file-storage])
+                :reitit-middleware (get-in opts [::ds/config :reitit-middleware])
+                :galt-url (get-in opts [::ds/config :galt-url])
+                :uuid clj-uuid/v7}))
            :config
-           {:group-repo (ds/ref [:storage :group])
+           {:galt-session (ds/ref [:storage :galt-session])
+            :group-repo (ds/ref [:storage :group])
             :user-repo (ds/ref [:storage :user])
             :location-repo (ds/ref [:storage :location])
             :db-access (ds/ref [:storage :db-access])
@@ -105,6 +122,54 @@
             :reitit-middleware (ds/ref [:app :reitit-middleware])
             :galt-url (ds/ref [:env :galt-root-url])
             }}
+     :members/routes
+     #::ds{:start
+           (fn [{:keys [::ds/config]}]
+             (galt.members.external.routes/router (:route-deps config)))
+           :config
+           {:route-deps (ds/ref [:app :route-deps])}}
+     :groups/routes
+     #::ds{:start
+           (fn [{:keys [::ds/config]}]
+             (galt.groups.external.routes/router (:route-deps config)))
+           :config
+           {:route-deps (ds/ref [:app :route-deps])}}
+     :locations/routes
+     #::ds{:start
+           (fn [{:keys [::ds/config]}]
+             (galt.locations.external.routes/router (:route-deps config)))
+           :config
+           {:route-deps (ds/ref [:app :route-deps])}}
+     :invitations/routes
+     #::ds{:start
+           (fn [{:keys [::ds/config]}]
+             (galt.invitations.external.routes/router (:route-deps config)))
+           :config
+           {:route-deps (ds/ref [:app :route-deps])}}
+     :route-handler
+     #::ds{:start
+           (fn [{:keys [::ds/config]}]
+             (let [members-router (get-in config [:members/routes])
+                   groups-router (get-in config [:groups/routes])
+                   locations-router (get-in config [:locations/routes])
+                   invitations-router (get-in config [:invitations/routes])
+                   route-deps (get-in config [:route-deps])
+                   galt-session (get-in config [:galt-session])
+                   core-router (core.routes/router route-deps)
+                   final-router (core.routes/merge-routers
+                                  members-router
+                                  groups-router
+                                  locations-router
+                                  invitations-router
+                                  core-router)]
+               (core.routes/handler galt-session final-router)))
+           :config
+           {:members/routes (ds/ref [:app :members/routes])
+            :groups/routes (ds/ref [:app :groups/routes])
+            :locations/routes (ds/ref [:app :locations/routes])
+            :invitations/routes (ds/ref [:app :invitations/routes])
+            :route-deps (ds/ref [:app :route-deps])
+            :galt-session (ds/ref [:storage :galt-session])}}
      :web-server
      #::ds{:start
            (fn [opts]

@@ -1,4 +1,4 @@
-(ns galt.core.adapters.location
+(ns galt.locations.adapters.handlers
   (:require
     [galt.core.infrastructure.web.helpers :refer [get-signals]]
     [galt.core.adapters.sse-helpers :refer [with-sse]]

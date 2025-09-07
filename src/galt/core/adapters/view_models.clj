@@ -27,7 +27,10 @@
   "Takes route dependencies, request object and content hiccup vector
   Returns a map suitable for rendering the page layout"
   [deps req]
-  (let [page-title (str (str/capitalize (name (get-in req [:reitit.core/match :data :id]))) " | Galt" )]
+  (let [title-source-from-route (or
+                                  (get-in req [:reitit.core/match :data :id])
+                                  (get-in req [:reitit.core/match :data :name]))
+        page-title (str/capitalize (name title-source-from-route))]
     {:page-title page-title
      :path (get-in req [:reitit.core/match :path])
      :navbar (navbar-model deps req)

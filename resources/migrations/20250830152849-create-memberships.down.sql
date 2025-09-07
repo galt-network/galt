@@ -1,7 +1,5 @@
-DROP TABLE gifts;
+DROP TABLE galt_membership_payments;
 --;;
-DROP TABLE purchases;
---;;
-DROP TABLE galt_memberships;
+DROP TABLE payments;
 --;;
 DROP TABLE members;

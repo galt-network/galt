@@ -71,7 +71,7 @@
    [:head
     [:meta {:charset "utf-8"}]
     [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
-    [:title (:page-title model)]
+    [:title (str (:page-title model) " | Galt")]
     [:link {:rel "stylesheet" :href "https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css"}]
     [:link {:rel "stylesheet" :href "/assets/css/style.css"}]
     [:script {:type :module

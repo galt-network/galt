@@ -6,6 +6,7 @@
     [galt.members.use-cases.create-lightning-user :refer [new-create-lightning-user]]
     [galt.members.domain.user-repository :refer [find-user-by-id]]
     [galt.members.adapters.views :as views]
+    [galt.members.adapters.presentation.profile :as profile]
     [galt.members.adapters.view-models :as view-models]
     [reitit.core]))
 
@@ -21,7 +22,9 @@
   [{:keys [render user-repo layout]} req]
   (let [user-id (get-in req [:session :user-id])
         user (find-user-by-id user-repo user-id)
-        content [:div.content [:h3 "This is your profile"] [:strong (:users/name user)]]]
+        _ (println ">>> show-my-profile user:" user)
+        model {:member? false :user user :new-invitation-url (link-for-route req :invitations/new)}
+        content (profile/present model)]
     {:status 200
      :body (render (layout content))}))
 

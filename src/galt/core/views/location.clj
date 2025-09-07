@@ -31,7 +31,7 @@
    [:div.field {:style {:margin-bottom "12px"}}
     [:label.label "City"]
     [:div.control {:style {:z-index 1000}}
-     [:div.dropdown {:id "country-dropdown"
+     [:div.dropdown {:id "city-dropdown"
                      :data-class-is-active "$show-results & !$final-value"
                      :style {:display "block"}}
       [:div.dropdown-trigger

@@ -33,7 +33,7 @@
 (comment
   (migratus/init init-config)
 
-  (migratus/create config "create-locations")
+  (migratus/create config "create-invitations-payments")
 
   ;apply pending migrations
   (migratus/migrate config)
@@ -42,8 +42,8 @@
   (migratus/rollback config)
 
   ;bring up migrations matching the ids
-  (migratus/up config 20250814104102)
+  (migratus/up config 20250830152849)
 
   ;bring down migrations matching the ids
-  (migratus/down config 20250814104102)
+  (migratus/down config 20250830152849)
   )

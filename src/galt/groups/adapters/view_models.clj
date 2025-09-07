@@ -6,16 +6,6 @@
     [galt.core.adapters.db-access :refer [query]]
     [galt.core.adapters.time-helpers :as time-helpers]))
 
-(defn d*-action
-  "Returns a map like
-  (d*-action {:groups/id 123} :get :edit) #=> {:data-on-click \"@get('/users/123/edit')\"}"
-  [model method & [action]]
-  {:data-on-click
-   (str "@" (name method) "('/groups/"
-        (:groups/id model)
-        (when action (str "/" (name action)))
-        "')")})
-
 (defn groups-view-model
   [deps req]
   (let [groups (gr/list-groups (:group-repo deps))
