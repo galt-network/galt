@@ -1,4 +1,6 @@
-(ns galt.invitations.adapters.presentation)
+(ns galt.invitations.adapters.presentation
+  (:require
+    [galt.core.views.datastar-helpers :refer [d*-backend-action]]))
 
 (defn present
   [model]
@@ -11,10 +13,22 @@
              all the members of the picked group with invitation creation rights can answer you, though
              it will most likely be the founder"]]]]
    [:form.form
+    [:input {:type "hidden" :data-bind "group-id"}]
     [:div.field
      [:label.label "Group to post the invitation to (optional)"]
      [:div.control
-      [:input.input {:name "group"}]]]
+      [:div.dropdown {:data-class-is-active "$show-results"}
+       [:div.dropdown-trigger
+        [:input.input {:name "group"
+                       :data-bind "group-name"
+                       :data-on-focus "$show-results = true"
+                       :data-on-click__outside "$show-results = false"
+                       :data-on-input__debounce.500ms
+                       (d*-backend-action "/groups/search"
+                                          :get
+                                          {:action "search"}
+                                          {:filter-signals {:include "/group-name|action|show-results/"}})}]]
+       [:div.dropdown-menu {:id "group-search-dropdown-container"}]]]]
     [:div.field
      [:label.label "Member to request the invitation from (optional)"]
      [:div.control

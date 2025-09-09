@@ -1,24 +1,29 @@
 (ns galt.members.adapters.db-user-repository
   (:require
-    [galt.core.adapters.db-access :refer [query]]
-    [galt.members.domain.user-repository :refer [UserRepository]]))
+    [galt.core.adapters.db-access :refer [query query-one]]
+    [galt.members.domain.entities.user :as user]
+    [galt.core.adapters.db-result-transformations :refer [transform-row defaults ->local-date-time]]
+    [galt.core.infrastructure.name-generator :as name-generator]
+    [galt.members.domain.user-repository :as ur :refer [UserRepository]]))
 
-(defn active-user->user
+(def user-spec
+  {:users/id defaults
+   :users/pub_key defaults
+   :users/created_at [(first defaults) ->local-date-time]})
+
+(defn add-name-generated-from-pub-key
   [user]
-  {:users/id (:active_users/id user)
-   :users/pub-key (:active_users/pub_key user)
-   :users/name (:active_users/name user)
-   :users/created-at (:active_users/created_at user)})
+  (assoc user :name (name-generator/generate (:pub-key user))))
 
 (defrecord DbUserRepository [db-access]
   UserRepository
 
-  (add-user [_ name id pub-key]
-    (query db-access
-           {:insert-into [:users]
-            :columns [:name :id :pub-key]
-            :values [[name id pub-key]]
-            :returning [:*]}))
+  (add-user [_ id pub-key]
+    (->> {:insert-into [:users] :columns [:id :pub-key] :values [[id pub-key]] :returning [:*]}
+         (query db-access ,,,)
+         (first ,,,)
+         (transform-row user-spec ,,,)
+         (user/map->User ,,,)))
 
   (delete-user [_ id]
     (query db-access
@@ -27,21 +32,22 @@
             :where [:= :users/id id]}))
 
   (find-user-by-id [_ id]
-    (->> {:select [:*] :from [[:active_users :users]] :where [:= :id id] :limit 1}
-         (query db-access ,,,)
-         (map active-user->user ,,,)
-         first))
+    (some->> {:select [:*] :from [:users] :where [:= :id id] :limit 1}
+             (query-one db-access ,,,)
+             (transform-row user-spec ,,,)
+             (add-name-generated-from-pub-key ,,,)))
 
   (find-user-by-pub-key [_ pub-key]
-    (->> {:select [:*] :from [:active_users] :where [:= :pub_key pub-key]}
-         (query db-access ,,,)
-         (map active-user->user ,,,)
-         first))
+    (some->> {:select [:*] :from [:users] :where [:= :pub_key pub-key]}
+             (query-one db-access ,,,)
+             (transform-row user-spec)
+             (add-name-generated-from-pub-key ,,,)))
 
   (list-users [_]
-    (->> {:select [:*] :from [[:active_users :users]]}
+    (->> {:select [:*] :from [:users]}
          (query db-access ,,,)
-         (map active-user->user ,,,))))
+         (map #(transform-row user-spec %) ,,,)
+         (map add-name-generated-from-pub-key ,,,))))
 
 (defn new-db-user-repository [db-access]
   (DbUserRepository. db-access))

@@ -1,7 +1,7 @@
 (ns galt.locations.adapters.pg-location-repository
   (:require
     [galt.locations.domain.location-repository :as lr :refer [LocationRepository]]
-    [galt.core.adapters.db-access :refer [query in-transaction]]
+    [galt.core.adapters.db-access :refer [query query-one in-transaction]]
     [galt.locations.domain.entities.city :as city]
     [galt.locations.domain.entities.country :as country]
     [galt.locations.domain.entities.location :as location]
@@ -83,8 +83,7 @@
     (->> {:select common-city-columns
           :from [:cities]
           :where [:= :id id]}
-         (query db-access ,,,)
-         (first ,,,)
+         (query-one db-access ,,,)
          (transform-row city-spec ,,,)
          (city/map->City ,,,)))
 
@@ -118,8 +117,7 @@
     (->> {:select common-country-columns
           :from [:countries]
           :where [:= :iso2 code]}
-         (query db-access ,,,)
-         (first ,,,)
+         (query-one db-access ,,,)
          (transform-row country-spec ,,,)
          (country/map->Country ,,,)))
 
@@ -133,8 +131,7 @@
     (->> {:select [:*]
           :from [:locations]
           :where [:= :id id]}
-         (query db-access ,,,)
-         (first ,,,)
+         (query-one db-access ,,,)
          (transform-row location-spec ,,,)
          (location/map->Location ,,,))))
 

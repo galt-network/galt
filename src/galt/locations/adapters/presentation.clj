@@ -1,4 +1,4 @@
-(ns galt.core.views.location
+(ns galt.locations.adapters.presentation
   (:require
     [galt.core.views.datastar-helpers :refer [d*-backend-action]]))
 
@@ -32,7 +32,7 @@
     [:label.label "City"]
     [:div.control {:style {:z-index 1000}}
      [:div.dropdown {:id "city-dropdown"
-                     :data-class-is-active "$show-results & !$final-value"
+                     :data-class-is-active "$show-results && !$final-value"
                      :style {:display "block"}}
       [:div.dropdown-trigger
        [:input.input {:placeholder "Type to search"

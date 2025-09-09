@@ -4,9 +4,7 @@
     [galt.core.adapters.db-access :refer [query in-transaction]]
     [galt.groups.domain.entities.group :refer [map->Group]]
     [galt.core.adapters.db-result-transformations :refer [transform-row defaults ->local-date-time]]
-    [galt.groups.domain.entities.group-membership :refer [map->GroupMembership]]
-    [camel-snake-kebab.extras :as cske]
-    [camel-snake-kebab.core :as csk]))
+    [galt.groups.domain.entities.group-membership :refer [map->GroupMembership]]))
 
 
 (def group-spec
@@ -22,16 +20,12 @@
    :group_memberships/group_id defaults
    :group_memberships/role [(first defaults) keyword]})
 
-(defn keys->snake-case [map]
-  (cske/transform-keys csk/->snake_case_keyword map))
-
 (defrecord DbGroupRepository [db-access]
   GroupRepository
   (add-group [_ founder-id group]
     (in-transaction
       db-access
       (fn [query]
-        (println ">>> GroupRepository add-group GROUP" (keys->snake-case group))
         (query {:insert-into [:groups]
                 :values [group]})
         (query {:insert-into [:group_memberships]
@@ -62,6 +56,20 @@
                               [:= :group_memberships.member_id founder-id]
                               [:= :group_memberships.role "founder"]]}))
 
+  (fuzzy-find-group [_ s]
+    (let [limit 10
+          similarity-threshold 0.2]
+      (->> {:select (conj [:groups/*] [[:word_similarity [:lower s] [:lower :name]] :similarity])
+            :from [:groups]
+            :where [:or
+                    [:% [:lower :name] [:lower s]]
+                    [:> [:word_similarity [:lower s] [:lower :name]] similarity-threshold]]
+            :order-by [[[:word_similarity [:lower s] [:lower :name]] :desc]]
+            :limit limit}
+           (query db-access ,,,)
+           (map #(transform-row group-spec %))
+           (map map->Group ,,,))))
+
   (update-group [_ group]
     (query db-access {:update [:groups]
                       :set group
@@ -90,7 +98,11 @@
                limit (assoc ,,, :limit limit)))))
 
   (list-groups [_]
-    (query db-access {:select [:*] :from [:groups]}))
+    (query db-access {:select [:*] :from [:groups]})
+    (->> {:select [:*] :from [:groups]}
+         (query db-access ,,,)
+         (map #(transform-row group-spec %) ,,,)
+         (map map->Group ,,,)))
 
   (find-membership-by-member [_ group-id member-id]
     (->> {:select [:group_memberships.*]

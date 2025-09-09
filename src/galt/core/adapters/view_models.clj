@@ -9,8 +9,8 @@
         user-id (get-in req [:session :user-id])
         user (find-user-by-id user-repo user-id)
         logged-in? (not (nil? user))
-        login-user {:name (get user :users/name "Login")
-                    :avatar "https://avatars1.githubusercontent.com/u/7221389?v=4&s=32"
+        login-user {:name (get user :name "Login")
+                    :avatar "/assets/images/profile-user-account.svg"
                     :href (if logged-in? "/members/profile/me" "/members/login")}
         login-item {:id :login :title "Log in" :href "/members/login"}
         logout-item {:id :logout :title "Log out" :data-on-click "@post('/members/logout')"}

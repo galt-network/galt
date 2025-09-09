@@ -37,7 +37,7 @@
 (s/def ::command (s/keys :req-un [::founder-id ::name ::description ::location]))
 
 (defn add-group-use-case
-  [{:keys [group-repo location-repo uuid] :as deps} command]
+  [{:keys [group-repo location-repo gen-uuid] :as deps} command]
   (s/assert ::command command)
   (let [group-params (dissoc command :location)
         location-params (:location command)
@@ -45,9 +45,11 @@
         founder-id (:founder-id command)
         group-fields (-> command
                          (select-keys ,,, [:name :description :avatar])
-                         (assoc ,,, :id (uuid)))
+                         (assoc ,,, :id (gen-uuid)))
+        ; FIXME Shouldn't create location when there are validation errors
         created-location (lr/add-location location-repo location-params)
         group (assoc group-fields :location-id (:id created-location))
+        ; FIXME Shouldn't create group when there are validation errors
         created-group (add-group group-repo founder-id group)]
     (if (empty? validation-errors)
       [:ok created-group nil]

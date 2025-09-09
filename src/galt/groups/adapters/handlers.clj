@@ -5,6 +5,7 @@
     [galt.groups.adapters.views :as views]
     [galt.groups.adapters.view-models :as models]
     [galt.groups.domain.group-repository :as gr]
+    [galt.core.infrastructure.web.helpers :refer [get-signals]]
     [galt.locations.domain.location-repository :as lr]
     [galt.groups.domain.use-cases.add-group :refer [add-group-use-case]]
     [galt.groups.domain.use-cases.edit-group :refer [edit-group-use-case]]
@@ -122,3 +123,39 @@
         ]
     {:status 200 :body (render (layout {:content (views/show-group model)
                                         :head-tags head-tags-for-maps}))}))
+(defn dropdown-item
+  [{:keys [name value extra]}]
+  [:div.dropdown-item {:data-on-click
+                       (str "$search = '" name "'; $show-results = false;"
+                            (d*-backend-action "/groups/search"
+                                               :get
+                                               {:action "choose" :id value}
+                                               {:filter-signals {:include "/action|search|show-results/"}}))}
+   name
+   (when extra [:span.is-pulled-right {:style {:margin-left "1em"}} extra])
+   ])
+
+(defn search-groups
+  [{:keys [group-repo]} req]
+  (let [signals (get-signals req)
+        action (get-in req [:params :action])
+        query (:group-name signals)
+        fuzzy-find-groups (fn [q] (->> (gr/fuzzy-find-group group-repo q)
+                                       (map (fn [g] {:name (:name g) :value (:id g)}) ,,,)))]
+    (with-sse req
+      (fn [send!]
+        (case action
+          "search"
+          (do
+            (send! :html [:div.dropdown-menu {:id "group-search-dropdown-container"}
+                          [:div.dropdown-content (map dropdown-item (fuzzy-find-groups query))]])
+            (send! :signals {:show-results true}))
+          "choose"
+          (send! :signals {:group-id (get-in req [:params :id])
+                           :group-name (->> [:params :id]
+                                            (get-in req ,,,)
+                                            (parse-uuid ,,,)
+                                            (gr/find-group-by-id group-repo)
+                                            (:groups/name ,,,)
+                                            )
+                           :show-results false}))))))

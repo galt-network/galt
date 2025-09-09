@@ -1,9 +1,11 @@
 CREATE TABLE members (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID,
+  name VARCHAR(255) NOT NULL,
   avatar TEXT,
   slug VARCHAR(64),
-  created_at timestamp default current_timestamp
+  created_at timestamp default current_timestamp,
+  deleted_at timestamp 
 );
 --;;
 CREATE TABLE payments (

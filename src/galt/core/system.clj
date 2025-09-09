@@ -17,8 +17,12 @@
     [galt.groups.adapters.handlers]
     [galt.core.adapters.postgres-db-access :refer [new-db-access]]
     [galt.groups.adapters.db-group-repository :as group-repository]
+    [galt.members.domain.user-repository :refer [find-user-by-id]]
     [galt.members.adapters.db-user-repository :as db-user-repository]
+    [galt.members.adapters.db-member-repository :as db-member-repository]
     [galt.locations.adapters.pg-location-repository :as pg-location-repository]
+    [galt.invitations.adapters.db-invitation-repository :refer [add-invitation-request user-invitation-requests]]
+    [galt.invitations.use-cases.create-invitation :refer [create-invitation-use-case]]
     [clojure.java.io]
     [clj-uuid]
     [clojure.edn])
@@ -70,6 +74,12 @@
            :config
            {:db-access (ds/ref [:storage :db-access])}}
 
+     :member
+     #::ds{:start
+           (fn [opts] (db-member-repository/new-db-member-repository (get-in opts [::ds/config :db-access])))
+           :config
+           {:db-access (ds/ref [:storage :db-access])}}
+
      :location
      #::ds{:start
            (fn [opts] (pg-location-repository/new-location-repository (get-in opts [::ds/config :db-access])))
@@ -87,6 +97,20 @@
      :galt-session
      #::ds{:start
            (fn [_] galt-session-atom)}}
+
+    :use-cases
+    {:create-invitation
+     #::ds{:start
+           (fn [{{:keys [user-repo db]} ::ds/config}]
+             (partial
+               create-invitation-use-case
+               {:find-user-by-id (partial find-user-by-id user-repo)
+                :user-invitation-requests (partial user-invitation-requests db)
+                :add-invitation-request (partial add-invitation-request db)}))
+           :config
+           {:db (ds/ref [:storage :db])
+            :user-repo (ds/ref [:storage :user])
+            :db-access (ds/ref [:storage :db-access])}}}
     :app
     {:reitit-middleware
      #::ds{:start
@@ -105,17 +129,19 @@
                 :galt-session galt-session
                 :group-repo (get-in opts [::ds/config :group-repo])
                 :user-repo (get-in opts [::ds/config :user-repo])
+                :member-repo (get-in opts [::ds/config :member-repo])
                 :location-repo (get-in opts [::ds/config :location-repo])
                 :db-access (get-in opts [::ds/config :db-access])
                 :generate-name name-generator/generate
                 :file-storage (get-in opts [::ds/config :file-storage])
                 :reitit-middleware (get-in opts [::ds/config :reitit-middleware])
                 :galt-url (get-in opts [::ds/config :galt-url])
-                :uuid clj-uuid/v7}))
+                :gen-uuid clj-uuid/v7}))
            :config
            {:galt-session (ds/ref [:storage :galt-session])
             :group-repo (ds/ref [:storage :group])
             :user-repo (ds/ref [:storage :user])
+            :member-repo (ds/ref [:storage :member])
             :location-repo (ds/ref [:storage :location])
             :db-access (ds/ref [:storage :db-access])
             :file-storage (ds/ref [:storage :file-storage])

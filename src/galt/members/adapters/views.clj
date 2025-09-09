@@ -31,7 +31,7 @@
           :rows (:users model)
           :column-processor {:user link-to-profile
                              :groups #(group-tags %)
-                             :users/created-at #(short-format (.toLocalDateTime %))}}))
+                             :created-at #(short-format (.toLocalDateTime %))}}))
 
 (defn qr-code
   [content]
@@ -81,13 +81,9 @@
       [:i.far.fa-clipboard ]]]])
 
 (defn login-result-message
-  [status result]
-  (let [message-class {:ok :is-success :error :is-danger}
-        message-content {:ok [:div "Your user name generated from your public key is "
-                              [:strong (get-in result [:user :users/name])]]
-                         :error "Try logging in again or if you think this is our error, please report it"}]
-    [:article.message {:class [(message-class status)]}
-     [:div.message-header
-      [:p (:message result)]
-      [:button.delete]]
-     [:div.message-body (message-content status)]]))
+  [model]
+  [:article.message {:class [(:message-class model)]}
+   [:div.message-header
+    [:p (:message-header model)]
+    [:button.delete]]
+   [:div.message-body (:message-body model)]])

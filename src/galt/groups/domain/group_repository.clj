@@ -5,6 +5,7 @@
   (find-group-by-id [this group-id])
   (find-groups-by-name [this name])
   (find-groups-by-founder-id [this founder-id])
+  (fuzzy-find-group [this s])
   (update-group [this group])
   (add-to-group [this group-id member-id role])
   (find-groups-by-member [this member-id])

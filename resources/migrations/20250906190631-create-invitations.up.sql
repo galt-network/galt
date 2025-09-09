@@ -10,6 +10,7 @@ CREATE TABLE invitations (
 );
 --;;
 CREATE TABLE invitation_requests (
+  id SERIAL PRIMARY KEY,
   requesting_user_id UUID REFERENCES users(id) NOT NULL,
   target_member_id UUID REFERENCES members(id) NOT NULL,
   target_group_id UUID REFERENCES groups(id) NOT NULL,

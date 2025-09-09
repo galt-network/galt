@@ -1,5 +1,5 @@
-DROP TABLE galt_membership_payments;
+DROP TABLE IF EXISTS galt_membership_payments;
 --;;
-DROP TABLE payments;
+DROP TABLE IF EXISTS payments;
 --;;
-DROP TABLE members;
+DROP TABLE IF EXISTS members;

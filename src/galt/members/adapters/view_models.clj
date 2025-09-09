@@ -20,3 +20,18 @@
      :users (->> users
                  (map add-user ,,,)
                  (map add-groups ,,,))}))
+
+
+(defn login-result-view-model
+  [status result]
+  (let [name (or (-> result :member :name) (-> result :user :name))
+        message-classes {:ok :is-success
+                         :error :is-danger}]
+    {:name name
+     :message-class (get message-classes status)
+     :message-header (if (= :ok status) "Login successful!" "Login not successful")
+     :message-body (case status
+                     :error (:message result)
+                     :ok (if (:member result)
+                           (str "Welcome back, " name)
+                           (str "User created with public key. Your name is " name)))}))

@@ -33,8 +33,9 @@
 (comment
   (migratus/init init-config)
 
-  (migratus/create config "create-invitations-payments")
+  (migratus/create config "create-invitations")
 
+  (migratus/pending-list config)
   ;apply pending migrations
   (migratus/migrate config)
 

@@ -3,7 +3,7 @@
     [galt.core.infrastructure.web.helpers :refer [get-signals]]
     [galt.core.adapters.sse-helpers :refer [with-sse]]
     [galt.locations.domain.location-repository :as lr]
-    [galt.core.views.location :as location-views]))
+    [galt.locations.adapters.presentation :as location-views]))
 
 (defn search-cities
   [{:keys [location-repo]} req]

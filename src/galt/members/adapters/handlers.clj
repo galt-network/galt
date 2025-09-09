@@ -4,9 +4,10 @@
     [galt.core.adapters.link-generator :refer [link-for-route]]
     [starfederation.datastar.clojure.adapter.http-kit :refer [->sse-response on-open]]
     [galt.members.use-cases.create-lightning-user :refer [new-create-lightning-user]]
+    [galt.members.use-cases.show-profile :refer [show-profile-use-case]]
     [galt.members.domain.user-repository :refer [find-user-by-id]]
     [galt.members.adapters.views :as views]
-    [galt.members.adapters.presentation.profile :as profile]
+    [galt.members.adapters.presentation.profile :as presentation.profile]
     [galt.members.adapters.view-models :as view-models]
     [reitit.core]))
 
@@ -19,20 +20,23 @@
     {:status 200 :body (render (layout content))}))
 
 (defn show-my-profile
-  [{:keys [render user-repo layout]} req]
+  [{:keys [render layout] :as deps} req]
   (let [user-id (get-in req [:session :user-id])
-        user (find-user-by-id user-repo user-id)
-        _ (println ">>> show-my-profile user:" user)
-        model {:member? false :user user :new-invitation-url (link-for-route req :invitations/new)}
-        content (profile/present model)]
-    {:status 200
-     :body (render (layout content))}))
+        [status result] (show-profile-use-case deps {:logged-in-user-id user-id
+                                                     :profile-user-id user-id})
+        model {:member? (not (nil? (:member result)))
+               :name (:name (or (:member result) (:user result)))
+               :new-invitation-url (link-for-route req :invitations/new)}
+        content (case status
+                  :ok (presentation.profile/present model)
+                  :error (presentation.profile/present-error result))]
+    {:status 200 :body (render (layout content))}))
 
 (defn show-profile
   [{:keys [render user-repo layout]} req]
   (let [user-id (parse-uuid (get-in req [:path-params :id]))
         user (find-user-by-id user-repo user-id)
-        content [:div.content [:strong (:users/name user)]]]
+        content [:div.content [:strong (:name user)]]]
     {:status 200
      :body (render (layout content))}))
 
@@ -90,13 +94,14 @@
                       :signed-challenge (:sig params)}
         [status result] (new-create-lightning-user deps login-params)
         ; TODO: see why logging-in doesn't work in staging
-        logged-in-user-id (get-in result [:user :users/id])
+        logged-in-user-id (get-in result [:user :id])
         original-session-id (:galt-session-id params)
-        view-model ((:update-layout-model deps) (assoc-in req [:session :user-id] logged-in-user-id))]
+        view-model ((:update-layout-model deps) (assoc-in req [:session :user-id] logged-in-user-id))
+        login-result-model (view-models/login-result-view-model status result)]
     (case status
       :ok (do
             (-> (lnurl-session :connection)
-                (send! ,,, :html [:div {:id "login-area"} (views/login-result-message status result)])
+                (send! ,,, :html [:div {:id "login-area"} (views/login-result-message login-result-model)])
                 (send! ,,, :html ((:navbar deps) (:navbar view-model)))
                 (close! ,,,))
             {:status 200

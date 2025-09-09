@@ -21,7 +21,8 @@
 
   Value transform can be missing and identity will be used as default"
   [row-spec row]
-  (reduce (fn [new-row [column-key [key-fn val-fn]]]
-            (assoc new-row (key-fn column-key) ((or val-fn identity) (column-key row))))
-          {}
-          row-spec))
+  (when row
+    (reduce (fn [new-row [column-key [key-fn val-fn]]]
+              (assoc new-row (key-fn column-key) ((or val-fn identity) (column-key row))))
+            {}
+            row-spec)))

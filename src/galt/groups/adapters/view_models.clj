@@ -16,16 +16,16 @@
                  (fn [acc c] (assoc acc (:group_memberships/group_id c) (:members_count c)))
                  {}
                  (query (:db-access deps) group-counts))
-        add-counts (fn [g] (assoc g :members (get counts (:groups/id g))))
+        add-counts (fn [g] (assoc g :members (get counts (:id g))))
         add-action (fn [g] (assoc g :actions
                                   [{:name "View"
-                                    :href (link-for-route req :groups/by-id {:id (:groups/id g)})}
+                                    :href (link-for-route req :groups/by-id {:id (:id g)})}
                                    {:name "Edit"
-                                    :href (link-for-route req :groups/edit-group {:id (:groups/id g)})}]))
+                                    :href (link-for-route req :groups/edit-group {:id (:id g)})}]))
         groups-with-extras (->> groups
                                 (map add-counts ,,,)
                                 (map add-action))]
-    {:columns [["Group Name" :groups/name] :groups/description :members :actions]
+    {:columns [["Group Name" :name] :description :members :actions]
      :groups groups-with-extras}))
 
 (defn group-model
@@ -45,6 +45,5 @@
      :latitude (:latitude location)
      :longitude (:longitude location)
      :founded-at founded-at
-     :members (map (fn [m] {:name (:users/name m)
-                            :href (str galt-url "/members/" (:users/id m))})
-                   members)}))
+     :members (map (fn [m] {:name (:name m)
+                            :href (str galt-url "/members/" (:id m))}) members)}))

@@ -2,7 +2,7 @@
   (:require
     [galt.core.views.table :refer [table]]
     [clojure.string :as str]
-    [galt.core.views.location :as location-views]))
+    [galt.locations.adapters.presentation :as location-views]))
 
 (defn groups-list
   [model]
