@@ -2,7 +2,6 @@
   (:require
     [galt.core.infrastructure.web.helpers :refer [->json]]
     [galt.core.infrastructure.bitcoin.lnurl :as lnurl]
-    [galt.core.infrastructure.bitcoin.bouncy-castle-verify :refer [verify-signature]]
     [reitit.ring :as rr]
     [galt.members.adapters.handlers :as members]
     ))
@@ -34,9 +33,7 @@
                            :post (with-deps-layout members/logout)}]
        ["/members/login/lnurl-auth" {:id :lnurl-auth
                                      :get (with-layout
-                                            (-> deps
-                                                (assoc ,,, :->json ->json)
-                                                (assoc ,,, :verify-signature verify-signature))
+                                            (-> deps (assoc ,,, :->json ->json))
                                             members/lnurl-auth-callback)}]
        ["/members/:id" {:id :members
                         :name :members/show-profile

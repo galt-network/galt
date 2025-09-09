@@ -18,11 +18,13 @@
   (let [from-user-id (get-in req [:session :user-id])
         to-member-id (get-in req [:params :member-id])
         to-group-id (get-in req [:params :group-id])
+        content (get-in req [:params :content])
         [status result] (create-invitation-use-case {:from-user-id from-user-id
                                                      :to-member-id to-member-id
-                                                     :to-group-id to-group-id})]
+                                                     :to-group-id to-group-id
+                                                     :content content})]
     (case status
-      :error {:status 500 :body "No can do"}
+      :error {:status 500 :body (str "No can do:" result)}
       :ok {:status 303 :headers {"Location" (link-for-route req :invitations)}})))
 
 (defn list-invitations

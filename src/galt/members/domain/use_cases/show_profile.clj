@@ -1,4 +1,4 @@
-(ns galt.members.use-cases.show-profile
+(ns galt.members.domain.use-cases.show-profile
   (:require
     [galt.members.domain.user-repository :as ur]
     [galt.members.domain.member-repository :as mr]))

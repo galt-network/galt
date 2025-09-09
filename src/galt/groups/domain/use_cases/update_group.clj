@@ -1,10 +1,7 @@
-(ns galt.groups.domain.use-cases.update-group
-  (:require
-    [galt.groups.domain.group-repository :as gr]
-    ))
+(ns galt.groups.domain.use-cases.update-group)
 
 (defn update-group-use-case
-  [{:keys [group-repo location-repo]} command]
+  [{:keys [find-group-by-id]} command]
   (let [group (:group command)
-        db-group (gr/find-group-by-id group-repo (:id group))]
+        db-group (find-group-by-id (:id group))]
     [:ok db-group]))

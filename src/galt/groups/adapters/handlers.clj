@@ -8,9 +8,6 @@
     [galt.core.infrastructure.web.helpers :refer [get-signals]]
     [galt.locations.domain.location-repository :as lr]
     [galt.groups.domain.use-cases.add-group :refer [add-group-use-case]]
-    [galt.groups.domain.use-cases.edit-group :refer [edit-group-use-case]]
-    [galt.groups.domain.use-cases.delete-group :refer [delete-group-use-case]]
-    [galt.groups.domain.use-cases.update-group :refer [update-group-use-case]]
     [galt.core.views.datastar-helpers :refer [d*-backend-action]]
     [galt.core.adapters.sse-helpers :refer [with-sse]]))
 
@@ -67,11 +64,10 @@
                         render)})))
 
 (defn edit-group
-  [{:keys [group-repo location-repo content render layout]} req]
+  [{:keys [edit-group-use-case location-repo content render layout]} req]
   (let [group-id (parse-uuid (get-in req [:path-params :id]))
         logged-in-user-id (get-in req [:session :user-id])
-        [status result] (edit-group-use-case {:group-repo group-repo}
-                                             {:group-id group-id :editor-id logged-in-user-id})
+        [status result] (edit-group-use-case {:group-id group-id :editor-id logged-in-user-id})
         location (lr/find-location-by-id location-repo (:location-id result))
         delete-url (link-for-route req :groups/by-id {:id group-id})
         model {:group result
@@ -88,21 +84,19 @@
       {:status 401 :body (render (layout (content (views/error-messages [(:message result)]))))})))
 
 (defn update-group
-  [deps req]
+  [{:keys [update-group-use-case]} req]
   (let [group-id (get-in req [:path-params :id])
-        command {:group {:id (parse-uuid group-id)}
-                 :location {}}
-        [status result] (update-group-use-case deps command)]
+        command {:group {:id (parse-uuid group-id)} :location {}}
+        [status result] (update-group-use-case command)]
     (if (= :ok status)
       {:status 303 :headers {"Location" (link-for-route req :groups/by-id {:id (:id result)})}}
       {:status 401 :body result})))
 
 (defn delete-group
-  [{:keys [group-repo]} req]
+  [{:keys [delete-group-use-case]} req]
   (let [group-id (parse-uuid (get-in req [:path-params :id]))
         logged-in-user-id (get-in req [:session :user-id])]
-    (delete-group-use-case {:group-repo group-repo}
-                           {:deletor-id logged-in-user-id :group-id group-id})
+    (delete-group-use-case {:deletor-id logged-in-user-id :group-id group-id})
     (with-sse req (fn [send!]
                     (send! :notification "Group successfully deleted")
                     (send! :js "window.location.href = 'https://dev.galt.is/groups'")))))

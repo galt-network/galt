@@ -3,8 +3,7 @@
     [galt.core.adapters.sse-helpers :refer [with-sse send! close!]]
     [galt.core.adapters.link-generator :refer [link-for-route]]
     [starfederation.datastar.clojure.adapter.http-kit :refer [->sse-response on-open]]
-    [galt.members.use-cases.create-lightning-user :refer [new-create-lightning-user]]
-    [galt.members.use-cases.show-profile :refer [show-profile-use-case]]
+    [galt.members.domain.use-cases.show-profile :refer [show-profile-use-case]]
     [galt.members.domain.user-repository :refer [find-user-by-id]]
     [galt.members.adapters.views :as views]
     [galt.members.adapters.presentation.profile :as presentation.profile]
@@ -83,7 +82,7 @@
         (add-to-lnurl-session k1-hex {:k1 k1-hex :connection sse :expires-at in-ten-minutes})))}))
 
 (defn lnurl-auth-callback
-  [deps req]
+  [{:keys [create-lightning-user-use-case] :as deps} req]
   (let [params (get req :params) ; TODO verify presence of params with spec?
         ->json (:->json deps)
         lnurl-session (get-lnurl-session (:k1 params))
@@ -92,7 +91,7 @@
                       :k1-expires-at (:expires-at lnurl-session)
                       :user-pub-key (:key params)
                       :signed-challenge (:sig params)}
-        [status result] (new-create-lightning-user deps login-params)
+        [status result] (create-lightning-user-use-case login-params)
         ; TODO: see why logging-in doesn't work in staging
         logged-in-user-id (get-in result [:user :id])
         original-session-id (:galt-session-id params)

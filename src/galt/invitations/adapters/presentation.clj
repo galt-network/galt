@@ -12,7 +12,7 @@
      [:p [:i "Picking a group allows you to search only within its members. If you leave the member field empty,
              all the members of the picked group with invitation creation rights can answer you, though
              it will most likely be the founder"]]]]
-   [:form.form
+   [:form.form {:action "/invitations" :method "POST"}
     [:input {:type "hidden" :data-bind "group-id"}]
     [:div.field
      [:label.label "Group to post the invitation to (optional)"]

@@ -1,4 +1,4 @@
-(ns galt.invitations.use-cases.create-invitation-test
+(ns galt.invitations.domain.use-cases.create-invitation-test
   (:require
    [clojure.test :refer [deftest testing is]]
    [matcher-combinators.test]
@@ -8,15 +8,13 @@
    [spy.assert :as assert]
    [spy.test]
    [galt.invitations.domain.entities.invitation-request :as ir]
-   [galt.invitations.use-cases.create-invitation :refer [create-invitation-use-case]]
-   [java-time.api :as jt]))
+   [galt.invitations.use-cases.create-invitation :refer [create-invitation-use-case]]))
 
 (declare match?)
 
 (defn generate-string-of-length [length]
   (gen/generate (gen/fmap str/join (gen/vector gen/char-alphanumeric length))))
 
-(> (count (generate-string-of-length 31)) 30)
 (deftest create-invitation-use-case-test
   (testing "error cases"
     (let [deps {:find-user-by-id (constantly {:id (random-uuid)})

@@ -1,4 +1,4 @@
-(ns galt.locations.adapters.pg-location-repository
+(ns galt.locations.adapters.db-location-repository
   (:require
     [galt.locations.domain.location-repository :as lr :refer [LocationRepository]]
     [galt.core.adapters.db-access :refer [query query-one in-transaction]]
@@ -77,7 +77,7 @@
   [maplike]
   (into {} (remove (comp nil? val) maplike)))
 
-(defrecord PgLocationRepository [db-access]
+(defrecord DbLocationRepository [db-access]
   LocationRepository
   (find-city-by-id [_ id]
     (->> {:select common-city-columns
@@ -135,26 +135,6 @@
          (transform-row location-spec ,,,)
          (location/map->Location ,,,))))
 
-(def last-repo (atom nil))
-
-(defn new-location-repository
+(defn new-db-location-repository
   [db-access]
-  (reset! last-repo (PgLocationRepository. db-access))
-  (PgLocationRepository. db-access))
-
-(comment
-  (lr/fuzzy-find-city @last-repo "New")
-  (lr/fuzzy-find-city @last-repo "New" "GB")
-  (lr/find-city-by-id @last-repo 31740)
-  (lr/fuzzy-find-country @last-repo "New")
-  (lr/find-country-by-code @last-repo "SV")
-  (lr/all-countries @last-repo)
-
-  (def my-location (location/map->Location {:name "Best Place"
-                                            :latitude 13.48833
-                                            :longitude -89.32222
-                                            :city-id 104884
-                                            :country-code "SV"}))
-  (lr/add-location @last-repo my-location)
-  (lr/find-location-by-id @last-repo 3)
-  )
+  (DbLocationRepository. db-access))

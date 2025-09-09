@@ -1,4 +1,4 @@
-(ns galt.invitations.use-cases.create-invitation
+(ns galt.invitations.domain.use-cases.create-invitation
   (:require
     [clojure.spec.alpha :as s]
     [clojure.spec.test.alpha :as st]
@@ -7,6 +7,7 @@
 (s/def ::deps (s/keys :req-un [::find-user-by-id
                                ::user-invitation-requests
                                ::add-invitation-request]))
+
 (s/def ::command (s/keys :req-un [::from-user-id
                                   ::to-group-id
                                   ::to-member-id
