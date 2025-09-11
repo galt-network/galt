@@ -3,9 +3,12 @@
    [galt.core.adapters.link-generator :refer [link-for-route]]
    [galt.core.adapters.sse-helpers :refer [close! send! with-sse]]
    [galt.core.infrastructure.web.helpers :refer [get-signals]]
+    [galt.core.views.components.dropdown-search :refer [dropdown-search-menu
+                                                        id-element-name
+                                                        show-results-signal-name]]
    [galt.members.adapters.presentation.members-list :as presentation.members-list]
    [galt.members.adapters.presentation.profile :as presentation.profile]
-    [galt.members.adapters.presentation.non-member-profile :as non-member-profile]
+   [galt.members.adapters.presentation.non-member-profile :as non-member-profile]
    [galt.members.adapters.view-models :as view-models]
    [galt.members.adapters.views :as views]
    [galt.members.domain.member-repository :as mr]
@@ -33,7 +36,7 @@
                      layout
                      render)}
       :error {:status 400
-              :body (-> (link-for-route req :invitations/new)
+              :body (-> (link-for-route req :invitations/new-request)
                         non-member-profile/present
                         layout
                         render)})))
@@ -139,13 +142,41 @@
         (send! :html (app-container (assoc model-after-logging-out
                                            :content [:h1 "You have been logged out"])))))))
 
+; (defn search-members
+;   [{:keys [search-members-use-case]} req]
+;   (with-sse
+;     req
+;     (fn [send!]
+;       (let [query (:query (get-signals req))
+;             [status result] (search-members-use-case {:query query})
+;             panel-items (view-models/members-search-view-model result (partial link-for-route req))]
+;         (send! :html (presentation.members-list/search-results
+;                        (map presentation.members-list/panel-item panel-items)))))))
+
+
 (defn search-members
-  [{:keys [search-members-use-case]} req]
-  (with-sse
-    req
-    (fn [send!]
-      (let [query (:query (get-signals req))
-            [status result] (search-members-use-case {:query query})
-            panel-items (view-models/members-search-view-model result (partial link-for-route req))]
-        (send! :html (presentation.members-list/search-results
-                       (map presentation.members-list/panel-item panel-items)))))))
+  [{:keys [member-repo]} req]
+  (let [signals (get-signals req)
+        action (get-in req [:params :action])
+        _ (println ">>> search-members signals" signals " | action:" action)
+        search-signal-name (get-in req [:params :search-signal-name])
+        extra-signal-name (get-in req [:params :extra-signal-name])
+        group-id (some-> (get signals (keyword extra-signal-name))
+                             parse-uuid)
+        query (get signals (keyword search-signal-name))
+        fuzzy-find-groups (fn [q] (->> (mr/find-members-by-name member-repo query group-id)
+                                       (map (fn [m] {:value (:name m) :id (:id m)}) ,,,)))]
+    (with-sse req
+      (fn [send!]
+        (case action
+          "search"
+          (do
+            (send! :html (dropdown-search-menu search-signal-name "/members/search" (fuzzy-find-groups query)))
+            (send! :signals {(show-results-signal-name search-signal-name) true}))
+          "choose"
+          (let [search-input-signal-name (get-in req [:params :name])
+                search-input-signal-value (get-in req [:params :value])
+                id-element-value (get-in req [:params :id])]
+            (send! :signals {search-input-signal-name search-input-signal-value
+                             (id-element-name search-input-signal-name) id-element-value
+                             (show-results-signal-name search-input-signal-name) false})))))))

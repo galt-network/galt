@@ -1,8 +1,8 @@
 (ns galt.members.domain.use-cases.search-members)
 
 (defn search-members-use-case
-  [{:keys [fuzzy-find-member list-members find-groups-by-member]} {:keys [query]}]
-  (let [members (if (> 3 (count query)) (list-members) (fuzzy-find-member query))]
+  [{:keys [find-members-by-name list-members find-groups-by-member]} {:keys [query group-id]}]
+  (let [members (find-members-by-name query group-id)]
     [:ok {:members members
           :groups (reduce (fn [acc m]
                             (assoc acc (:id m) (find-groups-by-member (:id m))))

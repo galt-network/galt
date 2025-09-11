@@ -190,7 +190,7 @@
      #::ds{:start
            (fn [{{:keys [member-repo group-repo]} ::ds/config}]
              (partial search-members-use-case
-                      {:fuzzy-find-member (partial mr/fuzzy-find-member member-repo)
+                      {:find-members-by-name (partial mr/find-members-by-name member-repo)
                        :list-members (partial mr/list-members member-repo)
                        :find-groups-by-member (partial gr/find-groups-by-member group-repo)}))
            :config

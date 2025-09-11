@@ -8,9 +8,10 @@
   (let [with-layout (:with-layout deps)
         with-deps-layout (partial with-layout deps)]
     (rr/router
-      [["/invitations/new" {:name :invitations/new
-                            :get (with-deps-layout handlers/new-invitation)}]
-       ["/invitations" {:name :invitations
-                        :get (with-deps-layout handlers/list-invitations)
-                        :post (with-deps-layout handlers/create-invitation)}]]
+      [["/invitations/new-request" {:name :invitations/new-request
+                                    :get (with-deps-layout handlers/new-invitation-request)
+                                    :post (with-deps-layout handlers/create-invitation-request)}]
+       ["/invitations" {:id :invitations
+                        :name :invitations
+                        :get (with-deps-layout handlers/list-invitations)}]]
       {:reitit.middleware/registry (:reitit-middleware deps)})))

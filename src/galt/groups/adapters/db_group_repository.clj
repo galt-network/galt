@@ -31,7 +31,6 @@
         (query {:insert-into [:group_memberships]
                 :columns [:group_id :member_id :role]
                 :values [[(:id group) founder-id "founder"]]})
-        ; TODO return groups.domain.entities.group/Group
         (->> {:select [:*] :from [:groups] :where [:= :id (:id group)]}
             query
             first
@@ -45,8 +44,17 @@
          (transform-row group-spec ,,,)
          (map->Group ,,,)))
 
-  (find-groups-by-name [_ name]
-    (query db-access {:select [:*] :from [:groups] :where [:= :name name]}))
+  (find-groups-by-name [_ name group-id]
+    (some->> {:select-distinct-on [[:groups.id] :groups.*]
+              :from [:groups]
+              :join [:group_memberships [:= :group_memberships.group_id :groups.id]]
+              :where [:and
+                      (if (nil? group-id) [:= 1 1] [:= :group_memberships.group_id group-id])
+                      [:ilike :name (str "%" name "%")]]
+              :limit 10}
+             (query db-access ,,,)
+             (map #(transform-row group-spec %) ,,,)
+             (map map->Group ,,,)))
 
   (find-groups-by-founder-id [_ founder-id]
     (query db-access {:select [:groups.*]
@@ -57,9 +65,12 @@
                               [:= :group_memberships.role "founder"]]}))
 
   (fuzzy-find-group [_ s]
+    (gr/fuzzy-find-group _ s nil))
+
+  (fuzzy-find-group [_ s member-id]
     (let [limit 10
           similarity-threshold 0.2]
-      (->> {:select (conj [:groups/*] [[:word_similarity [:lower s] [:lower :name]] :similarity])
+      (->> {:select [:groups.*]
             :from [:groups]
             :where [:or
                     [:% [:lower :name] [:lower s]]

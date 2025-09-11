@@ -3,9 +3,9 @@
 (defprotocol GroupRepository
   (add-group [this creator-id group])
   (find-group-by-id [this group-id])
-  (find-groups-by-name [this name])
+  (find-groups-by-name [this name] [this s member-id])
   (find-groups-by-founder-id [this founder-id])
-  (fuzzy-find-group [this s])
+  (fuzzy-find-group [this s] [this s member-id])
   (update-group [this group])
   (add-to-group [this group-id member-id role])
   (find-groups-by-member [this member-id])

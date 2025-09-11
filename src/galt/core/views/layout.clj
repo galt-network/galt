@@ -4,6 +4,7 @@
 
 (def item-icons
   {:profile [:fa :fa-user-o]
+   :invitations [:fa :fa-envelope-open-text]
    :logout [:fa :fa-right-from-bracket]
    :login [:fa :fa-right-to-bracket]})
 

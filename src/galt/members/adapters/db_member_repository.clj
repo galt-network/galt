@@ -26,6 +26,21 @@
          (transform-row member-spec ,,,)
          (member/map->Member ,,,)))
 
+  (find-members-by-name [_ s]
+    (mr/find-members-by-name _ s nil))
+
+  (find-members-by-name [_ s group-id]
+    (some->> {:select-distinct-on [[:members.id] :members.*]
+              :from [:members]
+              :join [:group-memberships [:= :group_memberships.member_id :members.id]]
+              :where [:and
+                      (if (nil? group-id) [:= 1 1] [:= :group_memberships.group_id group-id])
+                      [:ilike :name (str "%" s "%")]]
+              :limit 10}
+             (query db-access ,,,)
+             (map #(transform-row member-spec %) ,,,)
+             (map member/map->Member ,,,)))
+
   (find-member-by-id [_ id]
     (some->> {:select [:*] :from [:members] :where [:= :id id]}
              (query-one db-access ,,,)
@@ -47,9 +62,12 @@
              (member/map->Member ,,,)))
 
   (fuzzy-find-member [_ s]
+    (mr/fuzzy-find-member _ s nil))
+
+  (fuzzy-find-member [_ s group-id]
     (let [limit 10
           similarity-threshold 0.3]
-      (->> {:select [:*]
+      (->> {:select [:members.*]
             :from [:members]
             :where [:or
                     [:% [:lower :name] [:lower s]]

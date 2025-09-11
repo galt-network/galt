@@ -8,6 +8,9 @@
     [galt.core.infrastructure.web.helpers :refer [get-signals]]
     [galt.locations.domain.location-repository :as lr]
     [galt.groups.domain.use-cases.add-group :refer [add-group-use-case]]
+    [galt.core.views.components.dropdown-search :refer [dropdown-search-menu
+                                                        id-element-name
+                                                        show-results-signal-name]]
     [galt.core.views.datastar-helpers :refer [d*-backend-action]]
     [galt.core.adapters.sse-helpers :refer [with-sse]]))
 
@@ -118,39 +121,42 @@
         ]
     {:status 200 :body (render (layout {:content (views/show-group model)
                                         :head-tags head-tags-for-maps}))}))
-(defn dropdown-item
-  [{:keys [name value extra]}]
-  [:div.dropdown-item {:data-on-click
-                       (str "$search = '" name "'; $show-results = false;"
-                            (d*-backend-action "/groups/search"
-                                               :get
-                                               {:action "choose" :id value}
-                                               {:filter-signals {:include "/action|search|show-results/"}}))}
-   name
-   (when extra [:span.is-pulled-right {:style {:margin-left "1em"}} extra])
-   ])
+; (defn dropdown-item
+;   [{:keys [name value extra]}]
+;   [:div.dropdown-item {:data-on-click
+;                        (str "$search = '" name "'; $show-results = false;"
+;                             (d*-backend-action "/groups/search"
+;                                                :get
+;                                                {:action "choose" :id value}
+;                                                {:filter-signals {:include "/action|search|show-results/"}}))}
+;    name
+;    (when extra [:span.is-pulled-right {:style {:margin-left "1em"}} extra])
+;    ])
 
 (defn search-groups
   [{:keys [group-repo]} req]
   (let [signals (get-signals req)
         action (get-in req [:params :action])
-        query (:group-name signals)
-        fuzzy-find-groups (fn [q] (->> (gr/fuzzy-find-group group-repo q)
-                                       (map (fn [g] {:name (:name g) :value (:id g)}) ,,,)))]
+        _ (println ">>> search-groups signals" signals " | action:" action)
+        search-signal-name (get-in req [:params :search-signal-name])
+        extra-signal-name (get-in req [:params :extra-signal-name])
+        member-id (some-> (get signals (keyword extra-signal-name))
+                             parse-uuid)
+        query (get signals (keyword search-signal-name))
+        fuzzy-find-groups (fn [q] (->> (gr/find-groups-by-name group-repo q member-id)
+                                       (map (fn [g] {:value (:name g) :id (:id g)}) ,,,)))]
+    (println ">>> search-groups QUERY RESULTS:" (fuzzy-find-groups query))
     (with-sse req
       (fn [send!]
         (case action
           "search"
           (do
-            (send! :html [:div.dropdown-menu {:id "group-search-dropdown-container"}
-                          [:div.dropdown-content (map dropdown-item (fuzzy-find-groups query))]])
-            (send! :signals {:show-results true}))
+            (send! :html (dropdown-search-menu search-signal-name "/groups/search" (fuzzy-find-groups query)))
+            (send! :signals {(show-results-signal-name search-signal-name) true}))
           "choose"
-          (send! :signals {:group-id (get-in req [:params :id])
-                           :group-name (->> [:params :id]
-                                            (get-in req ,,,)
-                                            (parse-uuid ,,,)
-                                            (gr/find-group-by-id group-repo)
-                                            (:name ,,,)
-                                            )
-                           :show-results false}))))))
+          (let [search-input-signal-name (get-in req [:params :name])
+                search-input-signal-value (get-in req [:params :value])
+                id-element-value (get-in req [:params :id])]
+            (send! :signals {search-input-signal-name search-input-signal-value
+                             (id-element-name search-input-signal-name) id-element-value
+                             (show-results-signal-name search-input-signal-name) false})))))))

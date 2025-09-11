@@ -25,3 +25,6 @@
 
 (defn new-db-access [conn]
   (PostgresDbAccess. conn))
+
+(comment
+  (sql/format {:select-distinct-on [[:members.id] :member.*]}))

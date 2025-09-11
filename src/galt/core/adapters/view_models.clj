@@ -21,6 +21,7 @@
              {:title "Posts" :href "#" :selected? (= :posts route-id)}
              {:title "Inititatives" :href "#" :selected? (= :initiatives route-id)}]
      :dropdown [{:id :profile :title "Profile" :href "/members/me" :selected? (= :profile route-id)}
+                {:id :invitations :title "Invitations" :href "/invitations" :selected? (= :invitations route-id)}
                 session-item]}))
 
 (defn layout-model
