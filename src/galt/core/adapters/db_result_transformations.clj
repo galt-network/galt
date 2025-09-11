@@ -10,6 +10,9 @@
 
 (def defaults [non-namespaced-kebab identity])
 
+(defn map-without-nils
+  [maplike]
+  (into {} (remove (comp nil? val) maplike)))
 
 (defn transform-row
   "Takes a map where the keys are database column names (namespaced keywords)

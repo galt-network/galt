@@ -22,15 +22,18 @@
    (scittle-tag "geocoding-map.cljs")])
 
 (defn new-group
-  [{:keys [render layout location-repo]} req]
-  (let [countries (lr/all-countries location-repo)
+  [{:keys [render layout location-repo content new-group-use-case]} req]
+  (let [countries (lr/all-countries location-repo) ; TODO move this to locations UI & handler
         model {:form {:action-name "Create"
                       :action-method :post
                       :action-target (link-for-route req :groups)}
                :countries countries
-               :group {}}]
-    {:status 200 :body (render (layout {:content (views/new-group model)
-                                        :head-tags head-tags-for-maps}))}))
+               :group {}}
+        [status result] (new-group-use-case {:user-id (get-in req [:session :user-id])})]
+    (case status
+      :ok {:status 200 :body (render (layout {:content (views/new-group model)
+                                              :head-tags head-tags-for-maps}))}
+      :error {:status 403 :body (-> (views/error-messages [result]) content layout render)})))
 
 (defn- ->int [s]
   (try
@@ -40,7 +43,7 @@
 
 ; TODO add spec for deps (to have repo key with correct type)
 (defn create-group
-  [{:keys [render layout content] :as deps} req]
+  [{:keys [render layout content add-group-use-case] :as deps} req]
   (let [params (get req :params)
         group-creation {:founder-id (get-in req [:session :user-id])
                         :name (:group-name params)
@@ -52,13 +55,11 @@
                          :name (:location-name params)
                          :country-code (:country-code params)
                          :city-id (->int (:city-id params))}}
-        [status group errors] (add-group-use-case deps group-creation)]
+        [status group errors] (add-group-use-case group-creation)]
     (case status
       :ok {:status 303 :headers {"Location" (link-for-route req :groups/by-id {:id (:id group)})}}
       :error {:status 400
-              :body (-> [:div
-                         (views/error-messages errors)
-                         (views/new-group (assoc group-creation :action-name "Create"))]
+              :body (-> (views/error-messages errors)
                         content
                         layout
                         render)})))
@@ -72,7 +73,7 @@
         delete-url (link-for-route req :groups/by-id {:id group-id})
         model {:group result
                :location location
-               :countries (lr/all-countries location-repo)
+               :countries (lr/all-countries location-repo) ; TODO shouldn't pass this, refactor to locations
                :form
                {:action-name "Save"
                 :action-method "PUT"
@@ -150,6 +151,6 @@
                                             (get-in req ,,,)
                                             (parse-uuid ,,,)
                                             (gr/find-group-by-id group-repo)
-                                            (:groups/name ,,,)
+                                            (:name ,,,)
                                             )
                            :show-results false}))))))

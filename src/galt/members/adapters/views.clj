@@ -2,36 +2,12 @@
   (:require
     [clj.qrgen]
     [markdown.core]
-    [hiccup2.core]
-    [galt.core.views.table :refer [table]]
-    [galt.core.adapters.time-helpers :refer [short-format]])
+    [hiccup2.core])
   (:import
     [java.util Base64]))
 
 (defn encode-base64 [to-encode]
   (.encodeToString (Base64/getEncoder) to-encode))
-
-(defn group-tags
-  [groups]
-  (let [tags (map (fn [g] [:a {:href (:href g)} [:span.tag (:name g)]]) groups)
-        groups-to-show 4
-        remaining-count (- (count tags) groups-to-show)
-        more-text (str "And " remaining-count " more...")]
-    (if (> (count tags) groups-to-show)
-      (conj [:div.tags] (take groups-to-show tags) [:span.tag more-text])
-      [:div.tags tags])))
-
-(defn link-to-profile
-  [user]
-  [:a {:href (:href user)} (:name user)])
-
-(defn members-list
-  [model]
-  (table {:columns (:column-titles model)
-          :rows (:users model)
-          :column-processor {:user link-to-profile
-                             :groups #(group-tags %)
-                             :created-at #(short-format (.toLocalDateTime %))}}))
 
 (defn qr-code
   [content]

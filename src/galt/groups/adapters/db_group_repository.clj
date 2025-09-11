@@ -81,10 +81,13 @@
                       :values [[group-id member-id role]]}))
 
   (find-groups-by-member [_ member-id]
-    (query db-access {:select [:groups.*]
-                      :from [:groups]
-                      :join [:group_memberships [:= :groups.id :group_memberships.group_id]]
-                      :where [:= :group_memberships.member_id member-id]}))
+    (->> {:select [:groups.*]
+          :from [:groups]
+          :join [:group_memberships [:= :groups.id :group_memberships.group_id]]
+          :where [:= :group_memberships.member_id member-id]}
+         (query db-access ,,,)
+         (map #(transform-row group-spec %) ,,,)
+         (map map->Group)))
 
   ; TODO Implement Member domain entity and return members (not users)
   (list-members [_ group-id {:keys [limit]}]

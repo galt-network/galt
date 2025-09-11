@@ -33,7 +33,8 @@
 (comment
   (migratus/init init-config)
 
-  (migratus/create config "create-invitations")
+  ; create new migration files (.up & .down)
+  (migratus/create config "add-default-user-and-group")
 
   (migratus/pending-list config)
   ;apply pending migrations

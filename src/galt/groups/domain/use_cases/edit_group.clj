@@ -4,9 +4,9 @@
     [galt.groups.domain.entities.group-membership :refer [allowed-action?]]))
 
 (defn edit-group-use-case
-  [{:keys [group-repo]}
+  [{:keys [find-group-by-id find-membership-by-member]}
    {:keys [group-id editor-id]}]
-  (let [membership (gr/find-membership-by-member group-repo group-id editor-id)]
+  (let [membership (find-membership-by-member group-id editor-id)]
     (if (allowed-action? membership :edit)
-      [:ok (gr/find-group-by-id group-repo group-id)]
+      [:ok (find-group-by-id group-id)]
       [:error {:message "User is not allowed to edit this group"}])))

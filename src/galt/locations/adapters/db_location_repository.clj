@@ -5,7 +5,7 @@
     [galt.locations.domain.entities.city :as city]
     [galt.locations.domain.entities.country :as country]
     [galt.locations.domain.entities.location :as location]
-    [galt.core.adapters.db-result-transformations :refer [transform-row defaults]]
+    [galt.core.adapters.db-result-transformations :refer [transform-row defaults map-without-nils]]
     ))
 
 (def city-spec
@@ -73,10 +73,6 @@
 (def default-result-limit 10)
 (def default-word-similarity-threshold 0.1)
 
-(defn map-without-nils
-  [maplike]
-  (into {} (remove (comp nil? val) maplike)))
-
 (defrecord DbLocationRepository [db-access]
   LocationRepository
   (find-city-by-id [_ id]
@@ -113,7 +109,6 @@
          (map country/map->Country ,,,)))
 
   (find-country-by-code [_ code]
-    (println ">>> PgLocationRepository#find-country-by-code " code)
     (->> {:select common-country-columns
           :from [:countries]
           :where [:= :iso2 code]}

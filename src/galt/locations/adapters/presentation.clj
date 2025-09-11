@@ -12,13 +12,13 @@
    (str (:emoji c) " " (:name c))])
 
 (defn dropdown-search
-  [countries location]
+  [countries location output-params]
   [:div
    [:label.label "Country"]
    [:div.field.has-addons
     [:div.control
      [:div.select
-      [:select {:name "country-code"
+      [:select {:name (:country-code output-params)
                 :data-bind "country-code"
                 :data-on-change (d*-backend-action "/locations/coordinates"
                                                    :get
@@ -38,7 +38,7 @@
        [:input.input {:placeholder "Type to search"
                       :value (:name location)
                       :data-bind "search"
-                      :data-on-input__debounce.500
+                      :data-on-input__debounce.500ms
                       (d*-backend-action "/locations/search-cities"
                                          :get
                                          {}
@@ -50,11 +50,11 @@
        (dropdown-content (list))]]
      [:input {:type :hidden
               :id "city-id"
-              :name "city-id"
+              :name (:city-id output-params)
               :data-bind "city-id"}]
-     [:input {:type :hidden :name "latitude" :id "latitude" :data-bind "latitude"}]
-     [:input {:type :hidden :name "longitude" :id "longitude" :data-bind "longitude"}]
-     [:input {:type :hidden :name "location-name" :id "location-name" :data-attr "{value: $search}"}]]]])
+     [:input {:type :hidden :name (:latitude output-params) :id "latitude" :data-bind "latitude"}]
+     [:input {:type :hidden :name (:longitude output-params) :id "longitude" :data-bind "longitude"}]
+     [:input {:type :hidden :name (:location-name output-params):id "location-name" :data-attr "{value: $search}"}]]]])
 
 (defn dropdown-item
   [{:keys [name extra value]}]
@@ -68,9 +68,9 @@
    [:span.is-pulled-right {:style {:margin-left "1em"}} extra]])
 
 (defn searchable-map
-  [{:keys [countries location]}]
+  [{:keys [countries location output-params]}]
   [:div
-   (dropdown-search countries location)
+   (dropdown-search countries location output-params)
    [:div.field
     [:div {:id "map"
            :style {:height "400px"}

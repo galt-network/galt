@@ -5,6 +5,8 @@
 (defn new-group-membership [member-id group-id role]
   (->GroupMembership member-id group-id (keyword role)))
 
+(def roles [:founder :admin])
+
 (defn allowed-action?
   [membership action]
   (case action

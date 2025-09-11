@@ -1,26 +1,14 @@
 (ns galt.members.adapters.view-models
   (:require
-    [galt.groups.domain.group-repository :as gr]
-    [galt.members.domain.user-repository :refer [list-users]]
-    ))
+   [galt.core.adapters.time-helpers :as th]))
 
-(defn members-model
-  [{:keys [user-repo group-repo link-for-route]} _req]
-  (let [users (list-users user-repo)
-        add-groups (fn [user]
-                     (assoc user
-                            :groups
-                            (map (fn [g] {:name (:groups/name g)
-                                          :href (link-for-route :groups/by-id {:id (:groups/id g)})})
-                                 (gr/find-groups-by-member group-repo (:users/id user)))))
-        add-user (fn [user]
-                   (assoc user :user {:name (:users/name user)
-                                      :href (link-for-route :members/show-profile {:id (:users/id user)})}))]
-    {:column-titles [["Name" :user] ["Member Since" :users/created-at] :groups]
-     :users (->> users
-                 (map add-user ,,,)
-                 (map add-groups ,,,))}))
-
+(defn profile-view-model
+  [{:keys [member groups location]}]
+  {:member? true
+   :name (:name member)
+   :avatar (:avatar member)
+   :groups (map :name groups)
+   :location-name (str (:name location) (when (:country-code location) (str ", " (:country-code location))))})
 
 (defn login-result-view-model
   [status result]
@@ -35,3 +23,21 @@
                      :ok (if (:member result)
                            (str "Welcome back, " name)
                            (str "User created with public key. Your name is " name)))}))
+
+
+(defn members-search-view-model
+  [result link-for-route]
+  (map
+    (fn [m]
+      {:name (:name m)
+       :member-since (str (th/relative-time (:created-at m))
+                          " ("
+                          (th/short-format (:created-at m))
+                          ")")
+       :groups (map (fn [g]
+                      {:name (:name g)
+                       :href (link-for-route :groups/by-id {:id (:id g)})})
+                    (get-in result [:groups (:id m)]))
+       :groups-count (count (get-in result [:groups (:id m)]))
+       :link-to-profile (link-for-route :members/by-id {:id (:id m)})})
+    (:members result)))

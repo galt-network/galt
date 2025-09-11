@@ -11,7 +11,7 @@
        ask somebody you know who is a member, to send you one."]])
 
 (defn present
-  [model]
+  [link-url]
   [:div
    (introduction)
-   [:a.button.is-primary {:href (:new-invitation-url model)} "Request an invitation"]])
+   [:a.button.is-primary {:href link-url} "Request an invitation"]])

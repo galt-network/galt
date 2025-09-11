@@ -32,6 +32,9 @@
 
     [galt.invitations.domain.use-cases.create-invitation :refer [create-invitation-use-case]]
     [galt.members.domain.use-cases.create-lightning-user :refer [create-lightning-user-use-case]]
+    [galt.members.domain.use-cases.search-members :refer [search-members-use-case]]
+    [galt.members.domain.use-cases.show-profile :refer [show-profile-use-case]]
+    [galt.groups.domain.use-cases.new-group :refer [new-group-use-case]]
     [galt.groups.domain.use-cases.update-group :refer [update-group-use-case]]
     [galt.groups.domain.use-cases.delete-group :refer [delete-group-use-case]]
     [galt.groups.domain.use-cases.add-group :refer [add-group-use-case]]
@@ -148,9 +151,10 @@
 
      :add-group-use-case
      #::ds{:start
-           (fn [{{:keys [group-repo location-repo]} ::ds/config}]
+           (fn [{{:keys [group-repo location-repo member-repo]} ::ds/config}]
              (partial add-group-use-case
                       {:find-group-by-id (partial gr/find-group-by-id group-repo)
+                       :find-member-by-user-id (partial mr/find-member-by-user-id member-repo)
                        :find-groups-by-founder-id (partial gr/find-groups-by-founder-id group-repo)
                        :find-groups-by-name (partial gr/find-groups-by-name group-repo)
                        :add-group (partial gr/add-group group-repo)
@@ -159,7 +163,39 @@
                        }))
            :config
            {:group-repo (ds/ref [:storage :group])
+            :member-repo (ds/ref [:storage :member])
             :location-repo (ds/ref [:storage :location])}}
+
+     :new-group-use-case
+     #::ds{:start
+           (fn [{{:keys [member-repo]} ::ds/config}]
+             (partial new-group-use-case
+                      {:find-member-by-user-id (partial mr/find-member-by-user-id member-repo)}))
+           :config
+           {:member-repo (ds/ref [:storage :member])}}
+
+     :show-profile-use-case
+     #::ds{:start
+           (fn [{{:keys [member-repo group-repo location-repo]} ::ds/config}]
+             (partial show-profile-use-case
+                      {:find-member-by-id (partial mr/find-member-by-id member-repo)
+                       :find-groups-by-member (partial gr/find-groups-by-member group-repo)
+                       :find-location-by-id (partial lr/find-location-by-id location-repo)}))
+           :config
+           {:member-repo (ds/ref [:storage :member])
+            :group-repo (ds/ref [:storage :group])
+            :location-repo (ds/ref [:storage :location])}}
+
+     :search-members-use-case
+     #::ds{:start
+           (fn [{{:keys [member-repo group-repo]} ::ds/config}]
+             (partial search-members-use-case
+                      {:fuzzy-find-member (partial mr/fuzzy-find-member member-repo)
+                       :list-members (partial mr/list-members member-repo)
+                       :find-groups-by-member (partial gr/find-groups-by-member group-repo)}))
+           :config
+           {:member-repo (ds/ref [:storage :member])
+            :group-repo (ds/ref [:storage :group])}}
 
      :update-group-use-case
      #::ds{:start
@@ -181,7 +217,8 @@
      #::ds{:start
            (fn [{{:keys [group-repo]} ::ds/config}]
              (partial edit-group-use-case
-                      {:find-group-by-id (partial gr/find-group-by-id group-repo)}))
+                      {:find-group-by-id (partial gr/find-group-by-id group-repo)
+                       :find-membership-by-member (partial gr/find-membership-by-member group-repo)}))
            :config
            {:group-repo (ds/ref [:storage :group])}}
      }

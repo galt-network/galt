@@ -1,43 +1,59 @@
 (ns galt.members.adapters.handlers
   (:require
-    [galt.core.adapters.sse-helpers :refer [with-sse send! close!]]
-    [galt.core.adapters.link-generator :refer [link-for-route]]
-    [starfederation.datastar.clojure.adapter.http-kit :refer [->sse-response on-open]]
-    [galt.members.domain.use-cases.show-profile :refer [show-profile-use-case]]
-    [galt.members.domain.user-repository :refer [find-user-by-id]]
-    [galt.members.adapters.views :as views]
-    [galt.members.adapters.presentation.profile :as presentation.profile]
-    [galt.members.adapters.view-models :as view-models]
-    [reitit.core]))
+   [galt.core.adapters.link-generator :refer [link-for-route]]
+   [galt.core.adapters.sse-helpers :refer [close! send! with-sse]]
+   [galt.core.infrastructure.web.helpers :refer [get-signals]]
+   [galt.members.adapters.presentation.members-list :as presentation.members-list]
+   [galt.members.adapters.presentation.profile :as presentation.profile]
+    [galt.members.adapters.presentation.non-member-profile :as non-member-profile]
+   [galt.members.adapters.view-models :as view-models]
+   [galt.members.adapters.views :as views]
+   [galt.members.domain.member-repository :as mr]
+   [reitit.core]
+   [starfederation.datastar.clojure.adapter.http-kit :refer [->sse-response
+                                                             on-open]]))
 
 (defn show-members-list
-  [{:keys [render layout] :as deps} req]
-  (let [model-deps (merge
-                     {:link-for-route (partial link-for-route req)}
-                     (select-keys deps [:user-repo :group-repo]))
-        content (views/members-list (view-models/members-model model-deps req))]
+  [{:keys [render search-members-use-case layout] :as deps} req]
+  (let [[status result] (search-members-use-case {:query ""})
+        model (view-models/members-search-view-model result (partial link-for-route req))
+        content (presentation.members-list/present model)]
     {:status 200 :body (render (layout content))}))
 
 (defn show-my-profile
-  [{:keys [render layout] :as deps} req]
+  [{:keys [render layout member-repo show-profile-use-case]} req]
   (let [user-id (get-in req [:session :user-id])
-        [status result] (show-profile-use-case deps {:logged-in-user-id user-id
-                                                     :profile-user-id user-id})
-        model {:member? (not (nil? (:member result)))
-               :name (:name (or (:member result) (:user result)))
-               :new-invitation-url (link-for-route req :invitations/new)}
-        content (case status
-                  :ok (presentation.profile/present model)
-                  :error (presentation.profile/present-error result))]
-    {:status 200 :body (render (layout content))}))
+        member (mr/find-member-by-user-id member-repo user-id)
+        [status result] (show-profile-use-case {:member-id (:id member)})]
+    (case status
+      :ok {:status 200
+           :body (-> result
+                     view-models/profile-view-model
+                     presentation.profile/present
+                     layout
+                     render)}
+      :error {:status 400
+              :body (-> (link-for-route req :invitations/new)
+                        non-member-profile/present
+                        layout
+                        render)})))
 
 (defn show-profile
-  [{:keys [render user-repo layout]} req]
-  (let [user-id (parse-uuid (get-in req [:path-params :id]))
-        user (find-user-by-id user-repo user-id)
-        content [:div.content [:strong (:name user)]]]
-    {:status 200
-     :body (render (layout content))}))
+  [{:keys [render layout show-profile-use-case]} req]
+  (let [member-id (parse-uuid (get-in req [:path-params :id]))
+        [status result] (show-profile-use-case {:member-id member-id})]
+    (case status
+      :ok {:status 200
+           :body (-> result
+                     view-models/profile-view-model
+                     presentation.profile/present
+                     layout
+                     render)}
+      :error {:status 400
+              :body (-> [result]
+                        presentation.profile/present-error
+                        layout
+                        render)})))
 
 (defn edit-my-profile
   [deps req]
@@ -120,4 +136,16 @@
             _ (swap! galt-session assoc-in [session-key :user-id] nil)
             req-logged-out (assoc-in req [:session :user-id] nil)
             model-after-logging-out ((:update-layout-model deps) req-logged-out)]
-        (send! :html (app-container (assoc model-after-logging-out :content [:h1 "You have been logged out"])))))))
+        (send! :html (app-container (assoc model-after-logging-out
+                                           :content [:h1 "You have been logged out"])))))))
+
+(defn search-members
+  [{:keys [search-members-use-case]} req]
+  (with-sse
+    req
+    (fn [send!]
+      (let [query (:query (get-signals req))
+            [status result] (search-members-use-case {:query query})
+            panel-items (view-models/members-search-view-model result (partial link-for-route req))]
+        (send! :html (presentation.members-list/search-results
+                       (map presentation.members-list/panel-item panel-items)))))))

@@ -13,6 +13,9 @@
     (rr/router
       [["/members" {:id :members
                     :get (with-deps-layout members/show-members-list)}]
+       ["/members/search" {:id :members/search
+                           :conflicting true
+                           :get (with-deps-layout members/search-members)}]
        ["/members/me" {:id :profile
                        :conflicting true
                        :get (with-deps-layout members/show-my-profile)
@@ -36,7 +39,7 @@
                                             (-> deps (assoc ,,, :->json ->json))
                                             members/lnurl-auth-callback)}]
        ["/members/:id" {:id :members
-                        :name :members/show-profile
+                        :name :members/by-id
                         :conflicting true
                        :get (with-deps-layout members/show-profile)}]]
       {:reitit.middleware/registry (:reitit-middleware deps)})))

@@ -9,16 +9,16 @@
   (>= max-group-per-member (count (find-groups-by-founder-id founder-id))))
 
 (defn active-member?
-  [_deps _group-creation]
-  true)
+  [{:keys [find-member-by-user-id]} {:keys [founder-id]}]
+  (not (nil? (find-member-by-user-id founder-id))))
 
 (defn unique-name?
   [{:keys [find-groups-by-name]} group-creation]
   (empty? (find-groups-by-name (:name group-creation))))
 
 (def requirements
-  [[within-group-creation-limits? "Maximum number of groups per member reached"]
-   [active-member? "User must have an active membership on GALT"]
+  [[active-member? "User must have an active membership on GALT"]
+   [within-group-creation-limits? "Maximum number of groups per member reached"]
    [unique-name? "There already is a group with that name"]])
 
 (defn validate-all
@@ -33,26 +33,22 @@
 (s/def ::location map?)
 (s/def ::command (s/keys :req-un [::founder-id ::name ::description ::location]))
 
-(defn add-group-use-case
-  [{:keys [gen-uuid
-           find-group-by-id
-           find-groups-by-founder-id
-           find-groups-by-name
-           add-group
-           add-location] :as deps} command]
-  (s/assert ::command command)
-  (let [group-params (dissoc command :location)
+(defn create-group
+  [{:keys [gen-uuid add-location add-group]} command]
+  (let [founder-id (:founder-id command)
         location-params (:location command)
-        validation-errors (validate-all deps requirements group-params)
-        founder-id (:founder-id command)
         group-fields (-> command
                          (select-keys ,,, [:name :description :avatar])
                          (assoc ,,, :id (gen-uuid)))
-        ; FIXME Shouldn't create location when there are validation errors
         created-location (add-location location-params)
-        group (assoc group-fields :location-id (:id created-location))
-        ; FIXME Shouldn't create group when there are validation errors
-        created-group (add-group founder-id group)]
+        group (assoc group-fields :location-id (:id created-location))]
+    (add-group founder-id group)))
+
+(defn add-group-use-case
+  [deps command]
+  (s/assert ::command command)
+  (let [group-params (dissoc command :location)
+        validation-errors (validate-all deps requirements group-params)]
     (if (empty? validation-errors)
-      [:ok created-group nil]
+      [:ok (create-group deps command) nil]
       [:error nil validation-errors])))

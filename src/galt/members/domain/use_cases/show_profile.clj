@@ -1,17 +1,13 @@
-(ns galt.members.domain.use-cases.show-profile
-  (:require
-    [galt.members.domain.user-repository :as ur]
-    [galt.members.domain.member-repository :as mr]))
+(ns galt.members.domain.use-cases.show-profile)
 
 (defn show-profile-use-case
-  [{:keys [user-repo member-repo]} {:keys [logged-in-user-id profile-user-id]}]
-  (let [logged-in-user (ur/find-user-by-id user-repo logged-in-user-id)
-        user (ur/find-user-by-id user-repo profile-user-id)
-        member (mr/find-member-by-user-id member-repo profile-user-id)]
-
-    (if (= logged-in-user user)
-      (if member
-        [:ok {:member member :user user}]
-        [:ok {:user user}])
-      [:error "You're not allowed to view this profile"])
-    ))
+  [{:keys [find-member-by-id
+           find-groups-by-member
+           find-location-by-id]}
+   {:keys [member-id]}]
+  (let [member (find-member-by-id member-id)]
+    (if (nil? member)
+      [:error "Profile not found"]
+      [:ok {:member member
+            :location (find-location-by-id (:location-id member))
+            :groups (find-groups-by-member member-id)}])))

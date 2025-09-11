@@ -64,12 +64,18 @@
         {:src (or (:avatar group) "/assets/images/avatar-128x128.png")
          :data-attr-src "$uploaded-url"
          :data-show "$uploaded-url"
-         :data-on-load__.delay.500ms (str "$uploaded-url = '" (:avatar group) "'")}]]]]
+         :data-on-load__delay.500ms (str "$uploaded-url = '" (:avatar group) "'")}]]]]
     [:div.column (when location
                    {:data-on-load__delay.500ms
                     (str "galtMoveMarker(" (:latitude location)  "," (:longitude location) ")")})
      (location-views/searchable-map {:countries countries
-                                     :location location})]]
+                                     :location location
+                                     :output-params
+                                     {:city-id "city-id"
+                                     :country-code "country-code"
+                                     :location-name "location-name"
+                                     :latitude "latitude"
+                                     :longitude "longitude"}})]]
    [:div.field
     [:label.label {:for :group-description} "Group description"]
     [:div.control

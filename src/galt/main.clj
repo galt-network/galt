@@ -59,4 +59,5 @@
   (def repo (get-in @running-system [:donut.system/instances :storage :group]))
   (list-groups repo)
   (find-groups-by-member repo 42)
+  (get-in @running-system [:donut.system/instances :use-cases])
   )
