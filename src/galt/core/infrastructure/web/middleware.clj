@@ -3,7 +3,9 @@
     [starfederation.datastar.clojure.api :as d*]
     [galt.core.adapters.sse-helpers :refer [with-sse]]
     [taoensso.telemere :as tel]
+    [reitit.core]
     [clojure.string :as str]
+    [galt.core.adapters.url-helpers :refer [add-query-params]]
     ))
 
 (defn wrap-method-override
@@ -17,14 +19,39 @@
           (handler request)))
       (handler request))))
 
-(defn wrap-auth
-  [login-url handler]
+; (defn wrap-auth
+;   [handler router]
+;   (fn [request]
+;
+;     (if (get-in request [:session :user-id])
+;       (handler request)
+;
+;       (if (d*/datastar-request? request)
+;         (with-sse request (fn [send!] (send! :js (str "window.location.href = '" login-url "'"))))
+;         {:status 302 :headers {"Location" login-url}}))))
+
+(defn- sufficient-role? [user-role required-role hierarchy]
+  (<= (.indexOf hierarchy user-role) (.indexOf hierarchy required-role)))
+
+(defn wrap-auth [handler router]
   (fn [request]
-    (if (get-in request [:session :user-id])
-      (handler request)
-      (if (d*/datastar-request? request)
-        (with-sse request (fn [send!] (send! :js (str "window.location.href = '" login-url "'"))))
-        {:status 302 :headers {"Location" login-url}}))))
+    (let [match (reitit.core/match-by-path router (:uri request))
+          method (:request-method request)
+          required-role (get-in match [:result method :data :min-role])
+          role-hierarchy [:admin :member :user nil]
+          session (get-in request [:session])
+          role-from-session (cond
+                              (:admin session) :admin
+                              (:member-id session) :member
+                              (:user-id session) :user
+                              :else nil)]
+      (if (sufficient-role? role-from-session required-role role-hierarchy)
+        (handler request)
+        (let [message (str "You need to be at least " (name required-role) " to access " (:uri request))
+              login-url (add-query-params "/members/login" {:message message})]
+          (if (d*/datastar-request? request)
+            (with-sse request (fn [send!] (send! :js (str "window.location.href = '" login-url "'"))))
+            {:status 302 :headers {"Location" login-url}}))))))
 
 (defn wrap-add-galt-session
   [handler session-atom]

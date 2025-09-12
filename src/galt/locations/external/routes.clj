@@ -9,5 +9,4 @@
    [["/locations/search-cities" {:name :locations/cities
                                  :get (partial location/search-cities deps)}]
     ["/locations/coordinates" {:name :locations/coordinates
-                               :get (partial location/coordinates deps)}]]
-   {:reitit.middleware/registry (:reitit-middleware deps)}))
+                               :get (partial location/coordinates deps)}]]))

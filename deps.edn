@@ -57,6 +57,7 @@
                        io.github.tonsky/clj-reload {:mvn/version "0.9.8"}}}
   :dev {:extra-paths ["test"]
         :extra-deps {tortue/spy {:mvn/version "2.15.0"} ; https://github.com/alexanderjamesking/spy
+                     ring/ring-mock {:mvn/version "0.6.2"}
                      nubank/matcher-combinators {:mvn/version "3.9.2"}}} ; https://github.com/nubank/matcher-combinators
   :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.10"}}
           :ns-default build}}}

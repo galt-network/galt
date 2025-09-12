@@ -11,7 +11,11 @@
       [["/invitations/new-request" {:name :invitations/new-request
                                     :get (with-deps-layout handlers/new-invitation-request)
                                     :post (with-deps-layout handlers/create-invitation-request)}]
+       ["/invitations/new" {:name :invitations/new
+                            :get (with-deps-layout handlers/new-invitation)
+                            :post (with-deps-layout handlers/create-invitation)}]
        ["/invitations" {:id :invitations
                         :name :invitations
-                        :get (with-deps-layout handlers/list-invitations)}]]
-      {:reitit.middleware/registry (:reitit-middleware deps)})))
+                        :get (with-deps-layout handlers/list-invitations)}]
+       ["/i/:id" {:name :invitations/by-id
+                  :get (with-deps-layout handlers/show-invitation)}]])))

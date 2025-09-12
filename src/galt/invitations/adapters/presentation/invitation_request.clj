@@ -14,7 +14,7 @@
      [:p [:i "Picking a group allows you to search only within its members. If you leave the member field empty,
              all the members of the picked group with invitation creation rights can answer you, though
              it will most likely be the founder"]]]]
-   (errors-list errors)
+   (errors-list "Error in requesting invitation" errors)
    [:form.form {:action "/invitations/new-request" :method "POST"}
     [:div.field
      [:label.label "Group to post the invitation to (optional)"]

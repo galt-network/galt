@@ -1,8 +1,22 @@
 (ns galt.invitations.adapters.presentation.invitations-dashboard)
 
+(defn new-invitation-section
+  []
+  [:section.section
+   [:div.content
+    [:blockquote
+     [:p
+      [:i "Users need to become members in order to use all features of Galt.
+          They can do it through an invitation"]]
+     [:p
+      [:i "After you create an invitation, you can share it as a link or QR code.
+          Invitations can be configured to be used once or multiple times and to have expiration time"]]]]
+   [:a.button.is-primary.is-medium {:href "/invitations/new"} "Create new invitation"]])
+
 (defn present
   [{:keys [requests invitations]}]
   [:div {:class "container"}
+   (new-invitation-section)
    [:section {:class "section"}
     [:h1 {:class "title"} "Invitation Requests"]
     [:table {:class "table is-striped is-hoverable is-fullwidth"}

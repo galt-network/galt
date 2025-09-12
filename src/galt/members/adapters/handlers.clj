@@ -2,13 +2,14 @@
   (:require
    [galt.core.adapters.link-generator :refer [link-for-route]]
    [galt.core.adapters.sse-helpers :refer [close! send! with-sse]]
+   [galt.core.adapters.url-helpers :refer [decode-url-encoded]]
    [galt.core.infrastructure.web.helpers :refer [get-signals]]
-    [galt.core.views.components.dropdown-search :refer [dropdown-search-menu
-                                                        id-element-name
-                                                        show-results-signal-name]]
+   [galt.core.views.components.dropdown-search :refer [dropdown-search-menu
+                                                       id-element-name
+                                                       show-results-signal-name]]
    [galt.members.adapters.presentation.members-list :as presentation.members-list]
-   [galt.members.adapters.presentation.profile :as presentation.profile]
    [galt.members.adapters.presentation.non-member-profile :as non-member-profile]
+   [galt.members.adapters.presentation.profile :as presentation.profile]
    [galt.members.adapters.view-models :as view-models]
    [galt.members.adapters.views :as views]
    [galt.members.domain.member-repository :as mr]
@@ -65,8 +66,9 @@
 (defn show-login
   [{:keys [layout render]} req]
   (let [session-id (str (random-uuid))
+        message (decode-url-encoded (get-in req [:query-params "message"]))
         updated-session (merge (:session req) {:show-login-id session-id})
-        content (views/login-form nil)]
+        content (views/login-form {:message message})]
     {:session updated-session
      :body (render (layout content))
      :status 200}))
@@ -113,8 +115,11 @@
         [status result] (create-lightning-user-use-case login-params)
         ; TODO: see why logging-in doesn't work in staging
         logged-in-user-id (get-in result [:user :id])
+        logged-in-member-id (get-in result [:member :id])
         original-session-id (:galt-session-id params)
-        view-model ((:update-layout-model deps) (assoc-in req [:session :user-id] logged-in-user-id))
+        view-model ((:update-layout-model deps) (update-in req [:session] assoc
+                                                           :user-id logged-in-user-id
+                                                           :member-id logged-in-member-id))
         login-result-model (view-models/login-result-view-model status result)]
     (case status
       :ok (do
@@ -125,7 +130,8 @@
             {:status 200
              :body (->json {:status "OK"})
              :headers {"Content-Type" "application/json"}
-             :update-related-session [original-session-id {:user-id logged-in-user-id}]})
+             :update-related-session [original-session-id {:user-id logged-in-user-id
+                                                           :member-id logged-in-member-id}]})
       :error {:status 200
               :headers {"Content-Type" "application/json"}
               :body (->json {:status "ERROR" :reason (:message result)})})))

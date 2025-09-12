@@ -23,13 +23,14 @@
     [galt.members.domain.member-repository :as mr]
     [galt.groups.domain.group-repository :as gr]
     [galt.locations.domain.location-repository :as lr]
+    [galt.invitations.domain.invitation-repository :as ir]
 
     [galt.members.adapters.db-user-repository :refer [new-db-user-repository]]
     [galt.members.adapters.db-member-repository :refer [new-db-member-repository]]
     [galt.locations.adapters.db-location-repository :refer [new-db-location-repository]]
     [galt.invitations.adapters.db-invitation-repository :refer [new-db-invitation-repository]]
-    [galt.invitations.domain.invitation-repository :refer [add-invitation-request user-invitation-requests]]
 
+    [galt.invitations.domain.use-cases.create-invitation-request :refer [create-invitation-request-use-case]]
     [galt.invitations.domain.use-cases.create-invitation :refer [create-invitation-use-case]]
     [galt.members.domain.use-cases.create-lightning-user :refer [create-lightning-user-use-case]]
     [galt.members.domain.use-cases.search-members :refer [search-members-use-case]]
@@ -123,18 +124,26 @@
            (fn [_] galt-session-atom)}}
 
     :use-cases
-    {:create-invitation-use-case
+    {:create-invitation-request-use-case
      #::ds{:start
            (fn [{{:keys [user-repo invitation-repo]} ::ds/config}]
              (partial
-               create-invitation-use-case
+               create-invitation-request-use-case
                {:find-user-by-id (partial find-user-by-id user-repo)
-                :user-invitation-requests (partial user-invitation-requests invitation-repo)
-                :add-invitation-request (partial add-invitation-request invitation-repo)}))
+                :user-invitation-requests (partial ir/user-invitation-requests invitation-repo)
+                :add-invitation-request (partial ir/add-invitation-request invitation-repo)}))
            :config
-           {:db (ds/ref [:storage :db])
-            :user-repo (ds/ref [:storage :user])
+           {:user-repo (ds/ref [:storage :user])
             :invitation-repo (ds/ref [:storage :invitation])}}
+
+     :create-invitation-use-case
+     #::ds{:start
+           (fn [{{:keys [invitation-repo]} ::ds/config}]
+             (partial
+               create-invitation-use-case
+               {:add-invitation (partial ir/add-invitation invitation-repo)}))
+           :config
+           {:invitation-repo (ds/ref [:storage :invitation])}}
 
      :create-lightning-user-use-case
      #::ds{:start
@@ -220,18 +229,10 @@
                       {:find-group-by-id (partial gr/find-group-by-id group-repo)
                        :find-membership-by-member (partial gr/find-membership-by-member group-repo)}))
            :config
-           {:group-repo (ds/ref [:storage :group])}}
-     }
+           {:group-repo (ds/ref [:storage :group])}}}
 
     :app
-    {:reitit-middleware
-     #::ds{:start
-           (fn [opts]
-             (let [galt-url (get-in opts [::ds/config :galt-url])
-                   login-url (str galt-url "/members/login")]
-               {:auth (partial middleware/wrap-auth login-url)}))
-           :config {:galt-url (ds/ref [:env :galt-root-url])}}
-     :route-deps
+    {:route-deps
      #::ds{:start
            (fn [{:keys [::ds/config]}]
              (let [galt-session (config :galt-session)]
@@ -244,10 +245,10 @@
                   :user-repo (config :user-repo)
                   :member-repo (config :member-repo)
                   :location-repo (config :location-repo)
+                  :invitation-repo (config :invitation-repo)
                   :db-access (config :db-access)
                   :generate-name name-generator/generate
                   :file-storage (config :file-storage)
-                  :reitit-middleware (config :reitit-middleware)
                   :galt-url (config :galt-url)
                   :gen-uuid clj-uuid/v7}
                  (config :use-cases))))
@@ -257,9 +258,9 @@
             :user-repo (ds/ref [:storage :user])
             :member-repo (ds/ref [:storage :member])
             :location-repo (ds/ref [:storage :location])
+            :invitation-repo (ds/ref [:storage :invitation])
             :db-access (ds/ref [:storage :db-access])
             :file-storage (ds/ref [:storage :file-storage])
-            :reitit-middleware (ds/ref [:app :reitit-middleware])
             :galt-url (ds/ref [:env :galt-root-url])
             :use-cases (ds/ref [:use-cases])
             }}

@@ -4,7 +4,8 @@
     [galt.core.adapters.db-access :refer [query in-transaction]]
     [galt.groups.domain.entities.group :refer [map->Group]]
     [galt.core.adapters.db-result-transformations :refer [transform-row defaults ->local-date-time]]
-    [galt.groups.domain.entities.group-membership :refer [map->GroupMembership]]))
+    [galt.groups.domain.entities.group-membership :refer [map->GroupMembership]])
+  )
 
 
 (def group-spec
@@ -43,6 +44,9 @@
          (first ,,,)
          (transform-row group-spec ,,,)
          (map->Group ,,,)))
+
+  (find-groups-by-name [_ name]
+    (gr/find-groups-by-name _ name nil))
 
   (find-groups-by-name [_ name group-id]
     (some->> {:select-distinct-on [[:groups.id] :groups.*]

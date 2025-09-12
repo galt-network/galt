@@ -2,7 +2,8 @@
   (:require
     [clj.qrgen]
     [markdown.core]
-    [hiccup2.core])
+    [hiccup2.core]
+    [galt.core.views.components :refer [errors-list]])
   (:import
     [java.util Base64]))
 
@@ -28,17 +29,18 @@
   No other data is asked from you in order to use the platform.")
 
 (defn login-form
-  [_model]
+  [model]
   [:div.columns.is-centered
    [:div.column.is-four-fifths
+    (when (:message model) (errors-list (:message model)))
     [:div.content (hiccup2.core/raw (markdown.core/md-to-html-string login-explanation))]
     [:div.block.is-size-5.has-text-centered
      [:div {:id "login-action-description"} "Click the button to login with Bitcoin Lightning LNURL-auth"]]
     [:div {:id "login-area"}
      [:div.field.has-addons.has-addons-centered
-     [:div.control
-      [:button.button.is-primary
-       {:data-on-click "@post('/members/login')"} "Login with LNURL"]]]]]])
+      [:div.control
+       [:button.button.is-primary
+        {:data-on-click "@post('/members/login')"} "Login with LNURL"]]]]]])
 
 (defn qr-code-img
   [lnurl]

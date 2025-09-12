@@ -26,13 +26,12 @@
                                  (wrap-cors ,,,
                                             :access-control-allow-origin #".*"
                                             :access-control-allow-methods [:get])
-                                 (wrap-content-type ,,, {:mime-types {"cljs" "application/x-scittle"}}))}]]
-     {:reitit.middleware/registry (:reitit-middleware deps)})))
+                                 (wrap-content-type ,,, {:mime-types {"cljs" "application/x-scittle"}}))}]])))
 
 (defn handler [galt-session-atom router]
-  (-> (rr/ring-handler router nil {:middleware [{:name :logging
-                                                 :description "Telemere reitit/ring logging"
-                                                 :wrap middleware/wrap-with-logger}]})
+  (-> (rr/ring-handler router nil)
+      (middleware/wrap-auth ,,, router)
+      middleware/wrap-with-logger
       middleware/wrap-method-override
       wrap-keyword-params
       wrap-params

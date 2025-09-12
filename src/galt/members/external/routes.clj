@@ -19,7 +19,7 @@
        ["/members/me" {:id :profile
                        :conflicting true
                        :get (with-deps-layout members/show-my-profile)
-                       :middleware [:auth]}]
+                       :min-role :member}]
        ["/members/me/edit" {:id :members
                             :get (with-deps-layout members/edit-my-profile)}]
        ["/members/login" {:id :login
@@ -41,5 +41,4 @@
        ["/members/:id" {:id :members
                         :name :members/by-id
                         :conflicting true
-                       :get (with-deps-layout members/show-profile)}]]
-      {:reitit.middleware/registry (:reitit-middleware deps)})))
+                       :get (with-deps-layout members/show-profile)}]])))

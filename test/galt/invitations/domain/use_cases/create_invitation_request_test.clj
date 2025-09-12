@@ -1,4 +1,4 @@
-(ns galt.invitations.domain.use-cases.create-invitation-test
+(ns galt.invitations.domain.use-cases.create-invitation-request-test
   (:require
    [clojure.test :refer [deftest testing is]]
    [matcher-combinators.test]
@@ -8,25 +8,25 @@
    [spy.assert :as assert]
    [spy.test]
    [galt.invitations.domain.entities.invitation-request :as ir]
-   [galt.invitations.use-cases.create-invitation :refer [create-invitation-use-case]]))
+   [galt.invitations.domain.use-cases.create-invitation-request :refer [create-invitation-request-use-case]]))
 
 (declare match?)
 
 (defn generate-string-of-length [length]
   (gen/generate (gen/fmap str/join (gen/vector gen/char-alphanumeric length))))
 
-(deftest create-invitation-use-case-test
+(deftest create-invitation-request-use-case-test
   (testing "error cases"
     (let [deps {:find-user-by-id (constantly {:id (random-uuid)})
                 :user-invitation-requests (constantly [{} {} {}])}
-          [status _] (create-invitation-use-case deps {})]
+          [status _] (create-invitation-request-use-case deps {})]
       (is (= :error status) "Errors for unknown user"))
 
     (let [user-id (random-uuid)
           user {:id user-id}
           deps {:find-user-by-id (constantly user)
                 :user-invitation-requests (constantly [{} {} {} {}])}
-          [status _] (create-invitation-use-case deps {:from-user-id random-uuid})]
+          [status _] (create-invitation-request-use-case deps {:from-user-id random-uuid})]
       (is (= :error status) "Errors if too many previous requests"))
 
     (let [user {:id (random-uuid)}
@@ -38,7 +38,7 @@
                    :to-group "group-id"
                    :email "c@example.com"
                    :content (generate-string-of-length 25)}
-          [status _] (create-invitation-use-case deps command)]
+          [status _] (create-invitation-request-use-case deps command)]
       (is (= :error status) "Errors if request content too short")))
 
   (testing "success cases"
@@ -57,7 +57,7 @@
                    :to-group-id "group-id"
                    :email "c@example.com"
                    :content (generate-string-of-length 31)}
-          [status result] (create-invitation-use-case deps command)]
+          [status result] (create-invitation-request-use-case deps command)]
       (is (= :ok status) (str "ok status with valid params: " result))
       (spy.assert/called? spy-storage)
       (is (= (:requesting-user-id result) user-id) "invitation from the correct user")
