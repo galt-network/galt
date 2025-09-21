@@ -1,8 +1,8 @@
-(ns galt.members.adapters.views
+(ns galt.members.adapters.presentation.show-login
   (:require
     [galt.core.adapters.presentation-helpers :refer [render-markdown]]
+    [galt.members.adapters.presentation.qr-code :as presentation.qr-code]
     [galt.core.views.components :refer [errors-list]]))
-
 
 (def login-explanation
   "## Explanation
@@ -15,24 +15,27 @@
 
   No other data is asked from you in order to use the platform.")
 
-(defn login-form
+(defn present
   [model]
-  [:div.columns.is-centered
+  [:div.columns.is-centered {:data-on-load (:datastar-action model)
+                             ; :data-on-signal-patch "@get('/payments/new')"
+                             ; :data-on-signal-patch-filters "{include: /payment-status/}"
+                             }
    [:div.column.is-four-fifths
     (when (:message model) (errors-list (:message model)))
     [:div.content (render-markdown login-explanation)]
     [:div.block.is-size-5.has-text-centered
-     [:div {:id "login-action-description"} "Click the button to login with Bitcoin Lightning LNURL-auth"]]
+     [:div {:id "login-action-description"} "Scan the QR code with your Bitcoin Lightning wallet"]]
     [:div {:id "login-area"}
-     [:div.field.has-addons.has-addons-centered
-      [:div.control
-       [:button.button.is-primary
-        {:data-on-click "@post('/members/login')"} "Login with LNURL"]]]]]])
+     [:div#login-area
+      [:div.level
+       [:div.level-item (presentation.qr-code/qr-code-img (:lnurl model))]]]]]])
 
-(defn login-result-message
+(defn login-result
   [model]
-  [:article.message {:class [(:message-class model)]}
-   [:div.message-header
-    [:p (:message-header model)]
-    [:button.delete]]
-   [:div.message-body (:message-body model)]])
+  [:div#login-area
+   [:article.message {:class [(:message-class model)]}
+    [:div.message-header
+     [:p (:message-header model)]
+     [:button.delete]]
+    [:div.message-body (:message-body model)]]])

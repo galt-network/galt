@@ -29,17 +29,12 @@
                             :get (with-deps-layout members/edit-my-profile)}]
        ["/members/login" {:id :login
                           :conflicting true
-                          :get (with-deps-layout login-handlers/show-login)
-                          :post (with-layout
-                                  (merge deps
-                                         {:generate-lnurl (partial lnurl/generate-lnurl
-                                                                   (:galt-url deps)
-                                                                   "/members/login/lnurl-auth")})
-                                  login-handlers/do-login)}]
+                          :get (with-deps-layout login-handlers/show-login)}]
        ["/members/logout" {:id :login
                            :conflicting true
                            :post (with-deps-layout login-handlers/logout)}]
        ["/members/login/lnurl-auth" {:id :lnurl-auth
+                                     :name :members.login/lnurl-auth
                                      :get (with-layout
                                             (-> deps (assoc ,,, :->json ->json))
                                             login-handlers/lnurl-auth-callback)}]

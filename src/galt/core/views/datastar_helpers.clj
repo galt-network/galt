@@ -61,7 +61,6 @@
           d*-params-str (js-literal d*-params)]
       (str "@" (name method) "('" url "?" encoded-query-params "'," d*-params-str ");"))))
 
-
 (comment
   (d*-backend-action "/end/of/the-world" :post {:windows 95 :name "unknown thing"})
   (require '[galt.core.infrastructure.web.helpers :refer [->json]])

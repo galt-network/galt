@@ -3,8 +3,6 @@
 (defn watch-lnurl-login-use-case
   [{:keys [read-session]} {:keys [session-id]}]
   (let [session (read-session session-id)]
-    (println ">>> watch-lnurl-login-use-case SESSION" session)
-    (println ">>> watch-lnurl-login-use-case COMPARING" (System/currentTimeMillis) " vs " (get-in session [:lnurl-auth :expires-at]))
     (if (nil? session)
       [:ok {:status :logged-out :message "User is logged out"}]
       (if (contains? session :lnurl-auth)

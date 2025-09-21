@@ -35,6 +35,6 @@
       {on-open (fn [sse]
                  (println ">>> datastar-sse on-open" sse connection-id)
                  (add-connection connection-id sse))
-       on-close (fn [sse]
+       on-close (fn [sse _status]
                   (println ">>> datastar-sse on-close" sse connection-id)
                   (remove-connection connection-id))})))

@@ -56,14 +56,11 @@
         login-status (:status result)
         result-message (:message result)
         next-step-url (link-for-route req :invitations.steps/payment {:id invitation-id})]
-    (println ">>> LOGIN STATUS" status result)
     (with-sse req
       (fn [send!]
         (case login-status
           :logged-in
-          (do
-            (send! :html (steps/login-area (steps/login-success {:next-step next-step-url})))
-            #_(send! :to-url next-step-url))
+          (send! :html (steps/login-area (steps/login-success {:next-step next-step-url})))
           :expired
           (send! :html (steps/login-area (message {:title (name login-status)
                                                    :content result-message
@@ -77,7 +74,6 @@
                  :user-pub-key (:key params)
                  :session-id (:galt-session-id params)}
         [status result] (complete-lnurl-login-use-case command)]
-    (println ">>> login-callback" status result)
     (case status
       :ok {:status 200 :body (->json {:status "OK"})}
       :error {:status 200 :body (->json {:status "ERROR" :reason result})})))

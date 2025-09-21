@@ -39,7 +39,6 @@
    [galt.payments.adapters.db-payment-repository :refer [new-db-payment-repository]]
    [galt.payments.domain.payment-repository :as pr]
    [galt.members.domain.use-cases.complete-lnurl-login :refer [complete-lnurl-login-use-case]]
-   [galt.members.domain.use-cases.create-lightning-user :refer [create-lightning-user-use-case]]
    [galt.members.domain.use-cases.search-members :refer [search-members-use-case]]
    [galt.members.domain.use-cases.show-profile :refer [show-profile-use-case]]
    [galt.members.domain.use-cases.start-lnurl-login :refer [start-lnurl-login-use-case]]
@@ -159,7 +158,6 @@
     {:payment
      #::ds{:start
            (fn [{{:keys [node-url rune]} ::ds/config}]
-             (println ">>> Configuring ClnPaymentGateway with" node-url rune)
              (new-cln-payment-gateway node-url rune))
            :config
            {:node-url (ds/ref [:env :cln-rest-url])
@@ -198,19 +196,6 @@
                {:add-invitation (partial ir/add-invitation invitation-repo)}))
            :config
            {:invitation-repo (ds/ref [:storage :invitation])}}
-
-     :create-lightning-user-use-case
-     #::ds{:start
-           (fn [{{:keys [user-repo member-repo]} ::ds/config}]
-             (partial create-lightning-user-use-case
-                      {:verify-signature verify-signature
-                       :gen-uuid clj-uuid/v7
-                       :find-user-by-pub-key (partial ur/find-user-by-pub-key user-repo)
-                       :find-member-by-user-id (partial mr/find-member-by-user-id member-repo)
-                       :add-user (partial ur/add-user user-repo)}))
-           :config
-           {:user-repo (ds/ref [:storage :user])
-            :member-repo (ds/ref [:storage :member])}}
 
      :add-group-use-case
      #::ds{:start
