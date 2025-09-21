@@ -5,7 +5,7 @@
     [galt.core.system :as system]
     [cider.nrepl :refer [cider-nrepl-handler]]
     [clojure.core.async :as async]
-    [galt.core.infrastructure.database-migrations :as db-migrations])
+    [galt.core.infrastructure.db-migrations :as db-migrations])
   (:gen-class))
 
 (defonce nrepl-server (atom nil))

@@ -2,6 +2,7 @@
   (:require
     [reitit.core]))
 
+; TODO support URL params
 (defn link-for-route
   [router-or-req route-name & [path-params]]
   (let [router (if (reitit.core/router? router-or-req)

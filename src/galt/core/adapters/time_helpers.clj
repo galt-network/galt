@@ -32,6 +32,7 @@
           (not= 0 seconds) (direction seconds "second")
           :else "just now"))))
 
+;; Formatting strings from https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html
 (defn short-format
   [datetime]
   (jt/format :iso-local-date datetime))
@@ -58,12 +59,24 @@
         year (jt/format "uuuu" datetime)]
     (str day ", " (str/join " " [month-day "of" month year]))))
 
+(defn timestamp-id
+  "Returns a string like 20250920133056 with 1/100 second precision
+  Useful for generating somewhat unique ID-s"
+  []
+  (jt/format "yyyyMMddHHmmssSS" (jt/local-date-time)))
+
 (comment
   (require '[clojure.java-time.api :as jt])
   (def created-at (jt/zoned-date-time))
   (num->ordinal-str 42)
   (long-format created-at)
   (short-format created-at)
+  (jt/java-date (jt/instant 1759002549000))
+  (jt/instant 1759002549000)
+  (jt/java-date 1759002549000)
+  (jt/local-date-time)
   (jt/as-map (jt/zoned-date-time))
   (relative-time created-at created-at)
+  (jt/format "yyyyMMddHHmmssSS" created-at)
+  (jt/format "yyyyMMddHHmmssSS" (jt/local-date-time))
   (relative-time (jt/zoned-date-time 2025 1 1) (jt/zoned-date-time 2024 6 1)))

@@ -1,1 +1,5 @@
-{:galt-root-url "http://localhost:8081"}
+{:galt-root-url "http://localhost:8081"
+ :file-storage-root "resources/uploads"
+ :web-server-port 8081
+ :cln-rest-url "http://localhost:3010"
+ :cln-rune "<your rune here>"}

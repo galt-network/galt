@@ -3,8 +3,10 @@
     [starfederation.datastar.clojure.api :as d*]
     [galt.core.adapters.sse-helpers :refer [with-sse]]
     [taoensso.telemere :as tel]
+    [ring.middleware.session.store :as ss]
     [reitit.core]
     [clojure.string :as str]
+
     [galt.core.adapters.url-helpers :refer [add-query-params]]
     ))
 
@@ -53,15 +55,15 @@
             (with-sse request (fn [send!] (send! :js (str "window.location.href = '" login-url "'"))))
             {:status 302 :headers {"Location" login-url}}))))))
 
-(defn wrap-add-galt-session
-  [handler session-atom]
+(defn wrap-update-related-session
+  [handler store]
   (fn [req]
     (let [res (handler req)
           [session-id props] (get res :update-related-session)]
       (when session-id
-        (reset! session-atom (assoc-in @session-atom
-                                       [session-id]
-                                       (merge (get-in @session-atom [session-id]) props))))
+        (let [old-value (ss/read-session store session-id)
+              new-value (merge old-value props)]
+        (ss/write-session store session-id new-value)))
       res)))
 
 (defn- duration-from

@@ -10,3 +10,15 @@
          [:article.message.is-danger
           [:div.message-header [:p title]]
           [:div.message-body [:ul (map (fn [e] [:li e]) errors)]]]) ])))
+
+(def message-type->class
+  {:success "is-success"
+   :info "is-info"
+   :warning "is-warning"
+   :error "is-danger"})
+
+(defn message
+  [{:keys [title content type]}]
+  [:article.message {:class [(message-type->class type)]}
+   [:div.message-header [:p title]]
+   [:div.message-body content]])

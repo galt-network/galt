@@ -1,0 +1,7 @@
+{:ns galt.core.infrastructure.db-migrations.import-cities-countries
+ ; Folder pointed by GALT_CITIES_COUNTRIES_SQL_PATH will need to point to world.sql
+ ; This is available at https://github.com/dr5hn/countries-states-cities-database/tree/master/psql
+ ; Raw link:
+ ;  https://github.com/dr5hn/countries-states-cities-database/raw/refs/heads/master/psql/world.sql
+ :up-fn [migrate-up "GALT_CITIES_COUNTRIES_SQL_PATH"]
+ :down-fn migrate-down}

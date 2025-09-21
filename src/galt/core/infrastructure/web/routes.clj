@@ -10,7 +10,7 @@
     [ring.middleware.keyword-params :refer [wrap-keyword-params]]
     [ring.middleware.params :refer [wrap-params]]
     [ring.middleware.multipart-params :refer [wrap-multipart-params]]
-    [ring.middleware.session.memory :as memory]))
+    ))
 
 (defn router
  [deps]
@@ -19,6 +19,8 @@
    (rr/router
      [["/" {:id :home
             :get (with-deps-layout core-handlers/view-landing)}]
+      ["/datastar-sse" {:name :datastar-sse
+                        :post (partial core-handlers/datastar-sse deps)}]
       ["/files" {:post (partial core-handlers/store-file deps)}]
       ["/files/*path" {:get (partial core-handlers/serve-file deps)}]
       ["/assets/*" {:name :assets
@@ -28,7 +30,7 @@
                                             :access-control-allow-methods [:get])
                                  (wrap-content-type ,,, {:mime-types {"cljs" "application/x-scittle"}}))}]])))
 
-(defn handler [galt-session-atom router]
+(defn handler [session-store router]
   (-> (rr/ring-handler router nil)
       (middleware/wrap-auth ,,, router)
       middleware/wrap-with-logger
@@ -36,8 +38,8 @@
       wrap-keyword-params
       wrap-params
       wrap-multipart-params
-      (middleware/wrap-add-galt-session ,,, galt-session-atom)
-      (wrap-session ,,, {:store (memory/memory-store galt-session-atom)})))
+      (middleware/wrap-update-related-session ,,, session-store)
+      (wrap-session ,,, {:store session-store})))
 
 (defn merge-routers [& routers]
   (reitit.core/router

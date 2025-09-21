@@ -8,13 +8,13 @@ CREATE TABLE locations (
     latitude DOUBLE PRECISION NOT NULL,
     longitude DOUBLE PRECISION NOT NULL,
     country_code character(2),
-    city_id bigint
+    city_id bigint REFERENCES cities(id) ON DELETE SET NULL
 );
 --;;
 ALTER TABLE groups ADD COLUMN location_id INTEGER;
 --;;
-ALTER TABLE groups ADD CONSTRAINT fk_groups_location_id FOREIGN KEY (location_id) REFERENCES locations (id);
+ALTER TABLE groups ADD CONSTRAINT fk_groups_location_id FOREIGN KEY (location_id) REFERENCES locations (id) ON DELETE SET NULL;
 --;;
 ALTER TABLE members ADD COLUMN location_id INTEGER;
 --;;
-ALTER TABLE members ADD CONSTRAINT fk_members_location_id FOREIGN KEY (location_id) REFERENCES locations (id);
+ALTER TABLE members ADD CONSTRAINT fk_members_location_id FOREIGN KEY (location_id) REFERENCES locations (id) ON DELETE SET NULL;

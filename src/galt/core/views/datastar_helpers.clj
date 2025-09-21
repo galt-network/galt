@@ -4,7 +4,8 @@
     [camel-snake-kebab.core :as csk]))
 
 (defn js-literal
-  "Returns a string with JavaScript literal with camelCase keys
+  "Recursively converts clojure map into JavaScript object string with camelCase keys
+  Has special handling for regex expressions within map values
 
   Example:
     (js-literal {:filter-signals {:excludeThings \"/files/\"}})

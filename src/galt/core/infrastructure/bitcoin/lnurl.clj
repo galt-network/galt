@@ -11,9 +11,10 @@
     bytes))
 
 (defn generate-lnurl
-  [base-url & [query-params]]
+  [base-url path query-params]
   (let [k1 (generate-k1)
         k1-hex (encoding/hex-encode k1)
-        callback-url (add-query-params base-url (merge {:tag "login" :k1 k1-hex} query-params))
+        url-with-path (str base-url path)
+        callback-url (add-query-params url-with-path (merge {:tag "login" :k1 k1-hex} query-params))
         lnurl (encoding/encode-bech32 "lnurl" callback-url)]
     {:lnurl lnurl :url callback-url :k1-hex k1-hex}))

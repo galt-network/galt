@@ -38,7 +38,7 @@
   "columns - vector of keywords [:column-a, :column-b] or pairs [[\"Column Title\" :column-key]]
   column-processor - map of {:actions (fn [])}"
   [{:keys [columns column-processor rows]}]
-  [:table.table
+  [:table {:class [:table :is-striped :is-hoverable :is-fullwidth]}
    [:thead
     [:tr (map #(conj [:th] (column-title %)) columns)]]
     [:tbody

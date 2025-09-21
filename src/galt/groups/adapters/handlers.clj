@@ -7,7 +7,6 @@
     [galt.groups.domain.group-repository :as gr]
     [galt.core.infrastructure.web.helpers :refer [get-signals]]
     [galt.locations.domain.location-repository :as lr]
-    [galt.groups.domain.use-cases.add-group :refer [add-group-use-case]]
     [galt.core.views.components.dropdown-search :refer [dropdown-search-menu
                                                         id-element-name
                                                         show-results-signal-name]]

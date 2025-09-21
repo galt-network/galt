@@ -1,4 +1,4 @@
-(ns galt.core.infrastructure.database-migrations
+(ns galt.core.infrastructure.db-migrations
   (:require
     [next.jdbc :as jdbc]
     [migratus.core :as migratus]))
@@ -34,7 +34,7 @@
   (migratus/init init-config)
 
   ; create new migration files (.up & .down)
-  (migratus/create config "add-default-user-and-group")
+  (migratus/create config "create-invoices-invitation-usages")
 
   (migratus/pending-list config)
   ;apply pending migrations
@@ -45,7 +45,9 @@
 
   ;bring up migrations matching the ids
   (migratus/up config 20250830152849)
+  (migratus/up config 20250915223524)
 
   ;bring down migrations matching the ids
   (migratus/down config 20250830152849)
+  (migratus/down config 20250915223524)
   )

@@ -1,54 +1,63 @@
 (ns galt.core.system
   (:require
-    [donut.system :as ds]
-    [galt.core.infrastructure.database :as database]
-    [galt.core.infrastructure.web.middleware :as middleware]
-    [galt.core.infrastructure.name-generator :as name-generator]
-    [galt.core.views.layout :as layout] ; TODO see if can be removed
-    [galt.core.infrastructure.web.helpers :as web-helpers] ; TODO see if can be removed
-    [galt.core.infrastructure.web.routes :as core.routes]
-    [galt.core.infrastructure.web.server :as web.server]
-    [galt.core.infrastructure.bitcoin.bouncy-castle-verify :refer [verify-signature]]
-    [galt.members.external.routes]
-    [galt.groups.external.routes]
-    [galt.locations.external.routes]
-    [galt.invitations.external.routes]
-    [reitit.ring]
-    [galt.core.infrastructure.disk-file-storage :as file-storage]
-    [galt.groups.adapters.handlers]
-    [galt.core.adapters.postgres-db-access :refer [new-db-access]]
-    [galt.groups.adapters.db-group-repository :refer [new-group-repository]]
-
-    [galt.members.domain.user-repository :as ur :refer [find-user-by-id]]
-    [galt.members.domain.member-repository :as mr]
-    [galt.groups.domain.group-repository :as gr]
-    [galt.locations.domain.location-repository :as lr]
-    [galt.invitations.domain.invitation-repository :as ir]
-
-    [galt.members.adapters.db-user-repository :refer [new-db-user-repository]]
-    [galt.members.adapters.db-member-repository :refer [new-db-member-repository]]
-    [galt.locations.adapters.db-location-repository :refer [new-db-location-repository]]
-    [galt.invitations.adapters.db-invitation-repository :refer [new-db-invitation-repository]]
-
-    [galt.invitations.domain.use-cases.create-invitation-request :refer [create-invitation-request-use-case]]
-    [galt.invitations.domain.use-cases.create-invitation :refer [create-invitation-use-case]]
-    [galt.members.domain.use-cases.create-lightning-user :refer [create-lightning-user-use-case]]
-    [galt.members.domain.use-cases.search-members :refer [search-members-use-case]]
-    [galt.members.domain.use-cases.show-profile :refer [show-profile-use-case]]
-    [galt.groups.domain.use-cases.new-group :refer [new-group-use-case]]
-    [galt.groups.domain.use-cases.update-group :refer [update-group-use-case]]
-    [galt.groups.domain.use-cases.delete-group :refer [delete-group-use-case]]
-    [galt.groups.domain.use-cases.add-group :refer [add-group-use-case]]
-    [galt.groups.domain.use-cases.edit-group :refer [edit-group-use-case]]
-
-    [clojure.java.io]
-    [clj-uuid]
-    [clojure.edn])
+   [clj-uuid]
+   [clojure.edn]
+   [clojure.java.io]
+   [donut.system :as ds]
+   [galt.core.adapters.db-access]
+   [galt.core.adapters.postgres-db-access :refer [new-db-access]]
+   [galt.core.infrastructure.bitcoin.bouncy-castle-verify :refer [verify-signature]]
+   [galt.core.infrastructure.bitcoin.lnurl :refer [generate-lnurl]]
+   [galt.core.infrastructure.database :as database]
+   [galt.core.infrastructure.disk-file-storage :as file-storage]
+   [galt.core.infrastructure.name-generator :as name-generator]
+   [galt.core.infrastructure.web.helpers :as web-helpers] ; TODO see if can be removed
+   [galt.core.infrastructure.web.routes :as core.routes]
+   [galt.core.infrastructure.web.server :as web.server]
+   [galt.core.views.layout :as layout] ; TODO see if can be removed
+   [galt.groups.adapters.db-group-repository :refer [new-group-repository]]
+   [galt.groups.adapters.handlers]
+   [galt.groups.domain.group-repository :as gr]
+   [galt.groups.domain.use-cases.add-group :refer [add-group-use-case]]
+   [galt.groups.domain.use-cases.delete-group :refer [delete-group-use-case]]
+   [galt.groups.domain.use-cases.edit-group :refer [edit-group-use-case]]
+   [galt.groups.domain.use-cases.new-group :refer [new-group-use-case]]
+   [galt.groups.domain.use-cases.update-group :refer [update-group-use-case]]
+   [galt.groups.external.routes]
+   [galt.invitations.adapters.db-invitation-repository :refer [new-db-invitation-repository]]
+   [galt.invitations.domain.invitation-repository :as ir]
+   [galt.invitations.domain.use-cases.create-invitation :refer [create-invitation-use-case]]
+   [galt.invitations.domain.use-cases.create-invitation-request :refer [create-invitation-request-use-case]]
+   [galt.invitations.domain.use-cases.invitation-dashboard :refer [invitation-dashboard-use-case]]
+   [galt.invitations.external.routes]
+   [galt.locations.adapters.db-location-repository :refer [new-db-location-repository]]
+   [galt.locations.domain.location-repository :as lr]
+   [galt.locations.external.routes]
+   [galt.members.adapters.db-member-repository :refer [new-db-member-repository]]
+   [galt.members.adapters.db-user-repository :refer [new-db-user-repository]]
+   [galt.members.domain.member-repository :as mr]
+   [galt.payments.adapters.db-payment-repository :refer [new-db-payment-repository]]
+   [galt.payments.domain.payment-repository :as pr]
+   [galt.members.domain.use-cases.complete-lnurl-login :refer [complete-lnurl-login-use-case]]
+   [galt.members.domain.use-cases.create-lightning-user :refer [create-lightning-user-use-case]]
+   [galt.members.domain.use-cases.search-members :refer [search-members-use-case]]
+   [galt.members.domain.use-cases.show-profile :refer [show-profile-use-case]]
+   [galt.members.domain.use-cases.start-lnurl-login :refer [start-lnurl-login-use-case]]
+   [galt.members.domain.use-cases.watch-lnurl-login :refer [watch-lnurl-login-use-case]]
+   [galt.members.domain.user-repository :as ur :refer [find-user-by-id]]
+   [galt.members.external.routes]
+   [galt.payments.adapters.cln-payment-gateway :refer [new-cln-payment-gateway]]
+   [galt.payments.domain.payment-gateway :as pg]
+   [galt.payments.domain.use-cases.membership-payment :refer [membership-payment-use-case]]
+   [galt.payments.domain.use-cases.update-invoice :refer [update-invoice-use-case]]
+   [galt.payments.external.routes]
+   [reitit.ring]
+   [ring.middleware.session.memory :as memory]
+   [ring.middleware.session.store :refer [delete-session read-session
+                                          write-session]])
   (:import
    [com.zaxxer.hikari HikariDataSource]))
 
-
-(defonce galt-session-atom (atom {}))
 
 (defn get-config
   ([]
@@ -58,6 +67,8 @@
        clojure.java.io/file
        slurp
        clojure.edn/read-string)))
+
+(defonce galt-session-atom (atom {}))
 
 (def system
   {::ds/defs
@@ -110,6 +121,12 @@
            :config
            {:db-access (ds/ref [:storage :db-access])}}
 
+     :payment
+     #::ds{:start
+           (fn [{:keys [::ds/config]}] (new-db-payment-repository (:db-access config)))
+           :config
+           {:db-access (ds/ref [:storage :db-access])}}
+
      :file-storage
      #::ds{:start
            (fn [opts]
@@ -121,7 +138,32 @@
 
      :galt-session
      #::ds{:start
-           (fn [_] galt-session-atom)}}
+           (fn [_] galt-session-atom )}
+
+     :session-store
+     #::ds{:start
+           (fn [{:keys [::ds/config]}] (memory/memory-store (:storage config)))
+           :config
+           {:storage (ds/ref [:storage :galt-session])}}
+
+     :session-protocol-methods
+     #::ds{:start
+           (fn [{{:keys [session-store]} ::ds/config}]
+             {:read-session (partial read-session session-store)
+              :write-session (partial write-session session-store)
+              :delete-session (partial delete-session session-store)})
+           :config
+           {:session-store (ds/ref [:storage :session-store])}}}
+
+    :gateways
+    {:payment
+     #::ds{:start
+           (fn [{{:keys [node-url rune]} ::ds/config}]
+             (println ">>> Configuring ClnPaymentGateway with" node-url rune)
+             (new-cln-payment-gateway node-url rune))
+           :config
+           {:node-url (ds/ref [:env :cln-rest-url])
+            :rune (ds/ref [:env :cln-rune])}}}
 
     :use-cases
     {:create-invitation-request-use-case
@@ -135,6 +177,18 @@
            :config
            {:user-repo (ds/ref [:storage :user])
             :invitation-repo (ds/ref [:storage :invitation])}}
+
+     :invitation-dashboard-use-case
+     #::ds{:start
+           (fn [{{:keys [db group-repo]} ::ds/config}]
+             (partial
+               invitation-dashboard-use-case
+               {:query (partial galt.core.adapters.postgres-db-access/query db)
+                :find-groups-by-member (partial gr/find-groups-by-member group-repo)
+                :pub-key->name name-generator/generate}))
+           :config
+           {:db (ds/ref [:storage :db])
+            :group-repo (ds/ref [:storage :group])}}
 
      :create-invitation-use-case
      #::ds{:start
@@ -206,6 +260,38 @@
            {:member-repo (ds/ref [:storage :member])
             :group-repo (ds/ref [:storage :group])}}
 
+     :start-lnurl-login-use-case
+     #::ds{:start
+           (fn [{:keys [::ds/config]}]
+             (partial start-lnurl-login-use-case
+                      {:generate-lnurl (partial generate-lnurl (:galt-root-url config))
+                       :session-store (:session-store config)}))
+           :config
+           {:galt-root-url (ds/ref [:env :galt-root-url])
+            :session-store (ds/ref [:storage :session-store])}}
+
+     :complete-lnurl-login-use-case
+     #::ds{:start
+           (fn [{{:keys [session-store user-repo member-repo]} ::ds/config}]
+             (partial complete-lnurl-login-use-case
+                      {:session-store session-store
+                       :verify-signature verify-signature
+                       :gen-uuid clj-uuid/v7
+                       :find-user-by-pub-key (partial ur/find-user-by-pub-key user-repo)
+                       :find-member-by-user-id (partial mr/find-member-by-user-id member-repo)
+                       :add-user (partial ur/add-user user-repo)}))
+           :config
+           {:session-store (ds/ref [:storage :session-store])
+            :user-repo (ds/ref [:storage :user])
+            :member-repo (ds/ref [:storage :member])}}
+
+     :watch-lnurl-login-use-case
+     #::ds{:start
+           (fn [{{:keys [session-methods]} ::ds/config}]
+             (partial watch-lnurl-login-use-case (select-keys session-methods [:read-session])))
+           :config
+           {:session-methods (ds/ref [:storage :session-protocol-methods])}}
+
      :update-group-use-case
      #::ds{:start
            (fn [{{:keys [group-repo]} ::ds/config}]
@@ -229,32 +315,55 @@
                       {:find-group-by-id (partial gr/find-group-by-id group-repo)
                        :find-membership-by-member (partial gr/find-membership-by-member group-repo)}))
            :config
-           {:group-repo (ds/ref [:storage :group])}}}
+           {:group-repo (ds/ref [:storage :group])}}
+
+     :membership-payment-use-case
+     #::ds{:start
+           (fn [{{:keys [payment-repo payment-gw]} ::ds/config}]
+             (partial membership-payment-use-case
+                      {:membership-invoices (partial pr/membership-invoices payment-repo)
+                       :add-membership-invoice (partial pr/add-membership-invoice payment-repo)
+                       :create-invoice (partial pg/create-invoice payment-gw)}))
+           :config
+           {:member-repo (ds/ref [:storage :member])
+            :payment-repo (ds/ref [:storage :payment])
+            :payment-gw (ds/ref [:gateways :payment])}}
+
+     :update-invoice-use-case
+     #::ds{:start
+           (fn [{{:keys [payment-repo payment-gw]} ::ds/config}]
+             (partial update-invoice-use-case
+                      {:db-invoice-by-label (partial pr/invoice-by-label payment-repo)
+                       :ln-invoice-by-label (partial pg/invoice-by-label payment-gw)
+                       :update-membership-invoice (partial pr/update-membership-invoice payment-repo)}))
+           :config
+           {:payment-repo (ds/ref [:storage :payment])
+            :payment-gw (ds/ref [:gateways :payment])}}}
 
     :app
     {:route-deps
      #::ds{:start
            (fn [{:keys [::ds/config]}]
-             (let [galt-session (config :galt-session)]
-               (merge
-                 {:app-container layout/app-container
-                  :render web-helpers/render-html
-                  :with-layout web-helpers/with-layout
-                  :galt-session galt-session
-                  :group-repo (config :group-repo)
-                  :user-repo (config :user-repo)
-                  :member-repo (config :member-repo)
-                  :location-repo (config :location-repo)
-                  :invitation-repo (config :invitation-repo)
-                  :db-access (config :db-access)
-                  :generate-name name-generator/generate
-                  :file-storage (config :file-storage)
-                  :galt-url (config :galt-url)
-                  :gen-uuid clj-uuid/v7}
-                 (config :use-cases))))
+             (merge
+               {:app-container layout/app-container
+                :render web-helpers/render-html
+                :with-layout web-helpers/with-layout
+                :group-repo (config :group-repo)
+                :user-repo (config :user-repo)
+                :member-repo (config :member-repo)
+                :location-repo (config :location-repo)
+                :invitation-repo (config :invitation-repo)
+                :db-access (config :db-access)
+                :generate-name name-generator/generate
+                :file-storage (config :file-storage)
+                :galt-url (config :galt-url)
+                :gen-uuid clj-uuid/v7
+                :read-session (partial read-session (:session-store config))
+                :write-session (partial write-session (:session-store config))
+                :delete-session (partial delete-session (:session-store config))}
+               (config :use-cases)))
            :config
-           {:galt-session (ds/ref [:storage :galt-session])
-            :group-repo (ds/ref [:storage :group])
+           {:group-repo (ds/ref [:storage :group])
             :user-repo (ds/ref [:storage :user])
             :member-repo (ds/ref [:storage :member])
             :location-repo (ds/ref [:storage :location])
@@ -262,6 +371,7 @@
             :db-access (ds/ref [:storage :db-access])
             :file-storage (ds/ref [:storage :file-storage])
             :galt-url (ds/ref [:env :galt-root-url])
+            :session-store (ds/ref [:storage :session-store])
             :use-cases (ds/ref [:use-cases])
             }}
      :members/routes
@@ -288,30 +398,44 @@
              (galt.invitations.external.routes/router (:route-deps config)))
            :config
            {:route-deps (ds/ref [:app :route-deps])}}
-     :route-handler
+     :payments/routes
+     #::ds{:start
+           (fn [{:keys [::ds/config]}]
+             (galt.payments.external.routes/router (:route-deps config)))
+           :config
+           {:route-deps (ds/ref [:app :route-deps])}}
+     :router
      #::ds{:start
            (fn [{:keys [::ds/config]}]
              (let [members-router (get-in config [:members/routes])
                    groups-router (get-in config [:groups/routes])
                    locations-router (get-in config [:locations/routes])
                    invitations-router (get-in config [:invitations/routes])
+                   payments-router (get-in config [:payments/routes])
                    route-deps (get-in config [:route-deps])
-                   galt-session (get-in config [:galt-session])
-                   core-router (core.routes/router route-deps)
-                   final-router (core.routes/merge-routers
-                                  members-router
-                                  groups-router
-                                  locations-router
-                                  invitations-router
-                                  core-router)]
-               (core.routes/handler galt-session final-router)))
+                   core-router (core.routes/router route-deps)]
+               (core.routes/merge-routers
+                 members-router
+                 groups-router
+                 locations-router
+                 invitations-router
+                 payments-router
+                 core-router)))
            :config
            {:members/routes (ds/ref [:app :members/routes])
             :groups/routes (ds/ref [:app :groups/routes])
             :locations/routes (ds/ref [:app :locations/routes])
             :invitations/routes (ds/ref [:app :invitations/routes])
-            :route-deps (ds/ref [:app :route-deps])
-            :galt-session (ds/ref [:storage :galt-session])}}
+            :payments/routes (ds/ref [:app :payments/routes])
+            :route-deps (ds/ref [:app :route-deps])}}
+     :route-handler
+     #::ds{:start
+           (fn [{:keys [::ds/config]}]
+             (core.routes/handler (:session-store config) (:router config)))
+           :config
+           {:session-store (ds/ref [:storage :session-store])
+            :router (ds/ref [:app :router])}}
+
      :web-server
      #::ds{:start
            (fn [opts]

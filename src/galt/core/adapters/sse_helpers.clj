@@ -48,6 +48,7 @@
             (send-html sse data)
             (when extra (d*/execute-script! sse (push-state extra)))
             sse)
+    :to-url (d*/execute-script! sse (str "window.location.href = '" data "';"))
     :signals (send-signals sse data)
     :js (d*/execute-script! sse data)
     :cljs (send-cljs sse data)
@@ -78,13 +79,16 @@
     req
     {on-open
      (fn [sse]
+       (println ">>> INSIDE ->sse-response")
        ; Using future to do it in a separate thread, as the signal sender may sleep the thread to wait
-       (future
+       (callback (partial send! sse))
+       (Thread/sleep 50)
+       #_ (future
          (callback (partial send! sse))
          ; TODO Figure out why this is necessary?
          ;      Without this the SSE connection closes before any signals are sent
          ;      It seems to depend on the time waited. With 1ms no events but with 10 they get sent
-         (Thread/sleep 10)
+         (Thread/sleep 50)
          (d*/close-sse! sse))
        )}))
 

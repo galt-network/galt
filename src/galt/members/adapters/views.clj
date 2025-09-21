@@ -1,21 +1,8 @@
 (ns galt.members.adapters.views
   (:require
-    [clj.qrgen]
-    [markdown.core]
-    [hiccup2.core]
-    [galt.core.views.components :refer [errors-list]])
-  (:import
-    [java.util Base64]))
+    [galt.core.adapters.presentation-helpers :refer [render-markdown]]
+    [galt.core.views.components :refer [errors-list]]))
 
-(defn encode-base64 [to-encode]
-  (.encodeToString (Base64/getEncoder) to-encode))
-
-(defn qr-code
-  [content]
-  (->
-    (clj.qrgen/from content :size [300 300])
-    (clj.qrgen/as-bytes ,,,)
-    (encode-base64 ,,,)))
 
 (def login-explanation
   "## Explanation
@@ -33,7 +20,7 @@
   [:div.columns.is-centered
    [:div.column.is-four-fifths
     (when (:message model) (errors-list (:message model)))
-    [:div.content (hiccup2.core/raw (markdown.core/md-to-html-string login-explanation))]
+    [:div.content (render-markdown login-explanation)]
     [:div.block.is-size-5.has-text-centered
      [:div {:id "login-action-description"} "Click the button to login with Bitcoin Lightning LNURL-auth"]]
     [:div {:id "login-area"}
@@ -41,22 +28,6 @@
       [:div.control
        [:button.button.is-primary
         {:data-on-click "@post('/members/login')"} "Login with LNURL"]]]]]])
-
-(defn qr-code-img
-  [lnurl]
-  [:div
-   [:figure.image
-    [:a {:href (str "lightning:" lnurl)}
-     [:img {:src (str "data:image/png;base64," (qr-code lnurl))}]]]
-    [:div.control.has-icons-right
-     [:input {:type :text
-              :class [:input]
-              :value lnurl
-              :size 50
-              :read-only true
-              :onclick "galt.copyInputToClipboard(this)"}]
-     [:span {:class [:icon :is-small :is-right]}
-      [:i.far.fa-clipboard ]]]])
 
 (defn login-result-message
   [model]

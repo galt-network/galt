@@ -2,6 +2,7 @@
   (:require
     [galt.core.adapters.db-access :as db-access :refer [DbAccess]]
     [honey.sql :as sql]
+    [next.jdbc.date-time]
     [next.jdbc :as jdbc]))
 
 (defn query [conn query-vec]
@@ -10,6 +11,12 @@
        (sql/format ,,,)
        (jdbc/execute! conn ,,,)))
 
+(defn query-one [conn query-vec]
+  (println ">>> postgres-db-access/query-one" (sql/format query-vec))
+  (->> query-vec
+       (sql/format ,,,)
+       (jdbc/execute-one! conn ,,,)))
+
 (defrecord PostgresDbAccess [conn]
   DbAccess
 
@@ -17,7 +24,7 @@
     (query conn query-vec))
 
   (query-one [_ query-vec]
-    (first (query conn query-vec)))
+    (query-one conn query-vec))
 
   (in-transaction [_ callback]
     (jdbc/with-transaction [tx conn]

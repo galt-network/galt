@@ -85,5 +85,6 @@
     (reverse (into (list) (:head-tags model)))]
    [:body
     (app-container model)
+    ; [:input {:type "hidden" :data-on-load "@post('/datastar-sse')"}]
     [:a {:id "galt-history" :href (:path model) :data-on-click "@get(el.href)"}]
     [:script (hiccup2.core/raw history-js)]]])

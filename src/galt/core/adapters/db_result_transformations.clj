@@ -26,6 +26,9 @@
   [row-spec row]
   (when row
     (reduce (fn [new-row [column-key [key-fn val-fn]]]
-              (assoc new-row (key-fn column-key) ((or val-fn identity) (column-key row))))
+              (let [key-fn (if (keyword? key-fn) (constantly key-fn) key-fn)]
+                (assoc new-row
+                       (key-fn column-key)
+                       (when (column-key row) ((or val-fn identity) (column-key row))))))
             {}
             row-spec)))

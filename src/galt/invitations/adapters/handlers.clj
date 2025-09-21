@@ -65,9 +65,10 @@
       :ok {:status 303 :headers {"Location" (link-for-route req :invitations)}})))
 
 (defn list-invitations
-  [{:keys [render layout]} req]
-  (let [model {:requests
-               [{:requesting-user "Charlie Kirk" :to-member "Sarah Connor" :to-group "San Blas Ancap"}]
-               :invitations
-               [{:inviter "Charlie Brown" :invited-user "Alice Alba" :created-at "2 months ago (2025-07-01)" :expires-at "In 3 weeks (2025-09-30)" :max-usages 1 :current-usages 0}]}]
+  [{:keys [render invitation-dashboard-use-case layout]} req]
+  (let [[status result] (invitation-dashboard-use-case {:member-id (get-in req [:session :member-id])})
+        active (map #(assoc % :href (link-for-route req :invitations/by-id {:id (:id %)})) (:active result))
+        model {:requests (:requests result)
+               :active active
+               :inactive (:inactive result)}]
     {:status 200 :body (render (layout (dashboard/present model))) }))
