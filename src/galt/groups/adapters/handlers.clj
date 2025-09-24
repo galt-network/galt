@@ -47,7 +47,7 @@
 (defn create-group
   [{:keys [render layout content add-group-use-case] :as deps} req]
   (let [params (get req :params)
-        group-creation {:founder-id (get-in req [:session :user-id])
+        group-creation {:founder-id (get-in req [:session :member-id])
                         :name (:group-name params)
                         :avatar (:uploaded-url params)
                         :description (:group-description params)
@@ -120,17 +120,6 @@
         ]
     {:status 200 :body (render (layout {:content (views/show-group model)
                                         :head-tags head-tags-for-maps}))}))
-; (defn dropdown-item
-;   [{:keys [name value extra]}]
-;   [:div.dropdown-item {:data-on-click
-;                        (str "$search = '" name "'; $show-results = false;"
-;                             (d*-backend-action "/groups/search"
-;                                                :get
-;                                                {:action "choose" :id value}
-;                                                {:filter-signals {:include "/action|search|show-results/"}}))}
-;    name
-;    (when extra [:span.is-pulled-right {:style {:margin-left "1em"}} extra])
-;    ])
 
 (defn search-groups
   [{:keys [group-repo]} req]
@@ -144,7 +133,6 @@
         query (get signals (keyword search-signal-name))
         fuzzy-find-groups (fn [q] (->> (gr/find-groups-by-name group-repo q member-id)
                                        (map (fn [g] {:value (:name g) :id (:id g)}) ,,,)))]
-    (println ">>> search-groups QUERY RESULTS:" (fuzzy-find-groups query))
     (with-sse req
       (fn [send!]
         (case action

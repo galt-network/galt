@@ -83,14 +83,33 @@
          (transform-row city-spec ,,,)
          (city/map->City ,,,)))
 
-  (fuzzy-find-city [_ s]
+  #_(fuzzy-find-city [_ s]
     (->> (cities-fuzzy-query s default-result-limit default-word-similarity-threshold)
          (query db-access ,,,)
          (map #(transform-row city-spec %) ,,,)
          (map city/map->City ,,,)))
 
-  (fuzzy-find-city [_ s country-code]
+  #_(fuzzy-find-city [_ s country-code]
     (->> (cities-fuzzy-query s default-result-limit default-word-similarity-threshold)
+         (add-country-code-to-where country-code ,,,)
+         (query db-access ,,,)
+         (map #(transform-row city-spec %) ,,,)
+         (map city/map->City ,,,)))
+
+  (fuzzy-find-city [_ s]
+    (->> {:select [:cities.*]
+          :from [:cities]
+          :where [:ilike :cities.name (str "%" s "%")]}
+         (query db-access ,,,)
+         (map #(transform-row city-spec %) ,,,)
+         (map city/map->City ,,,)))
+
+  (fuzzy-find-city [_ s country-code]
+    (->> {:select [:cities.*]
+          :from [:cities]
+          :where [:and
+                  [:ilike :cities.name (str "%" s "%")]
+                  [:= :cities.country_code country-code]]}
          (add-country-code-to-where country-code ,,,)
          (query db-access ,,,)
          (map #(transform-row city-spec %) ,,,)
@@ -130,6 +149,12 @@
          (transform-row location-spec ,,,)
          (location/map->Location ,,,))))
 
+(def last-repo (atom nil))
+
 (defn new-db-location-repository
   [db-access]
+  (reset! last-repo (DbLocationRepository. db-access))
   (DbLocationRepository. db-access))
+
+(comment
+  (lr/fuzzy-find-city @last-repo "Tar" "EE"))

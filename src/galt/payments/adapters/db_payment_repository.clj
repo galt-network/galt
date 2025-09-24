@@ -56,6 +56,19 @@
     (some->>
       {:select [:*] :from [:invoices] :where [:= :label label]}
       (query-one db-access ,,,)
+      (transform-row invoice-spec ,,,)))
+
+  (current-membership-payment [_ user-id]
+    (some->>
+      {:select [:invoices.*]
+       :from [:invoices]
+       :join [[:galt_membership_payments :gmp] [:= :gmp.invoice_id :invoices.id]]
+       :where [:and
+               [:= :gmp.user_id user-id]
+               [:= :invoices/status [:cast "paid" :invoicestatus]]]
+       :order-by [[:invoices.created_at :desc]]
+       :limit 1}
+      (query-one db-access ,,,)
       (transform-row invoice-spec ,,,))))
 
 (def last-repo (atom nil))
@@ -65,6 +78,6 @@
 
 (comment
   (def user-id (parse-uuid "019954c1-bc96-706d-85b2-4b9b01e197c7"))
-  (pr/membership-invoices @last-repo user-id)
+  (pr/current-membership-payment @last-repo user-id)
   (require '[galt.payments.adapters.cln-gateway-responses :refer [responses]])
   (pr/add-membership-invoice @last-repo user-id (:invoice responses)))

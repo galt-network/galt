@@ -8,16 +8,16 @@
   [{:keys [find-groups-by-founder-id]} {:keys [founder-id]}]
   (>= max-group-per-member (count (find-groups-by-founder-id founder-id))))
 
-(defn active-member?
-  [{:keys [find-member-by-user-id]} {:keys [founder-id]}]
-  (not (nil? (find-member-by-user-id founder-id))))
+(defn active-membership?
+  [{:keys [find-member-by-id]} {:keys [founder-id]}]
+  (not (nil? (find-member-by-id founder-id))))
 
 (defn unique-name?
   [{:keys [find-groups-by-name]} group-creation]
   (empty? (find-groups-by-name (:name group-creation))))
 
 (def requirements
-  [[active-member? "User must have an active membership on GALT"]
+  [[active-membership? "User must have an active membership on GALT"]
    [within-group-creation-limits? "Maximum number of groups per member reached"]
    [unique-name? "There already is a group with that name"]])
 

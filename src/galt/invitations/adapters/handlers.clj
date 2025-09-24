@@ -45,6 +45,7 @@
     ;       In the SSE case it'll send the search dropdown hiccup vectors
     {:status 200 :body (render (layout {:content (invitation-request/present model)
                                         :page-title "New Invitation"}))}))
+
 (defn create-invitation-request
   [{:keys [create-invitation-request-use-case render layout]} req]
   (let [from-user-id (get-in req [:session :user-id])
@@ -68,7 +69,6 @@
   [{:keys [render invitation-dashboard-use-case layout]} req]
   (let [[status result] (invitation-dashboard-use-case {:member-id (get-in req [:session :member-id])})
         active (map #(assoc % :href (link-for-route req :invitations/by-id {:id (:id %)})) (:active result))
-        model {:requests (:requests result)
-               :active active
+        model {:active active
                :inactive (:inactive result)}]
     {:status 200 :body (render (layout (dashboard/present model))) }))

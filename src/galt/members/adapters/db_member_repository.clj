@@ -11,6 +11,7 @@
 (def member-spec
   {:members/id defaults
    :members/name defaults
+   :members/description defaults
    :members/slug defaults
    :members/avatar defaults
    :members/user_id defaults

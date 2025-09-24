@@ -6,9 +6,13 @@
   [{:keys [member groups location]}]
   {:member? true
    :name (:name member)
+   :description (:description member)
    :avatar (:avatar member)
+   :slug (:slug member)
    :groups (map :name groups)
-   :location-name (str (:name location) (when (:country-code location) (str ", " (:country-code location))))})
+   :location-name (str (:name location) (when (:country-code location) (str ", " (:country-code location))))
+   :latitude (:latitude location)
+   :longitude (:longitude location)})
 
 (defn login-result-view-model
   [status result]

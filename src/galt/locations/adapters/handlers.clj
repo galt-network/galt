@@ -12,6 +12,7 @@
         query-from-params (get-in req [:params :query])
         query (or query-from-signals query-from-params)
         country-code (get signals :country-code)
+        _ (println ">>> search-cities searching: " {:query query :country-code country-code})
         filtered-cities (if (seq country-code)
                           (lr/fuzzy-find-city location-repo query country-code)
                           (lr/fuzzy-find-city location-repo query))

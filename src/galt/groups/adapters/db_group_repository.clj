@@ -3,6 +3,7 @@
     [galt.groups.domain.group-repository :as gr :refer [GroupRepository]]
     [galt.core.adapters.db-access :refer [query in-transaction]]
     [galt.groups.domain.entities.group :refer [map->Group]]
+    [galt.members.adapters.db-member-repository :refer [member-spec]]
     [galt.core.adapters.db-result-transformations :refer [transform-row defaults ->local-date-time]]
     [galt.groups.domain.entities.group-membership :refer [map->GroupMembership]])
   )
@@ -104,16 +105,16 @@
          (map #(transform-row group-spec %) ,,,)
          (map map->Group)))
 
-  ; TODO Implement Member domain entity and return members (not users)
   (list-members [_ group-id {:keys [limit]}]
-    (let [sql {:select [:users.*]
-               :from [:users]
+    (let [sql {:select [:members.*]
+               :from [:members]
                :join [:group_memberships [:and
                                           [:= :group_memberships/group_id group-id]
-                                          [:= :users/id :group_memberships/member_id]]]}]
-      (query db-access
-             (cond-> sql
-               limit (assoc ,,, :limit limit)))))
+                                          [:= :members/id :group_memberships/member_id]]]}]
+      (->> (query db-access
+                  (cond-> sql
+                    limit (assoc ,,, :limit limit)))
+           (map #(transform-row member-spec %) ,,,))))
 
   (list-groups [_]
     (query db-access {:select [:*] :from [:groups]})

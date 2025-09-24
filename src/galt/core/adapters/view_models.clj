@@ -1,16 +1,20 @@
 (ns galt.core.adapters.view-models
   (:require
     [galt.members.domain.user-repository :refer [find-user-by-id]]
+    [galt.members.domain.member-repository :as mr]
     [clojure.string :as str]))
 
 (defn navbar-model
-  [{:keys [user-repo]} req]
+  [{:keys [user-repo member-repo]} req]
   (let [route-id (get-in req [:reitit.core/match :data :id])
         user-id (get-in req [:session :user-id])
         user (find-user-by-id user-repo user-id)
+        member (mr/find-member-by-user-id member-repo user-id)
+        avatar (get member :avatar "/assets/images/profile-user-account.svg")
+        name (or (get member :name) (get user :name) "Login")
         logged-in? (not (nil? user))
-        login-user {:name (get user :name "Login")
-                    :avatar "/assets/images/profile-user-account.svg"
+        login-user {:name name
+                    :avatar avatar
                     :href (if logged-in? "/members/profile/me" "/members/login")}
         login-item {:id :login :title "Log in" :href "/members/login"}
         logout-item {:id :logout :title "Log out" :data-on-click "@post('/members/logout')"}

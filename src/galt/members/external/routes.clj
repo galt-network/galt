@@ -12,7 +12,9 @@
         with-deps-layout (partial with-layout deps)]
     (rr/router
       [["/members" {:id :members
-                    :get (with-deps-layout members/show-members-list)}]
+                    :name :members
+                    :get (with-deps-layout members/show-members-list)
+                    :post (with-deps-layout members/create)}]
        ["/members/new" {:id :members
                         :name :members/new
                         :conflicting true
@@ -24,8 +26,10 @@
                        :name :members/me
                        :conflicting true
                        :get (with-deps-layout members/show-my-profile)
+                       :put (with-deps-layout members/update-my-profile)
                        :min-role :user}]
        ["/members/me/edit" {:id :members
+                            :name :members.me/edit
                             :get (with-deps-layout members/edit-my-profile)}]
        ["/members/login" {:id :login
                           :conflicting true
@@ -41,4 +45,4 @@
        ["/members/:id" {:id :members
                         :name :members/by-id
                         :conflicting true
-                       :get (with-deps-layout members/show-profile)}]])))
+                        :get (with-deps-layout members/show-profile)}]])))

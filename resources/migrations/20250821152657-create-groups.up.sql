@@ -11,6 +11,7 @@ CREATE TABLE members (
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
   avatar TEXT,
+  description TEXT,
   slug VARCHAR(64) UNIQUE,
   created_at timestamp default current_timestamp,
   deleted_at timestamp 

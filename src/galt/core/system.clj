@@ -33,6 +33,7 @@
    [galt.locations.adapters.db-location-repository :refer [new-db-location-repository]]
    [galt.locations.domain.location-repository :as lr]
    [galt.locations.external.routes]
+   [galt.design.routes]
    [galt.members.adapters.db-member-repository :refer [new-db-member-repository]]
    [galt.members.adapters.db-user-repository :refer [new-db-user-repository]]
    [galt.members.domain.member-repository :as mr]
@@ -43,6 +44,7 @@
    [galt.members.domain.use-cases.show-profile :refer [show-profile-use-case]]
    [galt.members.domain.use-cases.start-lnurl-login :refer [start-lnurl-login-use-case]]
    [galt.members.domain.use-cases.watch-lnurl-login :refer [watch-lnurl-login-use-case]]
+   [galt.members.domain.use-cases.create-member :refer [create-member-use-case]]
    [galt.members.domain.user-repository :as ur :refer [find-user-by-id]]
    [galt.members.external.routes]
    [galt.payments.adapters.cln-payment-gateway :refer [new-cln-payment-gateway]]
@@ -202,7 +204,7 @@
            (fn [{{:keys [group-repo location-repo member-repo]} ::ds/config}]
              (partial add-group-use-case
                       {:find-group-by-id (partial gr/find-group-by-id group-repo)
-                       :find-member-by-user-id (partial mr/find-member-by-user-id member-repo)
+                       :find-member-by-id (partial mr/find-member-by-id member-repo)
                        :find-groups-by-founder-id (partial gr/find-groups-by-founder-id group-repo)
                        :find-groups-by-name (partial gr/find-groups-by-name group-repo)
                        :add-group (partial gr/add-group group-repo)
@@ -224,14 +226,16 @@
 
      :show-profile-use-case
      #::ds{:start
-           (fn [{{:keys [member-repo group-repo location-repo]} ::ds/config}]
+           (fn [{{:keys [member-repo group-repo location-repo payment-repo]} ::ds/config}]
              (partial show-profile-use-case
-                      {:find-member-by-id (partial mr/find-member-by-id member-repo)
+                      {:find-member-by-user-id (partial mr/find-member-by-user-id member-repo)
                        :find-groups-by-member (partial gr/find-groups-by-member group-repo)
+                       :current-membership-payment (partial pr/current-membership-payment payment-repo)
                        :find-location-by-id (partial lr/find-location-by-id location-repo)}))
            :config
            {:member-repo (ds/ref [:storage :member])
             :group-repo (ds/ref [:storage :group])
+            :payment-repo (ds/ref [:storage :payment])
             :location-repo (ds/ref [:storage :location])}}
 
      :search-members-use-case
@@ -276,6 +280,16 @@
              (partial watch-lnurl-login-use-case (select-keys session-methods [:read-session])))
            :config
            {:session-methods (ds/ref [:storage :session-protocol-methods])}}
+
+     :create-member-use-case
+     #::ds{:start
+           (fn [{{:keys [location-repo member-repo]} ::ds/config}]
+             (partial create-member-use-case
+                      {:add-location (partial lr/add-location location-repo)
+                       :add-member (partial mr/add-member member-repo)}))
+           :config
+           {:member-repo (ds/ref [:storage :member])
+            :location-repo (ds/ref [:storage :location])}}
 
      :update-group-use-case
      #::ds{:start
@@ -389,6 +403,12 @@
              (galt.payments.external.routes/router (:route-deps config)))
            :config
            {:route-deps (ds/ref [:app :route-deps])}}
+     :design/routes
+     #::ds{:start
+           (fn [{:keys [::ds/config]}]
+             (galt.design.routes/router (:route-deps config)))
+           :config
+           {:route-deps (ds/ref [:app :route-deps])}}
      :router
      #::ds{:start
            (fn [{:keys [::ds/config]}]
@@ -397,6 +417,7 @@
                    locations-router (get-in config [:locations/routes])
                    invitations-router (get-in config [:invitations/routes])
                    payments-router (get-in config [:payments/routes])
+                   design-router (get-in config [:design/routes])
                    route-deps (get-in config [:route-deps])
                    core-router (core.routes/router route-deps)]
                (core.routes/merge-routers
@@ -405,6 +426,7 @@
                  locations-router
                  invitations-router
                  payments-router
+                 design-router
                  core-router)))
            :config
            {:members/routes (ds/ref [:app :members/routes])
@@ -412,6 +434,7 @@
             :locations/routes (ds/ref [:app :locations/routes])
             :invitations/routes (ds/ref [:app :invitations/routes])
             :payments/routes (ds/ref [:app :payments/routes])
+            :design/routes (ds/ref [:app :design/routes])
             :route-deps (ds/ref [:app :route-deps])}}
      :route-handler
      #::ds{:start

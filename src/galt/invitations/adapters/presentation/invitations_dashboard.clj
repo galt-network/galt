@@ -8,36 +8,12 @@
    [:div.content
     [:blockquote
      [:p
-      [:i "Users need to become members in order to use all features of Galt.
-          They can do it through an invitation"]]
+      [:i "Invitations are useful to get more members to your group. You can create invitations here
+          and share their links or QR codes with the people you'd like to join"]]
      [:p
       [:i "After you create an invitation, you can share it as a link or QR code.
           Invitations can be configured to be used once or multiple times and to have expiration time"]]]]
    [:a.button.is-primary.is-medium {:href "/invitations/new"} "Create new invitation"]])
-
-(defn invitation-requests-section
-  [requests]
-  [:section {:class "section"}
-    [:h1 {:class "title"} "Invitation Requests"]
-    [:table {:class "table is-striped is-hoverable is-fullwidth"}
-     [:thead
-      [:tr
-       [:th "Requesting User"]
-       [:th "To Member"]
-       [:th "To Group"]
-       [:th "Created At"]
-       [:th "Actions"]]]
-     [:tbody
-      (for [req requests]
-        [:tr
-         [:td (:requesting-user req)]
-         [:td (:to-member req)]
-         [:td (:to-group req)]
-         [:td (th/relative-time (:created-at req))]
-         [:td
-          [:div.buttons
-           [:button {:class "button is-success"} "Approve"]
-           [:button {:class "button is-danger"} "Deny"]]]])]]])
 
 (defn active-invitations [invitations]
   [:section {:class "section"}
@@ -89,9 +65,8 @@
          [:td.has-text-centered (:current-usages inv)]])]]])
 
 (defn present
-  [{:keys [requests active inactive]}]
+  [{:keys [active inactive]}]
   [:div {:class "container"}
    (new-invitation-section)
-   (invitation-requests-section requests)
    (active-invitations active)
    (inactive-invitations inactive)])

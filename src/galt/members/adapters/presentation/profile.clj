@@ -1,4 +1,6 @@
-(ns galt.members.adapters.presentation.profile)
+(ns galt.members.adapters.presentation.profile
+  (:require
+    [galt.core.adapters.presentation-helpers :refer [render-markdown]]))
 
 (defn present
   [model]
@@ -14,7 +16,7 @@
                   :received-messages ["Private message 1"]}
                  model)]
    [:div
-    [:section.hero.is-primary
+    [:section.hero.is-warning
      [:div.hero-body
       [:div.container
        [:div.columns.is-vcentered
@@ -23,8 +25,12 @@
           [:img.is-rounded {:src (:avatar member) :alt "Avatar"}]]]
         [:div.column
          [:h1.title.is-1 (:name member)]
-         [:h2.subtitle "Member Profile"]]]]]]
+         ]]]]]
+
     [:div.container.mt-6
+     [:section.section
+      [:h3.title.is-3 "Description"]
+      [:div.content (render-markdown (:description model))]]
      [:section.section
       [:h2.title.is-3 "Groups"]
       [:div.columns
