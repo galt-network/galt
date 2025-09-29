@@ -4,13 +4,13 @@
     ))
 
 (defn show-profile-use-case
-  [{:keys [find-member-by-user-id
+  [{:keys [find-member-by-id
            find-groups-by-member
            find-location-by-id
            current-membership-payment]}
-   {:keys [user-id]}]
-  (let [membership-payment (current-membership-payment user-id)
-        member (find-member-by-user-id user-id)]
+   {:keys [member-id]}]
+  (let [member (find-member-by-id member-id)
+        membership-payment (current-membership-payment (:user-id member))]
     (match [membership-payment member]
            [nil nil] [:error "Profile not found"]
            [_   nil] [:ok {:member nil}]

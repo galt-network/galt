@@ -33,7 +33,6 @@
                                                             email
                                                             content))])))))
 
-
 (s/fdef create-invitation-use-case
         :args (s/keys :req [::deps ::command]))
 

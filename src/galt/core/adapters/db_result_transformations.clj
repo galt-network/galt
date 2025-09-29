@@ -9,6 +9,7 @@
 (def non-namespaced-kebab (comp csk/->kebab-case without-namespace))
 
 (def defaults [non-namespaced-kebab identity])
+(def default-datetime [non-namespaced-kebab ->local-date-time])
 
 (defn map-without-nils
   [maplike]

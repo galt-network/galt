@@ -22,8 +22,8 @@
     {:user login-user
      :items [{:title "Members" :href "/members" :selected? (= :members route-id) }
              {:title "Groups" :href "/groups" :selected? (= :groups route-id)}
-             {:title "Posts" :href "#" :selected? (= :posts route-id)}
-             {:title "Inititatives" :href "#" :selected? (= :initiatives route-id)}]
+             {:title "Posts" :href "/posts" :selected? (= :posts route-id)}
+             {:title "Events" :href "/events" :selected? (= :events route-id)}]
      :dropdown [{:id :profile :title "Profile" :href "/members/me" :selected? (= :profile route-id)}
                 {:id :invitations :title "Invitations" :href "/invitations" :selected? (= :invitations route-id)}
                 session-item]}))

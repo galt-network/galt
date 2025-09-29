@@ -4,6 +4,7 @@
    [galt.core.views.landing-page :as l-views]
    [galt.groups.adapters.handlers :refer [head-tags-for-maps]]
    [galt.groups.adapters.views :as g-views]
+   [galt.groups.adapters.presentation.show-group :as presentation.show-group]
    [galt.locations.domain.location-repository :as lr]))
 
 (def landing-model
@@ -57,5 +58,5 @@
 
 (defn show-group
   [{:keys [layout render]} req]
-  {:status 200 :body (render (layout {:content (g-views/show-group show-model)
+  {:status 200 :body (render (layout {:content (presentation.show-group/present show-model)
                                       :head-tags head-tags-for-maps}))})

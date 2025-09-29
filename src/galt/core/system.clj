@@ -16,6 +16,7 @@
    [galt.core.infrastructure.web.server :as web.server]
    [galt.core.views.layout :as layout] ; TODO see if can be removed
    [galt.groups.adapters.db-group-repository :refer [new-group-repository]]
+   [galt.events.adapters.db-event-repository :refer [new-db-event-repository]]
    [galt.groups.adapters.handlers]
    [galt.groups.domain.group-repository :as gr]
    [galt.groups.domain.use-cases.add-group :refer [add-group-use-case]]
@@ -23,6 +24,7 @@
    [galt.groups.domain.use-cases.edit-group :refer [edit-group-use-case]]
    [galt.groups.domain.use-cases.new-group :refer [new-group-use-case]]
    [galt.groups.domain.use-cases.update-group :refer [update-group-use-case]]
+   [galt.groups.domain.use-cases.show-group :refer [show-group-use-case]]
    [galt.groups.external.routes]
    [galt.invitations.adapters.db-invitation-repository :refer [new-db-invitation-repository]]
    [galt.invitations.domain.invitation-repository :as ir]
@@ -30,6 +32,7 @@
    [galt.invitations.domain.use-cases.create-invitation-request :refer [create-invitation-request-use-case]]
    [galt.invitations.domain.use-cases.invitation-dashboard :refer [invitation-dashboard-use-case]]
    [galt.invitations.external.routes]
+   [galt.posts.external.routes]
    [galt.locations.adapters.db-location-repository :refer [new-db-location-repository]]
    [galt.locations.domain.location-repository :as lr]
    [galt.locations.external.routes]
@@ -45,13 +48,19 @@
    [galt.members.domain.use-cases.start-lnurl-login :refer [start-lnurl-login-use-case]]
    [galt.members.domain.use-cases.watch-lnurl-login :refer [watch-lnurl-login-use-case]]
    [galt.members.domain.use-cases.create-member :refer [create-member-use-case]]
+   [galt.posts.domain.use-cases.create-post :refer [create-post-use-case]]
    [galt.members.domain.user-repository :as ur :refer [find-user-by-id]]
+   [galt.posts.domain.post-repository :as po-re]
+   [galt.events.domain.event-repository :as er]
+   [galt.posts.adapters.db-post-repository :refer [new-db-post-repository]]
    [galt.members.external.routes]
    [galt.payments.adapters.cln-payment-gateway :refer [new-cln-payment-gateway]]
    [galt.payments.domain.payment-gateway :as pg]
    [galt.payments.domain.use-cases.membership-payment :refer [membership-payment-use-case]]
    [galt.payments.domain.use-cases.update-invoice :refer [update-invoice-use-case]]
+   [galt.events.domain.use-cases.add-event :refer [add-event-use-case]]
    [galt.payments.external.routes]
+   [galt.events.external.routes]
    [reitit.ring]
    [ring.middleware.session.memory :as memory]
    [ring.middleware.session.store :refer [delete-session read-session
@@ -125,6 +134,18 @@
      :payment
      #::ds{:start
            (fn [{:keys [::ds/config]}] (new-db-payment-repository (:db-access config)))
+           :config
+           {:db-access (ds/ref [:storage :db-access])}}
+
+     :post
+     #::ds{:start
+           (fn [{:keys [::ds/config]}] (new-db-post-repository (:db-access config)))
+           :config
+           {:db-access (ds/ref [:storage :db-access])}}
+
+     :event
+     #::ds{:start
+           (fn [{:keys [::ds/config]}] (new-db-event-repository (:db-access config)))
            :config
            {:db-access (ds/ref [:storage :db-access])}}
 
@@ -229,6 +250,7 @@
            (fn [{{:keys [member-repo group-repo location-repo payment-repo]} ::ds/config}]
              (partial show-profile-use-case
                       {:find-member-by-user-id (partial mr/find-member-by-user-id member-repo)
+                       :find-member-by-id (partial mr/find-member-by-id member-repo)
                        :find-groups-by-member (partial gr/find-groups-by-member group-repo)
                        :current-membership-payment (partial pr/current-membership-payment payment-repo)
                        :find-location-by-id (partial lr/find-location-by-id location-repo)}))
@@ -299,6 +321,19 @@
            :config
            {:group-repo (ds/ref [:storage :group])}}
 
+     :show-group-use-case
+     #::ds{:start
+           (fn [{{:keys [location-repo group-repo post-repo]} ::ds/config}]
+             (partial show-group-use-case
+                      {:find-group-by-id (partial gr/find-group-by-id group-repo)
+                       :find-location-by-id (partial lr/find-location-by-id location-repo)
+                       :group-posts (partial po-re/group-posts post-repo)
+                       :list-members (partial gr/list-members group-repo)}))
+           :config
+           {:group-repo (ds/ref [:storage :group])
+            :post-repo (ds/ref [:storage :post])
+            :location-repo (ds/ref [:storage :location])}}
+
      :delete-group-use-case
      #::ds{:start
            (fn [{{:keys [group-repo]} ::ds/config}]
@@ -337,7 +372,24 @@
                        :update-membership-invoice (partial pr/update-membership-invoice payment-repo)}))
            :config
            {:payment-repo (ds/ref [:storage :payment])
-            :payment-gw (ds/ref [:gateways :payment])}}}
+            :payment-gw (ds/ref [:gateways :payment])}}
+
+     :create-post-use-case
+     #::ds{:start
+           (fn [{{:keys [post-repo]} ::ds/config}]
+             (partial create-post-use-case
+                      {:add-post (partial po-re/add-post post-repo)}))
+           :config
+           {:post-repo (ds/ref [:storage :post])}}
+
+     :add-event-use-case
+     #::ds{:start
+           (fn [{{:keys [event-repo]} ::ds/config}]
+             (partial add-event-use-case
+                      {:add-event (partial er/add-event event-repo)}))
+           :config
+           {:event-repo (ds/ref [:storage :event])}}
+     }
 
     :app
     {:route-deps
@@ -352,6 +404,8 @@
                 :member-repo (config :member-repo)
                 :location-repo (config :location-repo)
                 :invitation-repo (config :invitation-repo)
+                :post-repo (config :post-repo)
+                :event-repo (config :event-repo)
                 :db-access (config :db-access)
                 :generate-name name-generator/generate
                 :file-storage (config :file-storage)
@@ -367,6 +421,8 @@
             :member-repo (ds/ref [:storage :member])
             :location-repo (ds/ref [:storage :location])
             :invitation-repo (ds/ref [:storage :invitation])
+            :post-repo (ds/ref [:storage :post])
+            :event-repo (ds/ref [:storage :event])
             :db-access (ds/ref [:storage :db-access])
             :file-storage (ds/ref [:storage :file-storage])
             :galt-url (ds/ref [:env :galt-root-url])
@@ -403,6 +459,18 @@
              (galt.payments.external.routes/router (:route-deps config)))
            :config
            {:route-deps (ds/ref [:app :route-deps])}}
+     :posts/routes
+     #::ds{:start
+           (fn [{:keys [::ds/config]}]
+             (galt.posts.external.routes/router (:route-deps config)))
+           :config
+           {:route-deps (ds/ref [:app :route-deps])}}
+     :events/routes
+     #::ds{:start
+           (fn [{:keys [::ds/config]}]
+             (galt.events.external.routes/router (:route-deps config)))
+           :config
+           {:route-deps (ds/ref [:app :route-deps])}}
      :design/routes
      #::ds{:start
            (fn [{:keys [::ds/config]}]
@@ -417,6 +485,8 @@
                    locations-router (get-in config [:locations/routes])
                    invitations-router (get-in config [:invitations/routes])
                    payments-router (get-in config [:payments/routes])
+                   posts-router (get-in config [:posts/routes])
+                   events-router (get-in config [:events/routes])
                    design-router (get-in config [:design/routes])
                    route-deps (get-in config [:route-deps])
                    core-router (core.routes/router route-deps)]
@@ -426,6 +496,8 @@
                  locations-router
                  invitations-router
                  payments-router
+                 posts-router
+                 events-router
                  design-router
                  core-router)))
            :config
@@ -434,6 +506,8 @@
             :locations/routes (ds/ref [:app :locations/routes])
             :invitations/routes (ds/ref [:app :invitations/routes])
             :payments/routes (ds/ref [:app :payments/routes])
+            :posts/routes (ds/ref [:app :posts/routes])
+            :events/routes (ds/ref [:app :events/routes])
             :design/routes (ds/ref [:app :design/routes])
             :route-deps (ds/ref [:app :route-deps])}}
      :route-handler

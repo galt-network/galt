@@ -59,14 +59,24 @@
         year (jt/format "uuuu" datetime)]
     (str day ", " (str/join " " [month-day "of" month year]))))
 
+(defn relative-with-short
+  "Returns a date string like 3 days ago (2025-09-24)"
+  [datetime]
+  (str (relative-time datetime) " (" (short-format datetime) ")"))
+
 (defn timestamp-id
   "Returns a string like 20250920133056 with 1/100 second precision
   Useful for generating somewhat unique ID-s"
   []
   (jt/format "yyyyMMddHHmmssSS" (jt/local-date-time)))
 
+(defn parse-form-datetime
+  [s]
+  (jt/local-date-time s))
+
 (comment
   (require '[clojure.java-time.api :as jt])
+
   (def created-at (jt/zoned-date-time))
   (num->ordinal-str 42)
   (long-format created-at)

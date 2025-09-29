@@ -1,10 +1,13 @@
 (ns galt.groups.adapters.handlers
   (:require
     [galt.core.adapters.link-generator :refer [link-for-route]]
+    [galt.core.adapters.url-helpers :refer [add-query-params]]
+    [galt.core.adapters.time-helpers :as time-helpers]
     [starfederation.datastar.clojure.api :as d*]
     [galt.groups.adapters.views :as views]
     [galt.groups.adapters.view-models :as models]
     [galt.groups.domain.group-repository :as gr]
+    [galt.groups.adapters.presentation.show-group :as presentation.show-group]
     [galt.core.infrastructure.web.helpers :refer [get-signals]]
     [galt.locations.domain.location-repository :as lr]
     [galt.core.views.components.dropdown-search :refer [dropdown-search-menu
@@ -114,11 +117,25 @@
       {:status 200 :body (render (layout content))})))
 
 (defn show-group
-  [{:keys [layout render] :as deps} req]
+  [{:keys [layout render show-group-use-case] :as deps} req]
   (let [group-id (get-in req [:path-params :id])
-        model (models/group-model deps req (parse-uuid group-id))
-        ]
-    {:status 200 :body (render (layout {:content (views/show-group model)
+        [status result] (show-group-use-case {:group-id (parse-uuid group-id)})
+        {:keys [group location members]} result
+        model {:name (:name group)
+               :description (:description group)
+               :avatar (:avatar group)
+               :languages ["Spanish" "English"]
+               :location-name (:name location)
+               :latitude (:latitude location)
+               :longitude (:longitude location)
+               :founded-at (time-helpers/relative-with-short (:created-at group))
+               :new-post-href (-> (link-for-route req :posts/new)
+                                  (add-query-params ,,, {:target-id group-id :target-type "group"}))
+               :members (map (fn [m] {:name (:name m)
+                                      :href (link-for-route req :members/by-id {:id (:id m)})})
+                             members)
+               :activity (:posts result)}]
+    {:status 200 :body (render (layout {:content (presentation.show-group/present model)
                                         :head-tags head-tags-for-maps}))}))
 
 (defn search-groups

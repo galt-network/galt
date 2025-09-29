@@ -32,9 +32,10 @@
        :else :nothing)
 
 (defn show-my-profile
-  [{:keys [render layout member-repo show-profile-use-case]} req]
+  [{:keys [render layout show-profile-use-case]} req]
   (let [user-id (get-in req [:session :user-id])
-        [status result] (show-profile-use-case {:user-id user-id})
+        member-id (get-in req [:session :member-id])
+        [status result] (show-profile-use-case {:member-id member-id})
         profile-content (-> result
                             view-models/profile-view-model
                             presentation.profile/present
