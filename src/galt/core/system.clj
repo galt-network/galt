@@ -59,6 +59,7 @@
    [galt.payments.domain.use-cases.membership-payment :refer [membership-payment-use-case]]
    [galt.payments.domain.use-cases.update-invoice :refer [update-invoice-use-case]]
    [galt.events.domain.use-cases.add-event :refer [add-event-use-case]]
+   [galt.events.domain.use-cases.list-events :refer [list-events-use-case]]
    [galt.payments.external.routes]
    [galt.events.external.routes]
    [reitit.ring]
@@ -387,6 +388,14 @@
            (fn [{{:keys [event-repo]} ::ds/config}]
              (partial add-event-use-case
                       {:add-event (partial er/add-event event-repo)}))
+           :config
+           {:event-repo (ds/ref [:storage :event])}}
+
+     :list-events-use-case
+     #::ds{:start
+           (fn [{{:keys [event-repo]} ::ds/config}]
+             (partial list-events-use-case
+                      {:list-events (partial er/list-events event-repo)}))
            :config
            {:event-repo (ds/ref [:storage :event])}}
      }

@@ -4,10 +4,25 @@
     [starfederation.datastar.clojure.api :as d*]
     [starfederation.datastar.clojure.api.common :as d*-common]
     [starfederation.datastar.clojure.adapter.http-kit :refer [->sse-response on-open]]
-    [galt.core.infrastructure.web.helpers :refer [->json]]))
+    [galt.core.infrastructure.web.helpers :refer [->json]]
+    [starfederation.datastar.clojure.api.common :as d*-api.common]))
 
-(defn send-html [sse hiccup]
-  (d*/patch-elements! sse (-> hiccup (h/html ,,,) (str ,,,)))
+(defn opts->d*-opts
+  [opts]
+  (let [conversion-map {:selector d*-api.common/selector
+                        :patch-mode d*-api.common/patch-mode}]
+    (reduce (fn [acc [k v]]
+                 (if (contains? conversion-map k)
+                   (assoc acc (get conversion-map k) v)
+                   (throw (ex-info "Unknown datastar option provided:"
+                                   {:unknown-key k :known-keys (keys conversion-map)}))))
+            {}
+            opts)))
+
+(defn send-html
+  "d*-opts passed to starfederation.datastar.clojure.api/patch-elements!"
+  [sse hiccup d*-opts]
+  (d*/patch-elements! sse (-> hiccup (h/html ,,,) (str ,,,)) (if d*-opts (opts->d*-opts d*-opts) {}))
   sse)
 
 (defn send-signals [sse signals]
@@ -45,9 +60,7 @@
 (defn send! [sse type data & [extra]]
   (case type
     :html (do
-            (send-html sse data)
-            (when extra (d*/execute-script! sse (push-state extra)))
-            sse)
+            (send-html sse data extra))
     :to-url (d*/execute-script! sse (str "window.location.href = '" data "';"))
     :signals (send-signals sse data)
     :js (d*/execute-script! sse data)
