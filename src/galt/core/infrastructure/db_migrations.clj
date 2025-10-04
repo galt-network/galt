@@ -34,7 +34,7 @@
   (migratus/init init-config)
 
   ; create new migration files (.up & .down)
-  (migratus/create config "create-events")
+  (migratus/create config "create-comments")
 
   (migratus/pending-list config)
   ;apply pending migrations

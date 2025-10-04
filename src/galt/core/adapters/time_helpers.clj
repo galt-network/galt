@@ -33,6 +33,10 @@
           :else "just now"))))
 
 ;; Formatting strings from https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html
+(defn short-format-with-time
+  [datetime]
+  (str (jt/format :iso-local-date datetime) " " (jt/format "HH:mm" datetime)))
+
 (defn short-format
   [datetime]
   (jt/format :iso-local-date datetime))
@@ -86,35 +90,32 @@
 
 (defn period-range
   "Returns a map with :start-time and :end-time as LocalDateTime for the given period keyword."
-  [kw]
-  {:pre [(keyword? kw)]}
-  (let [now (jt/local-time)
-        today (jt/local-date now)
-        midnight (jt/local-time 0 0)
-        dow-value (.getValue (jt/day-of-week today))
-        days-back (jt/days (dec dow-value))
-        monday (jt/minus today days-back)
-        saturday (jt/plus monday (jt/days 5))
-        next-monday (jt/plus monday (jt/days 7))
-        first-month (jt/adjust today :first-day-of-month)
-        next-first-month (jt/adjust today :first-day-of-next-month)
-        tomorrow (jt/plus today (jt/days 1))
-        day-after (jt/plus today (jt/days 2))]
-    (case kw
-      :today {:start-time (jt/local-date-time today midnight)
-              :end-time (jt/local-date-time tomorrow midnight)}
-      :tomorrow {:start-time (jt/local-date-time tomorrow midnight)
-                 :end-time (jt/local-date-time day-after midnight)}
-      :this-week {:start-time (jt/local-date-time monday midnight)
-                  :end-time (jt/local-date-time next-monday midnight)}
-      :this-weekend {:start-time (jt/local-date-time saturday midnight)
-                     :end-time (jt/local-date-time next-monday midnight)}
-      :next-week {:start-time (jt/local-date-time next-monday midnight)
-                  :end-time (jt/local-date-time (jt/plus next-monday (jt/days 7)) midnight)}
-      :this-month {:start-time (jt/local-date-time first-month midnight)
-                   :end-time (jt/local-date-time next-first-month midnight)}
-      :all {}
-      (throw (ex-info "Invalid period keyword" {:kw kw})))))
+  ([kw] (period-range (jt/local-date-time) kw))
+
+  ([now kw]
+   {:pre [(keyword? kw) (jt/local-date-time? now)]}
+   (let [today (jt/local-date now)
+         midnight (jt/local-time 0 0)
+         dow-value (.getValue (jt/day-of-week today))
+         days-back (jt/days (dec dow-value))
+         monday (jt/minus today days-back)
+         saturday (jt/plus monday (jt/days 5))
+         next-monday (jt/plus monday (jt/days 7))
+         first-month (jt/adjust today :first-day-of-month)
+         next-first-month (jt/adjust today :first-day-of-next-month)
+         tomorrow (jt/plus today (jt/days 1))
+         day-after (jt/plus today (jt/days 2))]
+     (case kw
+       :today [(jt/local-date-time today midnight) (jt/local-date-time tomorrow midnight)]
+       :tomorrow [(jt/local-date-time tomorrow midnight) (jt/local-date-time day-after midnight)]
+       :this-week [(jt/local-date-time monday midnight) (jt/local-date-time next-monday midnight)]
+       :this-weekend [(jt/local-date-time saturday midnight) (jt/local-date-time next-monday midnight)]
+       :next-week [(jt/local-date-time next-monday midnight)
+                   (jt/local-date-time (jt/plus next-monday (jt/days 7)) midnight)]
+       :this-month [(jt/local-date-time first-month midnight) (jt/local-date-time next-first-month midnight)]
+       :all []
+       (throw (ex-info "Invalid period keyword" {:kw kw}))))))
+
 (comment
   (require '[clojure.java-time.api :as jt])
 
@@ -132,6 +133,6 @@
   (jt/format "yyyyMMddHHmmssSS" (jt/local-date-time))
   (relative-time (jt/zoned-date-time 2025 1 1) (jt/zoned-date-time 2024 6 1))
   (period-range :today)
-  (period-range :this-month)
+  (period-range :this-week)
   (jt/adjust (jt/local-date-time) :day-of-week)
   )

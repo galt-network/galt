@@ -1,30 +1,29 @@
 (ns galt.events.adapters.presentation.list-events
   (:require
-   [galt.core.adapters.presentation-helpers :refer [render-markdown]]
-   [galt.core.adapters.time-helpers :as th :refer [relative-with-short]]))
+   [galt.core.adapters.time-helpers :as th :refer [relative-with-short]]
+   ))
 
 (defn event-card
   [event]
-  [:div.card
+  [:div.card.hoverable-row {:onclick (str "location.href = '" (:event-link event) "'")}
    [:div.card-content
-    [:div {:class "media"}
-     [:div {:class "media-left"}
-      [:figure {:class "image is-48x48"}
+    [:div.media
+     [:div.media-left
+      [:figure.image.is-48x48
        [:img {:src (or (:author-avatar event) "https://bulma.io/assets/images/placeholders/96x96.png")
               :alt "Event organizer"}]]]
-     [:div {:class "media-content"}
+     [:div.media-content
       [:div.is-flex.is-justify-content-space-between
-      [:p {:class "title is-4"} (:name event)]
-      [:div.tags.are-medium
-       [:span.tag "Starts: " (th/long-format-with-time (:start-time event))]
-       [:span.tag (:type event)]]]]]
-    [:div {:class "content"}
-     (render-markdown (:description event))
-     [:br]
-     [:div
-
-      [:time "Created " (relative-with-short (:publish-at event))]
-      " by " [:a {:href (str "/members/" (:author-id event))} (:author event)]]]]])
+       [:p.title.is-4 [:a {:href (:event-link event)} (:name event)]]
+       [:div.tags.are-medium
+        [:span.tag
+         [:i.fas.fa-clock {:style {:margin-right "0.5em"}}]
+         (th/long-format-with-time (:start-time event))]
+        [:span.tag (:type event)]]]]]
+    [:div
+     [:time "Created " (relative-with-short (:publish-at event))]
+     " by " [:a {:href (str "/members/" (:author-id event))} (:author event)]]
+    ]])
 
 (defn present
   [model]
@@ -70,10 +69,7 @@
                   :data-on-change "@get('/events?patch-mode=inner')"
                   :data-bind "type"
                   }]
-         "Online"]]]]]
-    ]
-   [:div {:id "event-cards"
-          ; :data-signals (:initial-signals model)
-          }
-     (map event-card (:events model))]
+         "Online"]]]]]]
+   [:div {:id "event-cards" :data-signals (:initial-signals model)}
+    (map event-card (:events model))]
    [:div {:data-on-intersect "@get('/events?patch-mode=append')"}]])
