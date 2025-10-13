@@ -1,6 +1,7 @@
 (ns galt.payments.adapters.presentation.new-payment
   (:require
-    [galt.members.adapters.presentation.qr-code :refer [qr-code-img]]))
+   [galt.core.views.components :refer [errors-list]]
+   [galt.members.adapters.presentation.qr-code :refer [qr-code-img]]))
 
 (defn show-invoice-payable
   [model]
@@ -29,11 +30,14 @@
       "created" (show-invoice-payable model)
       "unpaid" (show-invoice-payable model)
       "expired" (show-invoice-expired model)
-      "paid" (show-invoice-paid model))])
+      "paid" (show-invoice-paid model)
+      :error (errors-list "Error processing the invoice" (:message model)))])
 
 (defn present
   [model]
   [:div {:data-on-load (:datastar-action model)
          :data-on-signal-patch "@get('/payments/new')"
-         :data-on-signal-patch-filters "{include: /payment-status/}"}
+         ; FIXME datastar logs an error on the following:
+         :data-on-signal-patch-filters "{include: /payment-status/}"
+         }
    (payment-container model)])

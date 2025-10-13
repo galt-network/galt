@@ -26,13 +26,13 @@
      :name "uploaded-url",
      :data-attr-value "$uploaded-url"}]
    [:div.field
-    [:label.label {:for :member-name} "Member name"]
+    [:label.label {:for :member-name} "Name"]
     [:div.control
      [:input#member-name.input
       {:type :text, :name :member-name, :value (:name member)}]]
     [:p "Will be shown in the content (posts, messages, etc.)"]]
    [:div.field
-    [:label.label {:for :member-slug} "Member slug"]
+    [:label.label {:for :member-slug} "Slug"]
     [:div.control
      [:input#member-slug.input
       {:type :text, :name :member-slug, :value (:slug member)}]]

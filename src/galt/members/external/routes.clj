@@ -19,7 +19,8 @@
                         :name :members/new
                         :conflicting true
                         :get (with-deps-layout members/new-member)}]
-       ["/members/search" {:id :members/search
+       ["/members/search" {:id :members
+                           :name :members/search
                            :conflicting true
                            :get (with-deps-layout members/search-members)}]
        ["/members/me" {:id :members

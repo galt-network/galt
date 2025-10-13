@@ -57,7 +57,7 @@
              (map member/map->Member ,,,)))
 
   (find-member-by-user-id [_ id]
-    (some->> {:select [:*] :from [:members] :where [:= :user_id id]}
+    (some->> {:select [:*] :from [:members] :where [:= :id id]}
              (query-one db-access ,,,)
              (transform-row member-spec ,,,)
              (member/map->Member ,,,)))

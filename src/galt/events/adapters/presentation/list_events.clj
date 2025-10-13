@@ -21,7 +21,7 @@
          (th/long-format-with-time (:start-time event))]
         [:span.tag (:type event)]]]]]
     [:div
-     [:time "Created " (relative-with-short (:publish-at event))]
+     [:time "Created " (relative-with-short (:created-at event))]
      " by " [:a {:href (str "/members/" (:author-id event))} (:author event)]]
     ]])
 

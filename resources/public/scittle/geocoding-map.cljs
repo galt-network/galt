@@ -25,15 +25,15 @@
   [marker]
   [(.-lat (.getLatLng marker)) (.-lng (.getLatLng marker))])
 
-(defn new-marker [lat lng]
-  (let [marker (new Marker (clj->js [lat lng]) (clj->js {:draggable true}))]
+(defn new-marker [lat lng & [options]]
+  (let [marker (new Marker (clj->js [lat lng]) (clj->js (merge {:draggable true} options)))]
     (.on marker "moveend" (fn [event]
                             (.dispatchEvent
                               (.. marker -_map -_container)
                               (new-custom-event (coordinates-from-marker marker)))))))
 
-(defn add-marker [map lat lng]
-  (let [marker (new-marker lat lng)]
+(defn add-marker [map lat lng & [options]]
+  (let [marker (new-marker lat lng options)]
     (reset! last-marker marker)
     (.addTo marker map)
     (set! (.-galtLastMarker js/window) marker)
@@ -50,6 +50,37 @@
   (.setLatLng @last-marker (lat-lng lat lng))
   (fly-to map lat lng))
 
+(defn simple-centroid
+  "Computes the arithmetic mean of lat/lng pairs"
+  [coords]
+  (let [lats (map first coords)
+        lngs (map second coords)
+        avg-lat (/ (reduce + lats) (count lats))
+        avg-lng (/ (reduce + lngs) (count lngs))]
+    [avg-lat avg-lng]))
+
+(defn pan-to-contain [map coordinates]
+  (let [coords (js->clj coordinates)
+        latitudes (clojure.core/map first coords)
+        longitudes (clojure.core/map second coords)
+        min-lat (apply min latitudes)
+        min-lng (apply min longitudes)
+        max-lat (apply max latitudes)
+        max-lng (apply max longitudes)
+        bounds [[min-lat min-lng] [max-lat max-lng]]]
+    ; (.panInsideBounds map (clj->js bounds))
+    (.flyToBounds map (clj->js bounds))
+    ))
+
+(defn add-markers [map coordinates]
+  (doall
+    (clojure.core/map
+      (fn [[lat lng popup-content]]
+        (let [marker (add-marker map lat lng {:draggable false})]
+          (.bindPopup marker popup-content)))
+      (js->clj coordinates)))
+  (pan-to-contain map coordinates))
+
 (defn setup-map
   []
   (let [map (new Map "map")
@@ -63,6 +94,7 @@
     (set! (.-galtFly js/window) (partial fly-to map))
     (set! (.-galtMarker js/window) (partial add-marker map))
     (set! (.-galtMoveMarker js/window) (partial move-marker map))
+    (set! (.-galtAddMarkers js/window) (partial add-markers map))
     ))
 
 (setup-map)

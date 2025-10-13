@@ -23,8 +23,17 @@
   [model]
   [:nav.navbar {:id :navbar :role "navigation" :aria-label "main navigation"}
    [:div.navbar-brand
-    [:a.navbar-item {:href "/"} "GALT"]]
-   [:div.navbar-menu
+    [:a.navbar-item {:href "/"} "GALT"]
+    [:a.navbar-burger {:role "button"
+                       :aria-label "menu"
+                       :aria-expanded "false"
+                       :data-class-is-active "$navbar-open"
+                       :data-on-click "$navbar-open = !$navbar-open"}
+     [:span {:aria-hidden "true"}]
+     [:span {:aria-hidden "true"}]
+     [:span {:aria-hidden "true"}]
+     [:span {:aria-hidden "true"}]]]
+   [:div.navbar-menu {:data-class-is-active "$navbar-open"}
     (into [:div.navbar-start] (map navbar-item (:items model)))
     [:div.navbar-end
      [:div.navbar-item {:class [:has-dropdown :is-hoverable]}

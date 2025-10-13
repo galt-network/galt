@@ -8,6 +8,7 @@
     [galt.groups.adapters.view-models :as models]
     [galt.groups.domain.group-repository :as gr]
     [galt.groups.adapters.presentation.show-group :as presentation.show-group]
+    [galt.groups.adapters.presentation.list-groups :as presentation.list-groups]
     [galt.core.infrastructure.web.helpers :refer [get-signals]]
     [galt.locations.domain.location-repository :as lr]
     [galt.core.views.components.dropdown-search :refer [dropdown-search-menu
@@ -110,7 +111,7 @@
 (defn list-groups
   [{:keys [render layout] :as deps} req]
   (let [view-model (models/groups-view-model deps req)
-        content (views/groups-list view-model)]
+        content (presentation.list-groups/present view-model)]
     (if (d*/datastar-request? req)
       (with-sse req (fn [send!]
                       (send! :html (layout content) "/groups")))
@@ -119,7 +120,9 @@
 (defn show-group
   [{:keys [layout render show-group-use-case] :as deps} req]
   (let [group-id (get-in req [:path-params :id])
-        [status result] (show-group-use-case {:group-id (parse-uuid group-id)})
+        viewing-user-id (get-in req [:session :user-id])
+        [status result] (show-group-use-case {:viewing-user-id viewing-user-id
+                                              :group-id (parse-uuid group-id)})
         {:keys [group location members]} result
         model {:name (:name group)
                :description (:description group)

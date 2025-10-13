@@ -147,7 +147,25 @@
           :where [:= :id id]}
          (query-one db-access ,,,)
          (transform-row location-spec ,,,)
-         (location/map->Location ,,,))))
+         (location/map->Location ,,,)))
+
+  (locations-by-id [_ id]
+    (->> {:select [:*] :from [:locations] :where [:in :id (if (coll? id) id [id])]}
+         (query db-access ,,,)
+         (map #(transform-row location-spec %) ,,,)
+         (map #(location/map->Location %) ,,,)))
+
+  (locations-within-bounds [_ [[ne-lat ne-lng] [sw-lat sw-lng]]]
+    (->> {:select [:*]
+          :from [:locations]
+          :where [:and
+                  [:<= sw-lat :latitude]
+                  [:<= :latitude ne-lat]
+                  [:<= sw-lng :longitude]
+                  [:<= :longitude ne-lng]]}
+         (query db-access ,,,)
+         (map #(transform-row location-spec %) ,,,)
+         (map #(location/map->Location %) ,,,))))
 
 (def last-repo (atom nil))
 
@@ -157,4 +175,5 @@
   (DbLocationRepository. db-access))
 
 (comment
+  (lr/locations-by-id @last-repo [1 2])
   (lr/fuzzy-find-city @last-repo "Tar" "EE"))

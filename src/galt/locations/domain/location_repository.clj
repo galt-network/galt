@@ -9,4 +9,6 @@
 
   (add-location [this location])
   (find-location-by-id [this id])
+  (locations-by-id [this id-or-many])
+  (locations-within-bounds [this bounds] "Takes a vector opposite corner coordinate [[x1 y1] [x2 y2]]")
   )

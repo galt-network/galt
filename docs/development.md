@@ -16,7 +16,7 @@
 2. (local) Copy it to the destination server: `scp target/galt-0.1.1-standalone.jar galt.is:~/www/galt.is`
   - also copy config files: `scp -r config galt.is:~/galt.is`
 3. Remote env setup
-  - create a database user: `CREATE ROLE galt PASSWORD 'galtpass' WITH SUPERUSER CREATEDB INHERIT LOGIN;`
+  - create a database user: `CREATE ROLE galt WITH PASSWORD 'galtpass' SUPERUSER CREATEDB INHERIT LOGIN;`
     - _superuser is needed for some DB migrations that add extensions (e.g. cube, earthdistance)_
   - env variables needed: `MIGRATUS_DATABASE`, `MIGRATUS_USER`, `MIGRATUS_PASSWORD`
   - export env variables: `set -a && source .env && set +a`

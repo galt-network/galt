@@ -4,7 +4,6 @@
 
 (defn present
   [model]
-  (println ">>> PRESENT" model)
   (let [member (merge
                  {:name "John Doe"
                   :avatar "https://example.com/avatar.jpg"

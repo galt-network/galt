@@ -62,7 +62,7 @@
   economic theory that advocates for the abolition of centralized states in favor
   of stateless societies, where systems of private property are enforced by private agencies.
 
-  ### enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi
+  ### Enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi
   Ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit
   1. in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur
   2. sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
@@ -85,7 +85,7 @@
                        range-to-create-in)
         members-data (map (fn [user location idx]
                             {:name (str (grouped-name idx) " " (name-generator/generate (:pub-key user)) " von Test")
-                             :user-id (:id user)
+                             :id (:id user)
                              :avatar (rand-nth example-avatars)
                              :description lorem-ipsum
                              :location-id (:id location)}) users locations range-to-create-in)
@@ -94,7 +94,7 @@
 
 
 (defn seed-groups
-  [system count]
+  [system count & [founders]]
   (let [group-repo (get-in system [::ds/instances :storage :group])
         db-access (get-in system [::ds/instances :storage :db-access])
         previous-count (->> {:select [[:%count.*]] :from [:groups]}
@@ -102,7 +102,7 @@
                             (first ,,,)
                             :count)
         range-to-create-in (range previous-count (+ previous-count count))
-        founders (seed-members system count)
+        founders (or founders (seed-members system count))
         groups (map (fn [founder nr]
                       (gr/add-group
                         group-repo
@@ -117,23 +117,23 @@
 
 (defn add-members-to-groups
   [system members groups]
-  (doall (for [group groups
-               member members]
-           (gr/add-to-group (get-in system [::ds/instances :storage :group]) (:id group) (:id member) "member"))))
+  (doall
+    (for [group groups
+           member members]
+      (gr/add-to-group (get-in system [::ds/instances :storage :group]) (:id group) (:id member) "member"))))
 
 (defn seed-events
   [system group author & [opts]]
   (let [id (random-uuid)
         start-time (or (:start-time opts) (jt/local-date-time))
         end-time (jt/plus start-time (jt/hours 1.5))
-        publish-time start-time
         event {:id id
                :name (str (:name group) "'s Event \"" (name-generator/generate (str id)) "\"")
                :description lorem-ipsum
                :author-id (:id author)
                :start-time start-time
                :end-time end-time
-               :publish-at publish-time
+               :publish-at (jt/local-date-time)
                :location-id (:location-id group)
                :type (rand-nth ["live" "online"])}]
     (er/add-event (get-in system [::ds/instances :storage :event]) event)))
@@ -141,7 +141,7 @@
 (comment
   (require '[galt.main :refer [running-system]])
   (random-location-in-country @running-system "SV")
-  (def members (seed-members @running-system 30))
+  (def members (seed-members @running-system 20))
   (def groups (seed-groups @running-system 10))
   (let [[m-first m-second m-third] (partition 3 members)
         [g-first g-second g-third] (partition 3 groups)]
@@ -149,5 +149,10 @@
     (add-members-to-groups @running-system (concat m-first m-second) g-second)
     (add-members-to-groups @running-system (concat m-first m-second m-third) g-third))
 
-  (doall (for [group groups member members] (seed-events @running-system group member)))
+  (doall
+    (for [n (range 10)]
+      (seed-events @running-system
+                   (nth groups n)
+                   (nth members n)
+                   {:start-time (jt/plus (jt/local-date-time) (jt/days n))})))
   )

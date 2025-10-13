@@ -1,5 +1,5 @@
 CREATE TABLE invitations (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   inviting_member_id UUID NOT NULL,
   target_group_id UUID NOT NULL,
   content TEXT,

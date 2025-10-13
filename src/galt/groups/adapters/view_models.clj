@@ -5,15 +5,17 @@
    [galt.groups.domain.group-repository :as gr]))
 
 (defn groups-view-model
-  [deps req]
-  (let [groups (gr/list-groups (:group-repo deps))
+  [{:keys [group-repo db-access]} req]
+  (let [query-term (get-in req [:params :query])
+        groups (gr/find-groups-by-name group-repo query-term)
         group-counts {:select [:group_id [[:count :*] :members_count]]
                       :from [:group_memberships]
-                      :group-by [:group_id]}
+                      :group-by [:group_id]
+                      :where [:in :group-id (map :id groups)]}
         counts (reduce
                  (fn [acc c] (assoc acc (:group_memberships/group_id c) (:members_count c)))
                  {}
-                 (query (:db-access deps) group-counts))
+                 (query db-access group-counts))
         add-counts (fn [g] (assoc g :members (get counts (:id g))))
         add-action (fn [g] (assoc g :actions
                                   [{:name "View"
@@ -23,5 +25,7 @@
         groups-with-extras (->> groups
                                 (map add-counts ,,,)
                                 (map add-action))]
-    {:columns [["Group Name" :name] :description :members :actions]
+    {:group-name (get-in req [:params :group-name])
+     :group-name-id (get-in req [:params :group-name-id])
+     :columns [["Group Name" :name] :description :members :actions]
      :groups groups-with-extras}))

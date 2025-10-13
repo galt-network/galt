@@ -30,7 +30,7 @@
     (string? x)
     (if (and (.startsWith x "/") (.endsWith x "/"))
       x  ; Output as regex literal without quotes
-      (pr-str x))  ; Quote normal strings
+      (str "'" x "'")) ; Single-quote normal strings, for double-quotes use: (pr-str x)
 
     :else (pr-str x)))
 

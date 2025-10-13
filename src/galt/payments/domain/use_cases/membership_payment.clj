@@ -25,13 +25,16 @@
    {:keys [user-id] :as command}]
   (reset! last-deps deps)
   (let [existing-invoice (latest-non-expired-invoice (membership-invoices user-id))
-        invoice-params (membership-invoice-params user-id)]
-    (if existing-invoice
-      existing-invoice
-      (f/as-ok-> (create-invoice invoice-params) v
-        (select-keys v [:bolt-11 :expires-at :payment-hash :payment-secret :created-index])
-        (merge v invoice-params)
-        (add-membership-invoice user-id v)))))
+        invoice-params (membership-invoice-params user-id)
+        invoice (if existing-invoice
+                  existing-invoice
+                  (f/as-ok-> (create-invoice invoice-params) v
+                    (select-keys v [:bolt-11 :expires-at :payment-hash :payment-secret :created-index])
+                    (merge v invoice-params)
+                    (add-membership-invoice user-id v)))]
+    (if (f/failed? invoice)
+      [:error {:message (:message invoice)}]
+      [:ok invoice])))
 
 (comment
   (require '[galt.main :refer [running-system]])

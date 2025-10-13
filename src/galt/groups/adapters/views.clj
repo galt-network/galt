@@ -1,20 +1,7 @@
 (ns galt.groups.adapters.views
   (:require
-    [galt.core.views.table :refer [table]]
     [clojure.string :as str]
     [galt.locations.adapters.presentation :as location-views]))
-
-(defn groups-list
-  [model]
-  [:div [:a.button.is-primary {:href "/groups/new"} "Create group"]
-   (table {:columns (:columns model),
-           :column-processor
-             {:actions (fn [actions]
-                         (map (fn [a] [:div.control
-                                       [:a.button {:href (:href a)} (:name a)]])
-                           actions)),
-              :after-actions (fn [actions] [:div.field.is-grouped actions])},
-           :rows (:groups model)})])
 
 (defn hidden-form-method
   [method]

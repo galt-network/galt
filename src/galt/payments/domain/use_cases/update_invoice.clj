@@ -9,5 +9,4 @@
   ;      because the lightning node may be calling back for other invoices too
   (let [existing-invoice (db-invoice-by-label label)
         updated-params (ln-invoice-by-label label)]
-    (println ">>> UPDATE use-case" {:label label :existing existing-invoice :updated updated-params})
     (when existing-invoice (update-membership-invoice label (merge existing-invoice updated-params)))))

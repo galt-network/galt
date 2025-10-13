@@ -23,6 +23,12 @@
       [:time (relative-with-short (:publish-at activity))]
       " by " (:author activity)]]]])
 
+(defn button
+  [{:keys [href title]}]
+  [:a.button.is-fullwidth {:href href}
+   [:span.icon [:i.fas.fa-calendar]]
+   [:span title]])
+
 (defn present
   [model]
   [:div.section
@@ -33,13 +39,7 @@
        [:img {:src (:avatar model)}]]]
      [:div.column [:h1.title.has-text-centered (:name model)]]
      [:div.column.is-one-fifth
-      [:div.buttons
-       [:a.button.is-fullwidth {:href "#"}
-        [:span.icon [:i.fas.fa-calendar]]
-        [:span "New Event"]]
-       [:a.button.is-fullwidth {:href (:new-post-href model)}
-        [:span.icon [:i.fas.fa-pen-to-square]]
-        [:span "New Post"]]]]]
+      [:div.buttons (for [action (:actions model)] (button action))]]]
     [:div.columns
      [:div.column.is-one-third
       [:div.field [:label.label "Description"]

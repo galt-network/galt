@@ -1,6 +1,7 @@
 (ns galt.members.adapters.view-models
   (:require
-   [galt.core.adapters.time-helpers :as th]))
+   [galt.core.adapters.time-helpers :as th]
+   [galt.core.adapters.url-helpers :refer [add-query-params]]))
 
 (defn profile-view-model
   [{:keys [member groups location]}]
@@ -29,19 +30,32 @@
                            (str "User created with public key. Your name is " name)))}))
 
 
+; :tabs [{:name "All" :href (add-query-params (link-for-route :members/search))}]
 (defn members-search-view-model
-  [result link-for-route]
-  (map
-    (fn [m]
-      {:name (:name m)
-       :member-since (str (th/relative-time (:created-at m))
-                          " ("
-                          (th/short-format (:created-at m))
-                          ")")
-       :groups (map (fn [g]
-                      {:name (:name g)
-                       :href (link-for-route :groups/by-id {:id (:id g)})})
-                    (get-in result [:groups (:id m)]))
-       :groups-count (count (get-in result [:groups (:id m)]))
-       :link-to-profile (link-for-route :members/by-id {:id (:id m)})})
-    (:members result)))
+  [{:keys [members groups locations link-for-route active-tab]}]
+  (let [search-link (link-for-route :members)]
+    (println ">>> LOCATIONS" locations)
+    {:active-tab (keyword active-tab)
+     :tabs
+     [{:name "All" :href (add-query-params search-link {:tab "all"}) :active? (= "all" active-tab)}
+      ; {:name "Most active" :href (add-query-params search-link {:tab "active"}) :active? (= "active" active-tab)}
+      ; {:name "Most recent" :href (add-query-params search-link {:tab "recent"}) :active? (= "recent" active-tab)}
+      {:name "Near you" :href (add-query-params search-link {:tab "nearby"}) :active? (= "nearby" active-tab)}]
+     :locations locations
+     :members
+     (map
+       (fn [m]
+         {:name (:name m)
+          :avatar (:avatar m)
+          :member-since (str (th/relative-time (:created-at m))
+                             " ("
+                             (th/short-format (:created-at m))
+                             ")")
+          :location (get locations (:location-id m))
+          :groups (map (fn [g]
+                         {:name (:name g)
+                          :href (link-for-route :groups/by-id {:id (:id g)})})
+                       (get groups (:id m)))
+          :groups-count (count (get groups (:id m)))
+          :link-to-profile (link-for-route :members/by-id {:id (:id m)})})
+       members)}))

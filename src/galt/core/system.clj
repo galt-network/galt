@@ -250,8 +250,7 @@
      #::ds{:start
            (fn [{{:keys [member-repo group-repo location-repo payment-repo]} ::ds/config}]
              (partial show-profile-use-case
-                      {:find-member-by-user-id (partial mr/find-member-by-user-id member-repo)
-                       :find-member-by-id (partial mr/find-member-by-id member-repo)
+                      {:find-member-by-id (partial mr/find-member-by-id member-repo)
                        :find-groups-by-member (partial gr/find-groups-by-member group-repo)
                        :current-membership-payment (partial pr/current-membership-payment payment-repo)
                        :find-location-by-id (partial lr/find-location-by-id location-repo)}))
@@ -263,13 +262,14 @@
 
      :search-members-use-case
      #::ds{:start
-           (fn [{{:keys [member-repo group-repo]} ::ds/config}]
+           (fn [{{:keys [member-repo group-repo location-repo]} ::ds/config}]
              (partial search-members-use-case
                       {:find-members-by-name (partial mr/find-members-by-name member-repo)
-                       :list-members (partial mr/list-members member-repo)
+                       :locations-by-id (partial lr/locations-by-id location-repo)
                        :find-groups-by-member (partial gr/find-groups-by-member group-repo)}))
            :config
            {:member-repo (ds/ref [:storage :member])
+            :location-repo (ds/ref [:storage :location])
             :group-repo (ds/ref [:storage :group])}}
 
      :start-lnurl-login-use-case

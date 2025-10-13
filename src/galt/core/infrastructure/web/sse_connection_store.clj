@@ -1,6 +1,6 @@
 (ns galt.core.infrastructure.web.sse-connection-store)
 
-(def sse-connections (atom {}))
+(defonce sse-connections (atom {}))
 
 (defn add-connection
   ([id connection]

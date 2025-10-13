@@ -23,6 +23,7 @@
          (query db-access ,,,)
          (first ,,,)
          (transform-row user-spec ,,,)
+         (add-name-generated-from-pub-key ,,,)
          (user/map->User ,,,)))
 
   (delete-user [_ id]

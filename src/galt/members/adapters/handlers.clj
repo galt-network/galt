@@ -17,25 +17,33 @@
    [galt.members.adapters.presentation.profile :as presentation.profile]
    [galt.members.adapters.view-models :as view-models]
    [galt.members.domain.member-repository :as mr]
-   [reitit.core]))
+   [reitit.core]
+   [starfederation.datastar.clojure.api :as d*]))
 
 (defn show-members-list
   [{:keys [render search-members-use-case layout] :as deps} req]
-  (let [[status result] (search-members-use-case {:query ""})
-        model (view-models/members-search-view-model result (partial link-for-route req))
-        content (presentation.members-list/present model)]
-    {:status 200 :body (render (layout content))}))
-
-(match [:ok {:member 42}]
-       [:ok {:member nil}] :no-member
-       [:ok {:member _}] :some-member
-       :else :nothing)
+  (let [active-tab (get-in req [:params :tab] "all")
+        query (or (get-in req [:query-params "query"]) (get (get-signals req) :query))
+        [status result] (search-members-use-case {:query query})
+        model (view-models/members-search-view-model (merge result
+                                                            {:active-tab active-tab
+                                                             :link-for-route (partial link-for-route req)}))]
+    (if (d*/datastar-request? req)
+      (let []
+        (with-sse req
+          (fn [send!]
+            (send! :html (presentation.members-list/search-results model)))))
+      {:status 200
+       :body (-> {:content (presentation.members-list/present model)
+                  :head-tags (when (= "nearby" active-tab) head-tags-for-maps)}
+                 layout
+                 render)})))
 
 (defn show-my-profile
   [{:keys [render layout show-profile-use-case]} req]
   (let [user-id (get-in req [:session :user-id])
         member-id (get-in req [:session :member-id])
-        [status result] (show-profile-use-case {:member-id member-id})
+        [status result] (show-profile-use-case {:member-id member-id :user-id user-id})
         profile-content (-> result
                             view-models/profile-view-model
                             presentation.profile/present
@@ -86,12 +94,10 @@
                layout
                render)}))
 
-(def last-req (atom nil))
 (defn create
   [{:keys [create-member-use-case render layout]} req]
-  (reset! last-req req)
   (let [params (get req :params)
-        member {:user-id (get-in req [:session :user-id])
+        member {:id (get-in req [:session :user-id])
                 :name (:member-name params)
                 :slug (:member-slug params)
                 :avatar (:uploaded-url params)
@@ -154,6 +160,9 @@
                              (id-element-name search-input-signal-name) id-element-value
                              (show-results-signal-name search-input-signal-name) false})))))))
 
+; TODO See if it's really necessary - by viewing a user who has made a payment,
+;      they could be redirected to /members/me/edit page for editing which after saving
+;      would create a member for them
 (defn new-member
   [{:keys [membership-payment-use-case render layout]} req]
   (let [invoice ()

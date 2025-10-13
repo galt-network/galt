@@ -11,7 +11,7 @@
    {:keys [pub-key session-id]}]
   (let [user (or
                (find-user-by-pub-key pub-key)
-               (add-user (gen-uuid pub-key)))
+               (add-user (gen-uuid) pub-key))
         member (find-member-by-user-id (:id user))]
     (ss/write-session session-store session-id {:user-id (:id user)
                                                 :member-id (:id member)})
