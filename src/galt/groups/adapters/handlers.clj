@@ -9,7 +9,6 @@
    [galt.groups.adapters.presentation.list-groups :as presentation.list-groups]
    [galt.groups.adapters.presentation.show-group :as presentation.show-group]
    [galt.groups.adapters.views :as views]
-   [galt.groups.domain.group-repository :as gr]
    [galt.locations.domain.location-repository :as lr]
    [ring.util.http-status :as http-status]
    [starfederation.datastar.clojure.api :as d*]))

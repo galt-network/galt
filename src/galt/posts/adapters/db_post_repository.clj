@@ -1,9 +1,10 @@
 (ns galt.posts.adapters.db-post-repository
   (:require
-    [galt.core.adapters.db-access :refer [query query-one]]
-    [galt.core.adapters.db-result-transformations :as db-transform :refer [transform-row
-                                                                           defaults]]
-    [galt.posts.domain.post-repository :as pr :refer [PostRepository]]))
+   [galt.core.adapters.db-access :refer [query query-one]]
+   [galt.core.adapters.db-result-transformations :as db-transform :refer [defaults
+                                                                          transform-row]]
+   [galt.posts.domain.post-repository :as pr :refer [PostRepository]]
+   [honey.sql.helpers :refer [where]]))
 
 (def post-spec
   {:posts/id defaults
@@ -25,20 +26,25 @@
     (->> {:insert-into [:posts] :values [post]}
          (query-one db-access ,,,)))
 
-  (group-posts [_ group-id]
-    (->> {:select [:posts.*
-                   [:members.name :author]
-                   [:members.avatar :author-avatar]
-                   [:members.id :author-id]
-                   [:members.slug :author-slug]]
-          :from [:posts]
-          :join [:members [:= :members.id :posts.author-id]]
-          :where [:and
-                  [:= :target-type "group"]
-                  [:in :target-id (if (coll? group-id) group-id [group-id])]]}
-         (query db-access ,,,)
-         (map #(transform-row post-spec %) ,,,)
-         )))
+  (list-posts [_ {:keys [group-id limit offset] :or {limit 10 offset 0}}]
+    (let [base-q {:select [:posts.*
+                          [:members.name :author]
+                          [:members.avatar :author-avatar]
+                          [:members.id :author-id]
+                          [:members.slug :author-slug]]
+                 :from [:posts]
+                 :join [:members [:= :members.id :posts.author-id]]
+                 :where [:and [:= 1 1]]
+                 :limit limit
+                 :offset offset
+                 :order-by [:created-at]
+                 }
+          final-q (cond-> base-q
+                    group-id (where [:and
+                                     [:= :target-type "group"]
+                                     [:in :target-id (if (coll? group-id) group-id [group-id])]]))]
+      (->> (query db-access final-q)
+           (map #(transform-row post-spec %) ,,,)))))
 
 (def last-repo (atom nil))
 
@@ -47,5 +53,5 @@
   (DbPostRepository. db-access))
 
 (comment
-  (pr/group-posts @last-repo (parse-uuid "01997bba-dbe1-7067-9135-1a300d70e218"))
+  (pr/list-posts @last-repo (parse-uuid "01997bba-dbe1-7067-9135-1a300d70e218"))
   )

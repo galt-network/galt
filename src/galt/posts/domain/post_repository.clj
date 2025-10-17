@@ -2,4 +2,4 @@
 
 (defprotocol PostRepository
   (add-post [this post])
-  (group-posts [this group-id]))
+  (list-posts [this params]))

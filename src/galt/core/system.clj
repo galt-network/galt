@@ -328,7 +328,7 @@
              (partial show-group-use-case
                       {:find-group-by-id (partial gr/find-group-by-id group-repo)
                        :find-location-by-id (partial lr/find-location-by-id location-repo)
-                       :group-posts (partial po-re/group-posts post-repo)
+                       :list-posts (partial po-re/list-posts post-repo)
                        :list-members (partial gr/list-members group-repo)}))
            :config
            {:group-repo (ds/ref [:storage :group])

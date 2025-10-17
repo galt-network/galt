@@ -14,4 +14,9 @@
                   :get (with-deps-layout handlers/list-posts)}]
        ["/posts/new" {:id :posts
                       :name :posts/new
-                      :get (with-deps-layout handlers/new-post)}]])))
+                      :conflicting true
+                      :get (with-deps-layout handlers/new-post)}]
+       ["/posts/:id" {:id :posts
+                      :conflicting true
+                      :name :posts/by-id
+                      :get (with-deps-layout handlers/show-post)}]])))

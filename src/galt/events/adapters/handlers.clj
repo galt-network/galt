@@ -3,9 +3,9 @@
    [galt.core.adapters.link-generator :refer [link-for-route]]
    [galt.core.adapters.sse-helpers :refer [with-sse]]
    [galt.core.adapters.time-helpers :as th]
+   [galt.shared.domain.entities.comment :refer [nest-comments]]
    [galt.events.adapters.presentation.list-events :as presentation.list-events]
    [galt.events.adapters.presentation.new-event :as presentation.new-event]
-   [galt.events.adapters.presentation.comments :as presentation.comments]
    [galt.events.adapters.presentation.show-event :as presentation.show-event]
    [galt.core.views.datastar-helpers :refer [d*-backend-action]]
    [galt.events.domain.event-repository :as er]
@@ -67,17 +67,9 @@
                  :events (map (partial add-event-links req) result)
                  :initial-signals "{offset: 5, limit: 5}"
                  :offset offset
-                 :limit limit
-                 }]
+                 :limit limit}]
       {:status http-status/ok
        :body (-> model presentation.list-events/present layout render)})))
-
-(defn nest-comments [comments]
-  (let [by-parent (group-by :parent-id comments)
-        build (fn build [comment]
-                (let [children (get by-parent (:id comment) [])]
-                  (assoc comment :replies (map build children))))]
-    (map build (get by-parent nil []))))
 
 (defn add-datastar-actions [event-id comments]
   (let [add-action (fn [c]
@@ -121,9 +113,7 @@
   [{:keys [event-repo]} req]
   (let [event-id (get-in req [:path-params :id])
         parent-id (parse-long (get-in req [:query-params "parent-id"]))
-        _ (println ">>> PARENT ID" parent-id)
         comment (first (er/list-event-comments event-repo (parse-uuid event-id) {:comment-id parent-id}))
-        _ (println ">>> COMMENT" comment)
         event-comment-url (link-for-route req :events.by-id/comments {:id event-id})
         model {:parent-id parent-id
                :event-id event-id
@@ -136,8 +126,3 @@
         (send! :html (presentation.show-event/comment-form-modal model) {:selector "#comment-modal"
                                                                          :patch-mode "inner"})
         (send! :signals {:show-comment-modal true})))))
-
-(comment
-  (nest-comments [{:id 1 :parent-id nil :content "Top level"}
-                  {:id 2 :parent-id 1 :content "A reply"}
-                  {:id 3 :parent-id 2 :content "Reply to a reply"}]))
