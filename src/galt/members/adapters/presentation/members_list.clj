@@ -62,20 +62,15 @@
    [:p.panel-heading "Find members"]
    [:div.panel-block
     [:div.field.has-addons
-    [:p {:class [:control :has-icons-left]}
-     [:input.input.is-fullwidth {:placeholder "Search"
-                    :name "query"
-                    :data-bind "query"
-                    :data-on-keyup "evt.keyCode === 13 && @get('/members')"
-                    ; :data-on-keyup__debounce.500ms "@get('/members')"
-                    }]
-     [:span {:class "icon is-left"}
-      [:i {:class "fas fa-search" :aria-hidden "true"}]]]
-     [:p.control [:button.button.is-primary {:data-on-click (d*-backend-action "/members")} "Search"]]
-    ]]
+     [:p {:class [:control :has-icons-left]}
+      [:input.input.is-fullwidth {:placeholder "Search"
+                                  :name "query"
+                                  :data-bind "query"
+                                  :data-on-keyup "evt.keyCode === 13 && @get('/members')"
+                                  ; :data-on-keyup__debounce.500ms "@get('/members')"
+                                  }]
+      [:span {:class "icon is-left"}
+       [:i {:class "fas fa-search" :aria-hidden "true"}]]]
+     [:p.control [:button.button.is-primary {:data-on-click (d*-backend-action "/members")} "Search"]]]]
    [:p.panel-tabs (map panel-tab (:tabs model))]
-   (search-results model)
-   ; [:div.panel-block
-   ;  [:button {:class "button is-link is-outlined is-fullwidth"}
-   ;   "Reset all filters"]]
-   ]])
+   (search-results model)]])

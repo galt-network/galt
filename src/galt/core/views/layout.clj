@@ -21,7 +21,7 @@
 
 (defn navbar
   [model]
-  [:nav.navbar {:id :navbar :role "navigation" :aria-label "main navigation"}
+  [:nav.navbar {:id :navbar :role "navigation" :aria-label "main navigation" :style {:margin-bottom "2rem"}}
    [:div.navbar-brand
     [:a.navbar-item {:href "/"} "GALT"]
     [:a.navbar-burger {:role "button"
@@ -50,7 +50,7 @@
   [model]
   [:div#app-container
    (navbar (model :navbar))
-   [:section.is-medium {:style {:margin "3rem"} }
+   [:section.is-medium  #_{:style {:margin "3rem"}}
     (content (model :content))]
    [:div#notification-container
      [:div {:class [:notification :is-success]

@@ -17,8 +17,6 @@
   [{:keys [render layout]} req]
   {:status http-status/ok :body (-> {} presentation.new-event/present layout render)})
 
-
-
 (defn create
   [{:keys [render gen-uuid add-event-use-case event-repo layout]} req]
   (let [params (get req :params)
@@ -34,7 +32,6 @@
         [status result] (add-event-use-case {:event event})
         events (er/list-events event-repo {})]
     {:status http-status/created :body (-> {:events events} presentation.list-events/present layout render)}))
-
 
 (defn add-event-links
   [req event]
@@ -124,16 +121,20 @@
   [{:keys [event-repo]} req]
   (let [event-id (get-in req [:path-params :id])
         parent-id (parse-long (get-in req [:query-params "parent-id"]))
-        comment (er/get-comment event-repo parent-id)
-        _ (println ">>> COMMENT FOUND" comment)
+        _ (println ">>> PARENT ID" parent-id)
+        comment (first (er/list-event-comments event-repo (parse-uuid event-id) {:comment-id parent-id}))
+        _ (println ">>> COMMENT" comment)
         event-comment-url (link-for-route req :events.by-id/comments {:id event-id})
         model {:parent-id parent-id
                :event-id event-id
+               :author-avatar (:author-avatar comment)
+               :author-name (:author-name comment)
+               :content (:content comment)
                :add-comment-action event-comment-url}]
     (with-sse req
       (fn [send!]
-        (send! :html (presentation.show-event/add-comment-form model) {:selector "#comment-modal"
-                                                                       :patch-mode "inner"})
+        (send! :html (presentation.show-event/comment-form-modal model) {:selector "#comment-modal"
+                                                                         :patch-mode "inner"})
         (send! :signals {:show-comment-modal true})))))
 
 (comment

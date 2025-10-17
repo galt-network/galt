@@ -1,21 +1,18 @@
 (ns galt.groups.adapters.handlers
   (:require
-    [galt.core.adapters.link-generator :refer [link-for-route]]
-    [galt.core.adapters.url-helpers :refer [add-query-params]]
-    [galt.core.adapters.time-helpers :as time-helpers]
-    [starfederation.datastar.clojure.api :as d*]
-    [galt.groups.adapters.views :as views]
-    [galt.groups.adapters.view-models :as models]
-    [galt.groups.domain.group-repository :as gr]
-    [galt.groups.adapters.presentation.show-group :as presentation.show-group]
-    [galt.groups.adapters.presentation.list-groups :as presentation.list-groups]
-    [galt.core.infrastructure.web.helpers :refer [get-signals]]
-    [galt.locations.domain.location-repository :as lr]
-    [galt.core.views.components.dropdown-search :refer [dropdown-search-menu
-                                                        id-element-name
-                                                        show-results-signal-name]]
-    [galt.core.views.datastar-helpers :refer [d*-backend-action]]
-    [galt.core.adapters.sse-helpers :refer [with-sse]]))
+   [galt.core.adapters.link-generator :refer [link-for-route]]
+   [galt.core.adapters.sse-helpers :refer [with-sse]] ; List-groups deps
+   [galt.core.adapters.time-helpers :as time-helpers]
+   [galt.core.adapters.url-helpers :refer [add-query-params]]
+   [galt.core.infrastructure.web.helpers :refer [get-signals]]
+   [galt.core.views.datastar-helpers :refer [d*-backend-action]]
+   [galt.groups.adapters.presentation.list-groups :as presentation.list-groups]
+   [galt.groups.adapters.presentation.show-group :as presentation.show-group]
+   [galt.groups.adapters.views :as views]
+   [galt.groups.domain.group-repository :as gr]
+   [galt.locations.domain.location-repository :as lr]
+   [ring.util.http-status :as http-status]
+   [starfederation.datastar.clojure.api :as d*]))
 
 (defn scittle-tag
   [file-name]
@@ -108,14 +105,44 @@
                     (send! :notification "Group successfully deleted")
                     (send! :js "window.location.href = 'https://dev.galt.is/groups'")))))
 
+(defn add-group-links
+  [req group]
+  (assoc group :group-link (link-for-route req :groups/by-id {:id (:id group)})))
+
 (defn list-groups
-  [{:keys [render layout] :as deps} req]
-  (let [view-model (models/groups-view-model deps req)
-        content (presentation.list-groups/present view-model)]
-    (if (d*/datastar-request? req)
-      (with-sse req (fn [send!]
-                      (send! :html (layout content) "/groups")))
-      {:status 200 :body (render (layout content))})))
+  [{:keys [render list-groups-use-case layout] :as deps} req]
+  (if (d*/datastar-request? req)
+    (with-sse req
+      (fn [send!]
+        (let [signals (get-signals req)
+              patch-mode (get-in req [:params :patch-mode])
+              limit (if (= patch-mode "inner") 5 (get signals :limit 5))
+              offset (if (= patch-mode "inner") 0 (get signals :offset 0))
+              next-offset (+ limit offset)
+              query-str (get signals :query "")
+              command {:limit limit :offset offset :query query-str}
+              [status result] (list-groups-use-case command)
+              model (->> (:groups result)
+                         (map (partial add-group-links req) ,,,)
+                         (map (fn [g] (assoc g :location (get-in result [:locations (:id g)]))) ,,,))]
+          (send! :html (map presentation.list-groups/group-row model) {:selector "#group-rows"
+                                                                       :patch-mode patch-mode})
+          (send! :signals {:offset next-offset :limit limit}))))
+    (let [limit 5
+          offset 0
+          [status result] (list-groups-use-case {:query "" :limit limit :offset offset})
+          groups (->> (:groups result)
+                         (map (partial add-group-links req) ,,,)
+                         (map (fn [g] (assoc g :location (get-in result [:locations (:id g)]))) ,,,))
+          model {:new-group-href (link-for-route req :groups/new)
+                 :groups groups
+                 :location (:locations result)
+                 :initial-signals "{offset: 5, limit: 5}"
+                 :offset offset
+                 :limit limit
+                 }]
+      {:status http-status/ok
+       :body (-> model presentation.list-groups/present layout render)})))
 
 (defn show-group
   [{:keys [layout render show-group-use-case] :as deps} req]
@@ -140,30 +167,3 @@
                :activity (:posts result)}]
     {:status 200 :body (render (layout {:content (presentation.show-group/present model)
                                         :head-tags head-tags-for-maps}))}))
-
-(defn search-groups
-  [{:keys [group-repo]} req]
-  (let [signals (get-signals req)
-        action (get-in req [:params :action])
-        _ (println ">>> search-groups signals" signals " | action:" action)
-        search-signal-name (get-in req [:params :search-signal-name])
-        extra-signal-name (get-in req [:params :extra-signal-name])
-        member-id (some-> (get signals (keyword extra-signal-name))
-                             parse-uuid)
-        query (get signals (keyword search-signal-name))
-        fuzzy-find-groups (fn [q] (->> (gr/find-groups-by-name group-repo q member-id)
-                                       (map (fn [g] {:value (:name g) :id (:id g)}) ,,,)))]
-    (with-sse req
-      (fn [send!]
-        (case action
-          "search"
-          (do
-            (send! :html (dropdown-search-menu search-signal-name "/groups/search" (fuzzy-find-groups query)))
-            (send! :signals {(show-results-signal-name search-signal-name) true}))
-          "choose"
-          (let [search-input-signal-name (get-in req [:params :name])
-                search-input-signal-value (get-in req [:params :value])
-                id-element-value (get-in req [:params :id])]
-            (send! :signals {search-input-signal-name search-input-signal-value
-                             (id-element-name search-input-signal-name) id-element-value
-                             (show-results-signal-name search-input-signal-name) false})))))))

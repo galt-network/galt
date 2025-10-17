@@ -12,7 +12,7 @@
      (dropdown-search {:name "group-name"
                        :value (:group-name form)
                        :id (:group-name-id form)
-                       :endpoint "/groups/search"})]
+                       :endpoint "/invitations/search-group"})]
     [:div.field
      [:label.label "Valid until"]
      [:div.control

@@ -25,6 +25,7 @@
    [galt.groups.domain.use-cases.new-group :refer [new-group-use-case]]
    [galt.groups.domain.use-cases.update-group :refer [update-group-use-case]]
    [galt.groups.domain.use-cases.show-group :refer [show-group-use-case]]
+   [galt.groups.domain.use-cases.list-groups :refer [list-groups-use-case]]
    [galt.groups.external.routes]
    [galt.invitations.adapters.db-invitation-repository :refer [new-db-invitation-repository]]
    [galt.invitations.domain.invitation-repository :as ir]
@@ -227,8 +228,7 @@
              (partial add-group-use-case
                       {:find-group-by-id (partial gr/find-group-by-id group-repo)
                        :find-member-by-id (partial mr/find-member-by-id member-repo)
-                       :find-groups-by-founder-id (partial gr/find-groups-by-founder-id group-repo)
-                       :find-groups-by-name (partial gr/find-groups-by-name group-repo)
+                       :list-groups (partial gr/list-groups group-repo)
                        :add-group (partial gr/add-group group-repo)
                        :add-location (partial lr/add-location location-repo)
                        :gen-uuid clj-uuid/v7
@@ -333,6 +333,16 @@
            :config
            {:group-repo (ds/ref [:storage :group])
             :post-repo (ds/ref [:storage :post])
+            :location-repo (ds/ref [:storage :location])}}
+
+     :list-groups-use-case
+     #::ds{:start
+           (fn [{{:keys [location-repo group-repo]} ::ds/config}]
+             (partial list-groups-use-case
+                      {:list-groups (partial gr/list-groups group-repo)
+                       :locations-by-id (partial lr/locations-by-id location-repo)}))
+           :config
+           {:group-repo (ds/ref [:storage :group])
             :location-repo (ds/ref [:storage :location])}}
 
      :delete-group-use-case

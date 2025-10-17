@@ -34,12 +34,9 @@
 (defn members-search-view-model
   [{:keys [members groups locations link-for-route active-tab]}]
   (let [search-link (link-for-route :members)]
-    (println ">>> LOCATIONS" locations)
     {:active-tab (keyword active-tab)
      :tabs
      [{:name "All" :href (add-query-params search-link {:tab "all"}) :active? (= "all" active-tab)}
-      ; {:name "Most active" :href (add-query-params search-link {:tab "active"}) :active? (= "active" active-tab)}
-      ; {:name "Most recent" :href (add-query-params search-link {:tab "recent"}) :active? (= "recent" active-tab)}
       {:name "Near you" :href (add-query-params search-link {:tab "nearby"}) :active? (= "nearby" active-tab)}]
      :locations locations
      :members

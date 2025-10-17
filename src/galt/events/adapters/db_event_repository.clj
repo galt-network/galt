@@ -1,7 +1,7 @@
 (ns galt.events.adapters.db-event-repository
   (:require
     [galt.core.adapters.db-access :refer [query query-one]]
-    [honey.sql.helpers :refer [where]]
+    [honey.sql.helpers :refer [where limit]]
     [honey.sql :as sql]
     [galt.core.adapters.db-result-transformations :as db-transform :refer [transform-row defaults]]
     [galt.events.domain.event-repository :as er :refer [EventRepository]]))
@@ -51,8 +51,7 @@
               :join [:members [:= :members.id :comments.author-id]]
               :where [:= :comments.id comment-id]}
              (query-one db-access ,,,)
-             (transform-row comment-spec ,,,)
-             ))
+             (transform-row comment-spec ,,,)))
 
   (update-event [_ event])
 
@@ -68,27 +67,30 @@
                         :comment-id (:comments/id added-comment)}]})
       added-comment))
 
-  (list-event-comments [_ event-id params]
-    (->> {:with-recursive
-          [[:comments-hierarchy
-            {:union-all
-             [{:select [:comments.*, [0 :level]]
-               :from [:comments]
-               :join [:event_comments [:= :event_comments.comment_id :comments.id]]
-               :where [:and
-                       [:= :comments.parent_id nil]
-                       [:= :event_comments.event_id event-id]]}
-              {:select [:comments.* [[:+ :comments-hierarchy.level 1] :level]]
-               :from [:comments]
-               :join [:event_comments [:= :event_comments.comment_id :comments.id]
-                      :comments-hierarchy [:= :comments.parent_id :comments-hierarchy.id]]
-               :where [:= :event_comments.event_id event-id]}]}]]
-          :select [:comments-hierarchy.* [:members.name :author_name] [:members.avatar :author_avatar]]
-          :from [:comments-hierarchy]
-          :join [:members [:= :members.id :comments-hierarchy.author-id]]
-          :order-by [:created-at :level]}
-         (query db-access ,,,)
-         (map #(transform-row comment-spec %) ,,,)))
+  (list-event-comments [_ event-id {:keys [comment-id]}]
+    (let [base-q {:with-recursive
+                  [[:comments-hierarchy
+                    {:union-all
+                     [{:select [:comments.*, [:comments.id :comment_id] [0 :level]]
+                       :from [:comments]
+                       :join [:event_comments [:= :event_comments.comment_id :comments.id]]
+                       :where [:and
+                               [:= :comments.parent_id nil]
+                               [:= :event_comments.event_id event-id]]}
+                      {:select [:comments.* [:comments.id :comment_id] [[:+ :comments-hierarchy.level 1] :level]]
+                       :from [:comments]
+                       :join [:event_comments [:= :event_comments.comment_id :comments.id]
+                              :comments-hierarchy [:= :comments.parent_id :comments-hierarchy.id]]
+                       :where [:= :event_comments.event_id event-id]}]}]]
+                  :select [:comments-hierarchy.* [:members.name :author_name] [:members.avatar :author_avatar]]
+                  :from [:comments-hierarchy]
+                  :join [:members [:= :members.id :comments-hierarchy.author-id]]
+                  :order-by [:created-at :level]}
+          final-q (cond-> base-q
+                     comment-id (where [:= :comment_id comment-id])
+                     comment-id (limit 1))]
+      (->> (query db-access final-q)
+           (map #(transform-row comment-spec %) ,,,))))
 
   (rsvp-event [_ event-id member-id])
 
@@ -107,10 +109,10 @@
                      :offset offset}
           final-query (cond-> base-query
                         type (where [:= :events.type type])
-                         group-id (where [:= :group-id group-id])
-                         author-id (where [:= :events.author-id author-id])
-                         from-date (where [:>= :events.start-time from-date])
-                         to-date (where [:<= :events.start-time to-date]))]
+                        group-id (where [:= :group-id group-id])
+                        author-id (where [:= :events.author-id author-id])
+                        from-date (where [:>= :events.start-time from-date])
+                        to-date (where [:<= :events.start-time to-date]))]
       (->> (query db-access final-query)
            (map #(transform-row event-spec %) ,,,)))))
 
@@ -122,6 +124,7 @@
 
 (comment
   (er/list-event-comments (DbEventRepository. @dba) (parse-uuid "0199a040-8695-7013-96d1-ce24b17e46fd") {})
+  (def x (er/get-comment (DbEventRepository. @dba) 1))
   (require '[galt.core.adapters.time-helpers :as th])
   (map :name (er/list-events (DbEventRepository. @dba) {:limit 20
                                                         :from-date (first (th/period-range :this-week))

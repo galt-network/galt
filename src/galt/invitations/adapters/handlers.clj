@@ -7,6 +7,13 @@
    [galt.invitations.adapters.presentation.new-invitation :as new-invitation]
    [galt.invitations.adapters.presentation.invitation :as invitation-page]
    [galt.invitations.adapters.presentation.invitations-dashboard :as dashboard]
+    ; Groups search deps
+    [galt.core.adapters.sse-helpers :refer [with-sse]]
+    [galt.groups.domain.group-repository :as gr]
+    [galt.core.infrastructure.web.helpers :refer [get-signals]]
+    [galt.core.views.components.dropdown-search :refer [dropdown-search-menu
+                                                        id-element-name
+                                                        show-results-signal-name]]
    ))
 
 (defn new-invitation
@@ -27,7 +34,6 @@
                     :expires-at (jt/local-date (:expires-at params))
                     :max-usages (Integer/parseInt (:max-usages params))}
         [status result] (create-invitation-use-case {:invitation invitation})]
-    (println ">>> NEW-INVITATION result" [status result])
     {:status 303 :headers {"Location" (link-for-route req :invitations/by-id {:id (:id result)})}}))
 
 (defn show-invitation
@@ -72,3 +78,30 @@
         model {:active active
                :inactive (:inactive result)}]
     {:status 200 :body (render (layout (dashboard/present model))) }))
+
+
+(defn search-groups
+  [{:keys [group-repo]} req]
+  (let [signals (get-signals req)
+        action (get-in req [:params :action])
+        search-signal-name (get-in req [:params :search-signal-name])
+        extra-signal-name (get-in req [:params :extra-signal-name])
+        member-id (some-> (get signals (keyword extra-signal-name))
+                             parse-uuid)
+        query (get signals (keyword search-signal-name))
+        fuzzy-find-groups (fn [q] (->> (gr/list-groups group-repo {:query q :member-id member-id})
+                                       (map (fn [g] {:value (:name g) :id (:id g)}) ,,,)))]
+    (with-sse req
+      (fn [send!]
+        (case action
+          "search"
+          (do
+            (send! :html (dropdown-search-menu search-signal-name "/groups/search" (fuzzy-find-groups query)))
+            (send! :signals {(show-results-signal-name search-signal-name) true}))
+          "choose"
+          (let [search-input-signal-name (get-in req [:params :name])
+                search-input-signal-value (get-in req [:params :value])
+                id-element-value (get-in req [:params :id])]
+            (send! :signals {search-input-signal-name search-input-signal-value
+                             (id-element-name search-input-signal-name) id-element-value
+                             (show-results-signal-name search-input-signal-name) false})))))))

@@ -16,6 +16,9 @@
        ["/invitations/new" {:name :invitations/new
                             :get (with-deps-layout handlers/new-invitation)
                             :post (with-deps-layout handlers/create-invitation)}]
+       ["/invitations/search-group" {:name :invitations/search-groups
+                                     :conflicting true
+                                     :get (partial handlers/search-groups deps)}]
        ["/invitations" {:id :invitations
                         :min-role :member
                         :name :invitations

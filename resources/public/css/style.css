@@ -67,3 +67,10 @@ input[type="radio"] {
 .modal-background {
   background-color: rgba(0, 0, 0, 0.3); /* Black with 50% opacity */
 }
+
+@media screen and (max-width: 768px) {
+  .columns {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}

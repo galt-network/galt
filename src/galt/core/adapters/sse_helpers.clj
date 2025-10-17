@@ -92,7 +92,6 @@
     req
     {on-open
      (fn [sse]
-       (println ">>> INSIDE ->sse-response")
        ; Using future to do it in a separate thread, as the signal sender may sleep the thread to wait
        (callback (partial send! sse))
        (Thread/sleep 50)

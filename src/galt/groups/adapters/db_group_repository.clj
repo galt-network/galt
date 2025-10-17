@@ -1,7 +1,8 @@
 (ns galt.groups.adapters.db-group-repository
   (:require
+    [honey.sql.helpers :refer [where]]
     [galt.groups.domain.group-repository :as gr :refer [GroupRepository]]
-    [galt.core.adapters.db-access :refer [query in-transaction]]
+    [galt.core.adapters.db-access :as db-access :refer [query in-transaction]]
     [galt.groups.domain.entities.group :refer [map->Group]]
     [galt.members.adapters.db-member-repository :refer [member-spec]]
     [galt.core.adapters.db-result-transformations :refer [transform-row defaults ->local-date-time]]
@@ -46,46 +47,6 @@
          (transform-row group-spec ,,,)
          (map->Group ,,,)))
 
-  (find-groups-by-name [_ name]
-    (gr/find-groups-by-name _ name nil))
-
-  (find-groups-by-name [_ name group-id]
-    (some->> {:select-distinct-on [[:groups.id] :groups.*]
-              :from [:groups]
-              :join [:group_memberships [:= :group_memberships.group_id :groups.id]]
-              :where [:and
-                      (if (nil? group-id) [:= 1 1] [:= :group_memberships.group_id group-id])
-                      [:ilike :name (str "%" name "%")]]
-              :limit 10}
-             (query db-access ,,,)
-             (map #(transform-row group-spec %) ,,,)
-             (map map->Group ,,,)))
-
-  (find-groups-by-founder-id [_ founder-id]
-    (query db-access {:select [:groups.*]
-                      :from [:groups]
-                      :join [:group_memberships [:= :groups.id :group_memberships.group_id]]
-                      :where [:and
-                              [:= :group_memberships.member_id founder-id]
-                              [:= :group_memberships.role "founder"]]}))
-
-  (fuzzy-find-group [_ s]
-    (gr/fuzzy-find-group _ s nil))
-
-  (fuzzy-find-group [_ s member-id]
-    (let [limit 10
-          similarity-threshold 0.2]
-      (->> {:select [:groups.*]
-            :from [:groups]
-            :where [:or
-                    [:% [:lower :name] [:lower s]]
-                    [:> [:word_similarity [:lower s] [:lower :name]] similarity-threshold]]
-            :order-by [[[:word_similarity [:lower s] [:lower :name]] :desc]]
-            :limit limit}
-           (query db-access ,,,)
-           (map #(transform-row group-spec %))
-           (map map->Group ,,,))))
-
   (update-group [_ group]
     (query db-access {:update [:groups]
                       :set group
@@ -116,12 +77,22 @@
                     limit (assoc ,,, :limit limit)))
            (map #(transform-row member-spec %) ,,,))))
 
-  (list-groups [_]
-    (query db-access {:select [:*] :from [:groups]})
-    (->> {:select [:*] :from [:groups]}
-         (query db-access ,,,)
-         (map #(transform-row group-spec %) ,,,)
-         (map map->Group ,,,)))
+  (list-groups [_ {:keys [query name founder-id member-id limit offset] :or {limit 10 offset 0}}]
+    (let [base-q {:select-distinct-on [[:groups.id] :groups.*]
+                  :from [:groups]
+                  :join [:group_memberships [:= :group_memberships.group_id :groups.id]]
+                  :where [:and [:= 1 1]]
+                  :order-by [:groups.id :groups.created_at]
+                  :limit limit
+                  :offset offset}
+          final-q (cond-> base-q
+                    query (where [:ilike :groups.name (str "%" query "%")])
+                    name (where [:= :groups.name name])
+                    founder-id (where [:and [:= :member_id founder-id] [:= :role "founder"]])
+                    member-id (where [:= :member_id member-id]))]
+      (->> (db-access/query db-access final-q)
+           (map #(transform-row group-spec %) ,,,)
+           (map map->Group ,,,))))
 
   (find-membership-by-member [_ group-id member-id]
     (->> {:select [:group_memberships.*]

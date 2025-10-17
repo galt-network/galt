@@ -46,16 +46,6 @@
    :countries/iso2
    :countries/emoji])
 
-(defn cities-fuzzy-query
-  [s limit similarity]
-  {:select (conj common-city-columns [[:word_similarity [:lower s] [:lower :name]] :similarity])
-    :from [:cities]
-    :where [:or
-            [:% [:lower :name] [:lower s]]
-            [:> [:word_similarity [:lower s] [:lower :name]] similarity]]
-    :order-by [[[:word_similarity [:lower s] [:lower :name]] :desc]]
-    :limit limit})
-
 (defn countries-fuzzy-query
   [s limit similarity]
   {:select (conj common-country-columns [[:word_similarity [:lower s] [:lower :name]] :similarity])
@@ -82,19 +72,6 @@
          (query-one db-access ,,,)
          (transform-row city-spec ,,,)
          (city/map->City ,,,)))
-
-  #_(fuzzy-find-city [_ s]
-    (->> (cities-fuzzy-query s default-result-limit default-word-similarity-threshold)
-         (query db-access ,,,)
-         (map #(transform-row city-spec %) ,,,)
-         (map city/map->City ,,,)))
-
-  #_(fuzzy-find-city [_ s country-code]
-    (->> (cities-fuzzy-query s default-result-limit default-word-similarity-threshold)
-         (add-country-code-to-where country-code ,,,)
-         (query db-access ,,,)
-         (map #(transform-row city-spec %) ,,,)
-         (map city/map->City ,,,)))
 
   (fuzzy-find-city [_ s]
     (->> {:select [:cities.*]

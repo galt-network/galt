@@ -13,9 +13,6 @@
                    :get (with-deps-layout groups/list-groups)
                    :post {:handler (with-deps-layout groups/create-group)
                           :min-role :member}}]
-       ["/groups/search" {:name :groups/search
-                          :conflicting true
-                          :get (partial groups/search-groups deps)}]
        ["/groups/new" {:id :groups
                        :name :groups/new
                        :conflicting true

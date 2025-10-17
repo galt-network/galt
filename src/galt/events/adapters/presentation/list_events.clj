@@ -1,29 +1,26 @@
 (ns galt.events.adapters.presentation.list-events
   (:require
-   [galt.core.adapters.time-helpers :as th :refer [relative-with-short]]
-   ))
+   [galt.core.adapters.time-helpers :as th :refer [relative-with-short]]))
 
 (defn event-card
   [event]
-  [:div.card.hoverable-row {:onclick (str "location.href = '" (:event-link event) "'")}
-   [:div.card-content
-    [:div.media
-     [:div.media-left
+  [:article.media
+   [:div.media-content
+    [:div.columns.is-vcentered
+     [:div.column.is-narrow
       [:figure.image.is-48x48
        [:img {:src (or (:author-avatar event) "https://bulma.io/assets/images/placeholders/96x96.png")
               :alt "Event organizer"}]]]
-     [:div.media-content
-      [:div.is-flex.is-justify-content-space-between
-       [:p.title.is-4 [:a {:href (:event-link event)} (:name event)]]
-       [:div.tags.are-medium
-        [:span.tag
-         [:i.fas.fa-clock {:style {:margin-right "0.5em"}}]
-         (th/long-format-with-time (:start-time event))]
-        [:span.tag (:type event)]]]]]
-    [:div
+     [:div.column
+      [:span.title.is-4 [:a {:href (:event-link event)} (:name event)]]]]
+    [:div.tags.are-medium.mx-3
+     [:span.tag
+      [:i.fas.fa-clock {:style {:margin-right "0.5em"}}]
+      (th/long-format-with-time (:start-time event))]
+     [:span.tag (:type event)]]
+    [:div.mx-3
      [:time "Created " (relative-with-short (:created-at event))]
-     " by " [:a {:href (str "/members/" (:author-id event))} (:author event)]]
-    ]])
+     " by " [:a {:href (str "/members/" (:author-id event))} (:author event)]]]])
 
 (defn present
   [model]

@@ -38,25 +38,12 @@
          [:a {:data-on-click (:datastar-modal-action model)} "Reply"]])
       (for [comment-model (:replies model)] (comment comment-model)))))
 
-#_ (defn comment
+(defn comment-form-modal
   [model]
-  [:article.media
-   [:figure.media-left
-    [:p.image.is-64x64
-     [:img {:src (:author-avatar model)}]]]
-   [:div.media-content
-    [:div
-     [:p
-      [:strong (:author-name model)]
-      [:br]
-      (:content model)
-      [:br]
-      [:small (:created-at model)]
-      (when (> 2 (:level model))
-        [:small
-         " • "
-         [:a {:data-on-click (:datastar-modal-action model)} "Reply"]])]]
-    (for [comment-model (:replies model)] (comment comment-model))]])
+  [:div.card
+   [:div.card-content
+    (comment-body model)
+    (add-comment-form model)]])
 
 (defn present
   [{:keys [event comments add-comment-action]}]
