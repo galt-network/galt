@@ -2,6 +2,8 @@
 
 [Galt](https://galt.is) is a set of tools to help freedom minded people find each other and to communicate.
 
+![Galt Members preview](docs/images/galt-members-preview.png)
+
 ## Features (existing and upcoming)
 
   - Anonymity (if you want). You can provide the data about yourself that you want or stay completely anonymous
