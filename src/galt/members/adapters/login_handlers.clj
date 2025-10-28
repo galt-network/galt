@@ -10,9 +10,11 @@
    [galt.members.adapters.view-models :refer [login-result-view-model]]))
 
 (defn show-login
-  [{:keys [layout start-lnurl-login-use-case render]} req]
+  [{:keys [layout start-lnurl-login-use-case render gen-uuid]} req]
   (let [message (decode-url-encoded (get-in req [:query-params "message"]))
-        session-id (get-in req [:cookies "ring-session" :value])
+        session-id (or
+                     (get-in req [:cookies "ring-session" :value])
+                     (gen-uuid))
         callback-path (link-for-route req :members.login/lnurl-auth)
         datastar-action (d*-backend-action "/datastar-sse" :post {:connection-id session-id})
         [_status lnurl] (start-lnurl-login-use-case {:session-id session-id
@@ -21,7 +23,6 @@
                :lnurl lnurl
                :datastar-action datastar-action}]
     {:status 200
-     :session (assoc (:session req) :login-started true)
      :body (-> model presentation.show-login/present layout render)}))
 
 (defn lnurl-auth-callback
