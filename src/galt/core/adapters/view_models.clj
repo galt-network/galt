@@ -17,7 +17,7 @@
                     :avatar avatar
                     :href (if logged-in? "/members/profile/me" "/members/login")}
         login-item {:id :login :title "Log in" :href "/members/login"}
-        logout-item {:id :logout :title "Log out" :data-on-click "@post('/members/logout')"}
+        logout-item {:id :logout :title "Log out" :data-on:click "@post('/members/logout')"}
         session-item (if logged-in? logout-item login-item)]
     {:user login-user
      :items [{:title "Members" :href "/members" :selected? (= :members route-id) }

@@ -18,13 +18,13 @@
     :enctype "multipart/form-data",
     :action (:action-target form),
     :method "POST",
-    :data-signals-files "[]"
+    :data-signals:files "[]"
     :onkeydown "if (event.keyCode === 13 && event.target.type !== 'textarea') { event.preventDefault(); }"}
    (hidden-form-method (:action-method form))
    [:input
     {:type "hidden",
      :name "uploaded-url",
-     :data-attr-value "$uploaded-url"}]
+     :data-attr:value "$uploaded-url"}]
    [:div.field
     [:label.label {:for :member-name} "Name"]
     [:div.control
@@ -48,7 +48,7 @@
           {:type "file",
            :name "uploaded-file",
            :data-bind "files",
-           :data-on-change "$files && @post('/files', {contentType: 'form'})"
+           :data-on:change "$files && @post('/files', {contentType: 'form'})"
            }]
          [:span.file-cta
           [:span.file-icon [:i.fas.fa-upload]]
@@ -56,9 +56,9 @@
       [:figure.image.is-128x128
        [:img#member-avatar
         {:src (or (:avatar member) "/assets/images/avatar-128x128.png")
-         :data-attr-src "$uploaded-url"
+         :data-attr:src "$uploaded-url"
          :data-show "$uploaded-url"
-         :data-on-load__delay.500ms (str "$uploaded-url = '" (:avatar member) "'")}]]]]
+         :data-init__delay.500ms (str "$uploaded-url = '" (:avatar member) "'")}]]]]
     [:div.column (when location
                    {:data-on-load__delay.500ms
                     (str "galtMoveMarker(" (:latitude location)  "," (:longitude location) ")")})

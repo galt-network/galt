@@ -21,6 +21,7 @@
                :lnurl lnurl
                :datastar-action datastar-action}]
     {:status 200
+     :session (assoc (:session req) :login-started true)
      :body (-> model presentation.show-login/present layout render)}))
 
 (defn lnurl-auth-callback

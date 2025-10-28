@@ -32,8 +32,8 @@
 (defn notification
   [text class]
   [:div#notification-container
-   [:div {:class [:notification class] :data-class-is-visible "$notification-visible"}
-    [:button.delete {:data-on-click "$notification-visible = false"}]
+   [:div {:class [:notification class] :data-class:is-visible "$notification-visible"}
+    [:button.delete {:data-on:click "$notification-visible = false"}]
     [:p text]]])
 
 (defn send-notification [sse message & [class]]

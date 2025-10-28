@@ -4,7 +4,7 @@
 
 (defn dropdown-search-menu-item
   [name endpoint {:keys [value id extra]}]
-  [:div.dropdown-item {:data-on-click
+  [:div.dropdown-item {:data-on:click
                        (d*-backend-action endpoint
                                           :get
                                           {:action "choose" :name name :value value :id id})}
@@ -40,14 +40,14 @@
     :id           - Value of id property (under <name>-id) of the searched entity
   "
   [{:keys [name value id endpoint extra-signal] :or {name "group-name" value "Galt" id "0ab34-ef87444"}}]
-  [:div.dropdown {:data-class-is-active (str "$" (show-results-signal-name name))}
+  [:div.dropdown {:data-class:is-active (str "$" (show-results-signal-name name))}
    [:div.dropdown-trigger
     [:input.input {:name name
                    :value value
                    :data-bind name
-                   :data-on-focus (str "$" (show-results-signal-name name) " = true")
-                   :data-on-click__outside__delay.10ms (str "$" (show-results-signal-name name) " = false")
-                   :data-on-input__debounce.500ms
+                   :data-on:focus (str "$" (show-results-signal-name name) " = true")
+                   :data-on:click__outside__delay.10ms (str "$" (show-results-signal-name name) " = false")
+                   :data-on:input__debounce.500ms
                    (d*-backend-action endpoint
                                       :get
                                       {:action "search" :search-signal-name name :extra-signal-name extra-signal}

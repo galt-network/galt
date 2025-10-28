@@ -37,7 +37,7 @@
       [:label.label "Date range:"]
       [:div.control
        [:div.select
-        [:select {:name "period" :data-on-change "@get('/posts?patch-mode=inner')" :data-bind "period"}
+        [:select {:name "period" :data-on:change "@get('/posts?patch-mode=inner')" :data-bind "period"}
          [:option {:value "today"} "Today"]
          [:option {:value "this-week" :selected true} "This week"]
          [:option {:value "this-month"} "This month"]
@@ -52,17 +52,17 @@
          [:input {:name "type"
                   :type "radio"
                   :value "live"
-                  :data-on-change "@get('/posts?patch-mode=inner')"
+                  :data-on:change "@get('/posts?patch-mode=inner')"
                   :data-bind "type"}]
          "Live"]
         [:label.radio
          [:input {:name "type"
                   :type "radio"
                   :value "online"
-                  :data-on-change "@get('/posts?patch-mode=inner')"
+                  :data-on:change "@get('/posts?patch-mode=inner')"
                   :data-bind "type"
                   }]
          "Online"]]]]]]
    [:div {:id "event-cards" :data-signals (:initial-signals model)}
     (map post-card (:posts model))]
-   [:div {:data-on-intersect "@get('/posts?patch-mode=append')"}]])
+   [:div {:data-on:intersect "@get('/posts?patch-mode=append')"}]])

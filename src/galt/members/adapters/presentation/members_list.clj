@@ -35,13 +35,13 @@
    [:div
     {:id "map"
      :style {:height "400px"}
-     :data-signals-locations (js-literal
+     :data-signals:locations (js-literal
                                (map (fn [member]
                                       [(get-in member [:location :latitude])
                                        (get-in member [:location :longitude])
                                        (render-html (profile-popup member))])
                                     (:members model)))
-     :data-on-load__delay.500ms "galtAddMarkers($locations)"
+     :data-init__delay.500ms "galtAddMarkers($locations)"
      }]])
 
 (defn search-results
@@ -66,11 +66,11 @@
       [:input.input.is-fullwidth {:placeholder "Search"
                                   :name "query"
                                   :data-bind "query"
-                                  :data-on-keyup "evt.keyCode === 13 && @get('/members')"
-                                  ; :data-on-keyup__debounce.500ms "@get('/members')"
+                                  :data-on:keyup "evt.keyCode === 13 && @get('/members')"
+                                  ; :data-on:keyup__debounce.500ms "@get('/members')"
                                   }]
       [:span {:class "icon is-left"}
        [:i {:class "fas fa-search" :aria-hidden "true"}]]]
-     [:p.control [:button.button.is-primary {:data-on-click (d*-backend-action "/members")} "Search"]]]]
+     [:p.control [:button.button.is-primary {:data-on:click (d*-backend-action "/members")} "Search"]]]]
    [:p.panel-tabs (map panel-tab (:tabs model))]
    (search-results model)]])

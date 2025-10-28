@@ -9,7 +9,7 @@
    [:h1.title.is-2 "Pay by scanning this QR code with your Lightning wallet"]
    (qr-code-img (:invoice-url model))
    [:pre (str model)]
-   [:input {:type "hidden" :data-on-load (:datastar-action model)}]
+   [:input {:type "hidden" :data-on:load (:datastar-action model)}]
    [:input {:type "text" :data-bind "payment-status"}]])
 
 (defn show-invoice-paid
@@ -35,9 +35,9 @@
 
 (defn present
   [model]
-  [:div {:data-on-load (:datastar-action model)
-         :data-on-signal-patch "@get('/payments/new')"
+  [:div {:data-on:load (:datastar-action model)
+         :data-on:signal-patch "@get('/payments/new')"
          ; FIXME datastar logs an error on the following:
-         :data-on-signal-patch-filters "{include: /payment-status/}"
+         :data-on:signal-patch-filters "{include: /payment-status/}"
          }
    (payment-container model)])

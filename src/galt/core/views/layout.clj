@@ -11,7 +11,7 @@
 (defn navbar-item
   [item]
   (let [icon-classes (item-icons (:id item))
-        datastar-props (select-keys item [:data-on-click])
+        datastar-props (select-keys item [:data-on:click])
         class-props {:class (if (:selected? item) [:is-selected] [])}
         link-props {:href (:href item)}]
     [:a.navbar-item
@@ -27,13 +27,13 @@
     [:a.navbar-burger {:role "button"
                        :aria-label "menu"
                        :aria-expanded "false"
-                       :data-class-is-active "$navbar-open"
-                       :data-on-click "$navbar-open = !$navbar-open"}
+                       :data-class:is-active "$navbar-open"
+                       :data-on:click "$navbar-open = !$navbar-open"}
      [:span {:aria-hidden "true"}]
      [:span {:aria-hidden "true"}]
      [:span {:aria-hidden "true"}]
      [:span {:aria-hidden "true"}]]]
-   [:div.navbar-menu {:data-class-is-active "$navbar-open"}
+   [:div.navbar-menu {:data-class:is-active "$navbar-open"}
     (into [:div.navbar-start] (map navbar-item (:items model)))
     [:div.navbar-end
      [:div.navbar-item {:class [:has-dropdown :is-hoverable]}
@@ -54,10 +54,10 @@
     (content (model :content))]
    [:div#notification-container
      [:div {:class [:notification :is-success]
-            :data-class-is-visible "$notification-visible"
-            :data-class-is-danger "$notification-is-danger"
-            :data-class-is-success "$notification-is-success"}
-      [:button.delete {:data-on-click "$notification-visible = false"}]
+            :data-class:is-visible "$notification-visible"
+            :data-class:is-danger "$notification-is-danger"
+            :data-class:is-success "$notification-is-success"}
+      [:button.delete {:data-on:click "$notification-visible = false"}]
       [:p {:data-text "$notification-text"}]]]])
 
 (def history-js
@@ -85,7 +85,7 @@
     [:link {:rel "stylesheet" :href "https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css"}]
     [:link {:rel "stylesheet" :href "/assets/css/style.css"}]
     [:script {:type :module
-              :src "https://cdn.jsdelivr.net/gh/starfederation/datastar@main/bundles/datastar.js"}]
+              :src "https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.0-RC.6/bundles/datastar.js"}]
     [:script {:src "https://kit.fontawesome.com/cb70718952.js" :crossorigin "anonymous"}]
     [:script {:src "https://cdn.jsdelivr.net/npm/scittle@0.7.27/dist/scittle.js"}]
     [:script {:src "https://cdn.jsdelivr.net/npm/scittle@0.7.27/dist/scittle.nrepl.js"}]
@@ -94,6 +94,6 @@
     (reverse (into (list) (:head-tags model)))]
    [:body
     (app-container model)
-    ; [:input {:type "hidden" :data-on-load "@post('/datastar-sse')"}]
-    [:a {:id "galt-history" :href (:path model) :data-on-click "@get(el.href)"}]
+    ; [:input {:type "hidden" :data-on:load "@post('/datastar-sse')"}]
+    [:a {:id "galt-history" :href (:path model) :data-on:click "@get(el.href)"}]
     [:script (hiccup2.core/raw history-js)]]])

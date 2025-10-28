@@ -17,9 +17,9 @@
 
 (defn present
   [model]
-  [:div.columns.is-centered {:data-on-load (:datastar-action model)
-                             ; :data-on-signal-patch "@get('/payments/new')"
-                             ; :data-on-signal-patch-filters "{include: /payment-status/}"
+  [:div.columns.is-centered {:data-init (:datastar-action model)
+                             ; :data-on:signal-patch "@get('/payments/new')"
+                             ; :data-on:signal-patch-filters "{include: /payment-status/}"
                              }
    [:div.column.is-four-fifths
     (when (:message model) (errors-list (:message model)))

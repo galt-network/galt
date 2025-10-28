@@ -18,13 +18,13 @@
     :enctype "multipart/form-data",
     :action (:action-target form),
     :method "POST",
-    :data-signals-files "[]"
+    :data-signals:files "[]"
     :onkeydown "if (event.keyCode === 13 && event.target.type !== 'textarea') { event.preventDefault(); }"}
    (hidden-form-method (:action-method form))
    [:input
     {:type "hidden",
      :name "uploaded-url",
-     :data-attr-value "$uploaded-url"}]
+     :data-attr:value "$uploaded-url"}]
    [:div.field
     [:label.label {:for :group-name} "Group name"]
     [:div.control
@@ -41,7 +41,7 @@
           {:type "file",
            :name "uploaded-file",
            :data-bind "files",
-           :data-on-change "$files && @post('/files', {contentType: 'form'})"
+           :data-on:change "$files && @post('/files', {contentType: 'form'})"
            }]
          [:span.file-cta
           [:span.file-icon [:i.fas.fa-upload]]
@@ -49,11 +49,11 @@
       [:figure.image.is-128x128
        [:img#group-avatar
         {:src (or (:avatar group) "/assets/images/avatar-128x128.png")
-         :data-attr-src "$uploaded-url"
+         :data-attr:src "$uploaded-url"
          :data-show "$uploaded-url"
-         :data-on-load__delay.500ms (str "$uploaded-url = '" (:avatar group) "'")}]]]]
+         :data-init__delay.500ms (str "$uploaded-url = '" (:avatar group) "'")}]]]]
     [:div.column (when location
-                   {:data-on-load__delay.500ms
+                   {:data-init__delay.500ms
                     (str "galtMoveMarker(" (:latitude location)  "," (:longitude location) ")")})
      (location-views/searchable-map {:countries countries
                                      :location location
@@ -79,12 +79,12 @@
 
 (defn delete-modal
   [{:keys [delete-action name]}]
-  [:div {:class "modal" :data-class-is-active "$modal-show"}
+  [:div {:class "modal" :data-class:is-active "$modal-show"}
    [:div {:class "modal-background"}]
    [:div {:class "modal-card"}
     [:header {:class "modal-card-head"}
      [:p {:class "modal-card-title"} "Are you sure?"]
-     [:button {:class "delete" :aria-label "close" :data-on-click "$modal-show = false"}]]
+     [:button {:class "delete" :aria-label "close" :data-on:click "$modal-show = false"}]]
     [:section {:class "modal-card-body"}
      [:div.content
       "You're about to delete the group "
@@ -93,9 +93,9 @@
       "If this is what you want, please confirm it by clicking the [Confirm delete] button"]]
     [:footer {:class "modal-card-foot"}
      [:div {:class "buttons"}
-      [:button {:class [:button :is-danger] :data-on-click delete-action}
+      [:button {:class [:button :is-danger] :data-on:click delete-action}
        "Confirm delete"]
-      [:button {:class [:button] :data-on-click "$modal-show = false"} "Cancel"]]]]])
+      [:button {:class [:button] :data-on:click "$modal-show = false"} "Cancel"]]]]])
 
 (defn edit-group
   [{:keys [form] :as model}]
@@ -103,7 +103,7 @@
    [:div.block
     [:h2.is-size-2 "Edit group"]
     (group-form model)
-    [:div.control [:button.button.is-danger {:data-on-click "$modal-show = true"} "Delete group"]]]
+    [:div.control [:button.button.is-danger {:data-on:click "$modal-show = true"} "Delete group"]]]
    (delete-modal form)])
 
 

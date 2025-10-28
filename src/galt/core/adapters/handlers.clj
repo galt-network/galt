@@ -29,7 +29,8 @@
 
 (defn datastar-sse
   [deps req]
-  (let [connection-id (get-in req [:query-params "connection-id"])]
+  (let [session-id (get-in req [:cookies "ring-session" :value])
+        connection-id (or (get-in req [:query-params "connection-id"]) session-id)]
     (->sse-response
       req
       {on-open (fn [sse]

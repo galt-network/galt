@@ -59,7 +59,7 @@
      [:div.column
       [:div {:id "map"
              :style {:height "400px"}
-             :data-on-load__delay.500ms
+             :data-init__delay.500ms
              (str "galtMoveMarker(" (:latitude model)  "," (:longitude model) ")")}]]]]
    [:div
     [:h2.is-size-3 "Recent activity"]

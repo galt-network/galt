@@ -35,10 +35,10 @@
         [:input.input.is-fullwidth {:placeholder "Search"
                                     :name "query"
                                     :data-bind "query"
-                                    :data-on-keyup "evt.keyCode === 13 && @get('/groups?patch-mode=inner')"}]
+                                    :data-on:keyup "evt.keyCode === 13 && @get('/groups?patch-mode=inner')"}]
         [:span {:class "icon is-left"}
          [:i {:class "fas fa-search" :aria-hidden "true"}]]]
-       [:p.control [:button.button.is-primary {:data-on-click (d*-backend-action "/members")} "Search"]]]]]
+       [:p.control [:button.button.is-primary {:data-on:click (d*-backend-action "/members")} "Search"]]]]]
     [:div.column.is-one-fifth
      [:a.button {:href (:new-group-href model)}
       [:span.icon [:i.fas.fa-calendar]]
@@ -48,4 +48,4 @@
     [:input {:type "hidden" :name "limit" :value (:limit model) :data-bind "limit"}]]
    [:div {:id "group-rows" :data-signals (:initial-signals model)}
     (map group-row (:groups model))]
-   [:div {:data-on-intersect "@get('/groups?patch-mode=append')"}]])
+   [:div {:data-on:intersect "@get('/groups?patch-mode=append')"}]])

@@ -20,31 +20,31 @@
      [:div.select
       [:select {:name (:country-code output-params)
                 :data-bind "country-code"
-                :data-on-change (d*-backend-action "/locations/coordinates"
+                :data-on:change (d*-backend-action "/locations/coordinates"
                                                    :get
                                                    {:type "country"}
                                                    {:filter-signals {:exclude "/files/"}})}
        [:option {:value ""} "Choose a country"]
        (map (fn [c] (country-option c (= (:code c) (:country-code location)))) countries)]]]
     [:div.control
-     [:button.button.is-info {:onclick "return false;" :data-on-click "$country-code = undefined"}"Clear"]]]
+     [:button.button.is-info {:onclick "return false;" :data-on:click "$country-code = undefined"}"Clear"]]]
    [:div.field {:style {:margin-bottom "12px"}}
     [:label.label "City"]
     [:div.control {:style {:z-index 1000}}
      [:div.dropdown {:id "city-dropdown"
-                     :data-class-is-active "$show-results && !$final-value"
+                     :data-class:is-active "$show-results && !$final-value"
                      :style {:display "block"}}
       [:div.dropdown-trigger
        [:input.input {:placeholder "Type to search"
                       :value (:name location)
                       :data-bind "search"
-                      :data-on-input__debounce.500ms
+                      :data-on:input__debounce.500ms
                       (d*-backend-action "/locations/search-cities"
                                          :get
                                          {}
                                          {:filter-signals {:include "/search|country-code/"}})
-                      :data-on-focus "$show-results = true; $final-value = null"
-                      :data-on-click__outside "$show-results = false"
+                      :data-on:focus "$show-results = true; $final-value = null"
+                      :data-on:click__outside "$show-results = false"
                       }]]
       [:div.dropdown-menu {:id "dropdown-menu" :role "menu"}
        (dropdown-content (list))]]
@@ -58,7 +58,7 @@
 
 (defn dropdown-item
   [{:keys [name extra value]}]
-  [:div.dropdown-item {:data-on-click
+  [:div.dropdown-item {:data-on:click
                        (str "$search = '" name "'; $show-results = false;"
                             (d*-backend-action "/locations/coordinates"
                                                :get
@@ -75,4 +75,4 @@
     [:div {:id "map"
            :style {:height "400px"}
            :data-effect "if ($latitude && $longitude) { galtMoveMarker($latitude, $longitude) }"
-           :data-on-update-coordinates "$latitude = evt.detail[0]; $longitude = evt.detail[1]"}]]])
+           :data-on:update-coordinates "$latitude = evt.detail[0]; $longitude = evt.detail[1]"}]]])
