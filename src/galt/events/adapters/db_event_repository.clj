@@ -2,7 +2,6 @@
   (:require
     [galt.core.adapters.db-access :refer [query query-one]]
     [honey.sql.helpers :refer [where limit]]
-    [honey.sql :as sql]
     [galt.core.adapters.db-result-transformations :as db-transform :refer [transform-row defaults]]
     [galt.events.domain.event-repository :as er :refer [EventRepository]]))
 
@@ -23,16 +22,6 @@
    :events/publish_at db-transform/default-datetime
    :events/created_at db-transform/default-datetime})
 
-(def comment-spec
-  {:id defaults
-   :content defaults
-   :parent_id defaults
-   :author_id defaults
-   :created_at db-transform/default-datetime
-   :level defaults
-   :members/author_name defaults
-   :members/author_avatar defaults})
-
 (defrecord DbEventRepository [db-access]
   EventRepository
 
@@ -45,52 +34,7 @@
              (query-one db-access ,,,)
              (transform-row event-spec ,,,)))
 
-  (get-comment [_ comment-id]
-    (some->> {:select [:comments.* [:members.name :author_name] [:members.avatar :author_avatar]]
-              :from [:comments]
-              :join [:members [:= :members.id :comments.author-id]]
-              :where [:= :comments.id comment-id]}
-             (query-one db-access ,,,)
-             (transform-row comment-spec ,,,)))
-
   (update-event [_ event])
-
-  (comment-event [_ event-id {:keys [parent-id content author-id]}]
-    (let [added-comment (query-one db-access {:insert-into [:comments]
-                                              :values [{:parent-id parent-id
-                                                        :content content
-                                                        :author-id author-id}]
-                                              :returning [:*]})]
-      (query db-access
-             {:insert-into [:event_comments]
-              :values [{:event-id event-id
-                        :comment-id (:comments/id added-comment)}]})
-      added-comment))
-
-  (list-event-comments [_ event-id {:keys [comment-id]}]
-    (let [base-q {:with-recursive
-                  [[:comments-hierarchy
-                    {:union-all
-                     [{:select [:comments.*, [:comments.id :comment_id] [0 :level]]
-                       :from [:comments]
-                       :join [:event_comments [:= :event_comments.comment_id :comments.id]]
-                       :where [:and
-                               [:= :comments.parent_id nil]
-                               [:= :event_comments.event_id event-id]]}
-                      {:select [:comments.* [:comments.id :comment_id] [[:+ :comments-hierarchy.level 1] :level]]
-                       :from [:comments]
-                       :join [:event_comments [:= :event_comments.comment_id :comments.id]
-                              :comments-hierarchy [:= :comments.parent_id :comments-hierarchy.id]]
-                       :where [:= :event_comments.event_id event-id]}]}]]
-                  :select [:comments-hierarchy.* [:members.name :author_name] [:members.avatar :author_avatar]]
-                  :from [:comments-hierarchy]
-                  :join [:members [:= :members.id :comments-hierarchy.author-id]]
-                  :order-by [:created-at :level]}
-          final-q (cond-> base-q
-                     comment-id (where [:= :comment_id comment-id])
-                     comment-id (limit 1))]
-      (->> (query db-access final-q)
-           (map #(transform-row comment-spec %) ,,,))))
 
   (rsvp-event [_ event-id member-id])
 
@@ -123,8 +67,6 @@
   (DbEventRepository. db-access))
 
 (comment
-  (er/list-event-comments (DbEventRepository. @dba) (parse-uuid "0199a040-8695-7013-96d1-ce24b17e46fd") {})
-  (def x (er/get-comment (DbEventRepository. @dba) 1))
   (require '[galt.core.adapters.time-helpers :as th])
   (map :name (er/list-events (DbEventRepository. @dba) {:limit 20
                                                         :from-date (first (th/period-range :this-week))

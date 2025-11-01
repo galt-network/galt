@@ -1,5 +1,6 @@
 (ns galt.groups.adapters.handlers
   (:require
+    [galt.core.adapters.number-helpers :refer [->int]]
    [galt.core.adapters.link-generator :refer [link-for-route]]
    [galt.core.adapters.sse-helpers :refer [with-sse]] ; List-groups deps
    [galt.core.adapters.time-helpers :as time-helpers]
@@ -36,12 +37,6 @@
       :ok {:status 200 :body (render (layout {:content (views/new-group model)
                                               :head-tags head-tags-for-maps}))}
       :error {:status 403 :body (-> (views/error-messages [result]) content layout render)})))
-
-(defn- ->int [s]
-  (try
-    (Integer/parseInt s)
-    (catch NumberFormatException _e
-      nil)))
 
 ; TODO add spec for deps (to have repo key with correct type)
 (defn create-group

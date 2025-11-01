@@ -19,8 +19,4 @@
        ["/events/:id" {:id :events
                        :conflicting true
                        :name :events/by-id
-                       :get (with-deps-layout events/show-event)}]
-       ["/events/:id/comments" {:id :events
-                                :name :events.by-id/comments
-                                :get (partial events/show-comment-form deps)
-                                :post (partial events/send-comment deps)}]])))
+                       :get (with-deps-layout events/show-event)}]])))

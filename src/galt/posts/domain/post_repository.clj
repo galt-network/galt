@@ -2,4 +2,5 @@
 
 (defprotocol PostRepository
   (add-post [this post])
+  (get-post [this post-id])
   (list-posts [this params]))

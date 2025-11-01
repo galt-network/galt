@@ -54,6 +54,8 @@
    [galt.posts.domain.post-repository :as po-re]
    [galt.events.domain.event-repository :as er]
    [galt.posts.adapters.db-post-repository :refer [new-db-post-repository]]
+   [galt.comments.domain.comment-repository :as cr]
+   [galt.comments.adapters.db-comment-repository :refer [new-db-comment-repository]]
    [galt.members.external.routes]
    [galt.payments.adapters.cln-payment-gateway :refer [new-cln-payment-gateway]]
    [galt.payments.domain.payment-gateway :as pg]
@@ -62,6 +64,7 @@
    [galt.events.domain.use-cases.add-event :refer [add-event-use-case]]
    [galt.events.domain.use-cases.list-events :refer [list-events-use-case]]
    [galt.payments.external.routes]
+   [galt.comments.external.routes]
    [galt.events.external.routes]
    [reitit.ring]
    [ring.middleware.session.memory :as memory]
@@ -148,6 +151,12 @@
      :event
      #::ds{:start
            (fn [{:keys [::ds/config]}] (new-db-event-repository (:db-access config)))
+           :config
+           {:db-access (ds/ref [:storage :db-access])}}
+
+     :comment
+     #::ds{:start
+           (fn [{:keys [::ds/config]}] (new-db-comment-repository (:db-access config)))
            :config
            {:db-access (ds/ref [:storage :db-access])}}
 
@@ -425,6 +434,7 @@
                 :invitation-repo (config :invitation-repo)
                 :post-repo (config :post-repo)
                 :event-repo (config :event-repo)
+                :comment-repo (config :comment-repo)
                 :db-access (config :db-access)
                 :generate-name name-generator/generate
                 :file-storage (config :file-storage)
@@ -442,6 +452,7 @@
             :invitation-repo (ds/ref [:storage :invitation])
             :post-repo (ds/ref [:storage :post])
             :event-repo (ds/ref [:storage :event])
+            :comment-repo (ds/ref [:storage :comment])
             :db-access (ds/ref [:storage :db-access])
             :file-storage (ds/ref [:storage :file-storage])
             :galt-url (ds/ref [:env :galt-root-url])
@@ -490,6 +501,12 @@
              (galt.events.external.routes/router (:route-deps config)))
            :config
            {:route-deps (ds/ref [:app :route-deps])}}
+     :comments/routes
+     #::ds{:start
+           (fn [{:keys [::ds/config]}]
+             (galt.comments.external.routes/router (:route-deps config)))
+           :config
+           {:route-deps (ds/ref [:app :route-deps])}}
      :design/routes
      #::ds{:start
            (fn [{:keys [::ds/config]}]
@@ -506,10 +523,12 @@
                    payments-router (get-in config [:payments/routes])
                    posts-router (get-in config [:posts/routes])
                    events-router (get-in config [:events/routes])
+                   comments-router (get-in config [:comments/routes])
                    design-router (get-in config [:design/routes])
                    route-deps (get-in config [:route-deps])
                    core-router (core.routes/router route-deps)]
                (core.routes/merge-routers
+                 core-router
                  members-router
                  groups-router
                  locations-router
@@ -517,8 +536,9 @@
                  payments-router
                  posts-router
                  events-router
+                 comments-router
                  design-router
-                 core-router)))
+                 )))
            :config
            {:members/routes (ds/ref [:app :members/routes])
             :groups/routes (ds/ref [:app :groups/routes])
@@ -527,6 +547,7 @@
             :payments/routes (ds/ref [:app :payments/routes])
             :posts/routes (ds/ref [:app :posts/routes])
             :events/routes (ds/ref [:app :events/routes])
+            :comments/routes (ds/ref [:app :comments/routes])
             :design/routes (ds/ref [:app :design/routes])
             :route-deps (ds/ref [:app :route-deps])}}
      :route-handler

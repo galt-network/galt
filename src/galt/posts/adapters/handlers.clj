@@ -4,8 +4,10 @@
    [galt.core.adapters.sse-helpers :refer [with-sse]]
    [galt.core.adapters.time-helpers :as th]
    [galt.core.infrastructure.web.helpers :refer [get-signals]]
+   [galt.core.views.datastar-helpers :refer [d*-backend-action]]
    [galt.posts.adapters.presentation.list-posts :as presentation.list-posts]
    [galt.posts.adapters.presentation.new-post :as presentation.new-post]
+   [galt.posts.adapters.presentation.show-post :as presentation.show-post]
    [galt.posts.domain.post-repository :as pr]
    [ring.util.http-status :as http-status]
    [starfederation.datastar.clojure.api :refer [datastar-request?]]))
@@ -74,5 +76,11 @@
       :error {:status 422 :body (-> model presentation.new-post/present layout render)})))
 
 (defn show-post
-  [{:keys [render layout]} req]
-  {:status http-status/ok :body (-> [:h1.title.is-1 "This is a post"] layout render)})
+  [{:keys [render post-repo layout]} req]
+  (let [post-id (parse-uuid (get-in req [:path-params :id]))
+        post (pr/get-post post-repo post-id)
+        comments-url (link-for-route req :comments {:entity-id post-id :entity-type "posts"})
+        model {:post post
+               :comment-action (d*-backend-action comments-url :get)}]
+    {:status http-status/ok
+     :body (-> model presentation.show-post/present layout render)}))

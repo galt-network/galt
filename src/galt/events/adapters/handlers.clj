@@ -3,7 +3,7 @@
    [galt.core.adapters.link-generator :refer [link-for-route]]
    [galt.core.adapters.sse-helpers :refer [with-sse]]
    [galt.core.adapters.time-helpers :as th]
-   [galt.shared.domain.entities.comment :refer [nest-comments]]
+   [galt.comments.domain.entities.comment :refer [nest-comments]]
    [galt.events.adapters.presentation.list-events :as presentation.list-events]
    [galt.events.adapters.presentation.new-event :as presentation.new-event]
    [galt.events.adapters.presentation.show-event :as presentation.show-event]
@@ -71,58 +71,11 @@
       {:status http-status/ok
        :body (-> model presentation.list-events/present layout render)})))
 
-(defn add-datastar-actions [event-id comments]
-  (let [add-action (fn [c]
-                     (assoc c
-                            :datastar-modal-action
-                            (d*-backend-action
-                              (str "/events/" event-id "/comments")
-                              :get
-                              {:parent-id (:id c)})))]
-    (map add-action comments)))
-
 (defn show-event
   [{:keys [layout event-repo render]} req]
   (let [event-id (parse-uuid (get-in req [:path-params :id]))
         event (er/get-event event-repo event-id)
-        comments (er/list-event-comments event-repo event-id {})
-        event-comment-url (link-for-route req :events.by-id/comments {:id event-id})
+        comments-url (link-for-route req :comments {:entity-id event-id :entity-type "events"})
         model {:event event
-               :get-comment-form (d*-backend-action event-comment-url :get )
-               :add-comment-action event-comment-url
-               :comments (->> comments
-                              (map (fn [c] (assoc c :created-at (th/short-format-with-time (:created-at c)))) ,,,)
-                              (add-datastar-actions event-id)
-                              nest-comments)}]
+               :comment-action (d*-backend-action comments-url :get)}]
     {:status http-status/ok :body (-> model presentation.show-event/present layout render)}))
-
-(defn send-comment
-  [{:keys [event-repo]} req]
-  (let [event-id (get-in req [:path-params :id])
-        parent-id (some-> (get-in req [:params :parent-id]) parse-long)
-        content (get-in req [:params :content])
-        author-id (get-in req [:session :member-id])
-        event-url (link-for-route req :events/by-id {:id event-id})
-        comment {:parent-id parent-id
-                 :content content
-                 :author-id author-id}]
-    (er/comment-event event-repo (parse-uuid event-id) comment)
-    {:status http-status/see-other :headers {"Location" event-url}}))
-
-(defn show-comment-form
-  [{:keys [event-repo]} req]
-  (let [event-id (get-in req [:path-params :id])
-        parent-id (parse-long (get-in req [:query-params "parent-id"]))
-        comment (first (er/list-event-comments event-repo (parse-uuid event-id) {:comment-id parent-id}))
-        event-comment-url (link-for-route req :events.by-id/comments {:id event-id})
-        model {:parent-id parent-id
-               :event-id event-id
-               :author-avatar (:author-avatar comment)
-               :author-name (:author-name comment)
-               :content (:content comment)
-               :add-comment-action event-comment-url}]
-    (with-sse req
-      (fn [send!]
-        (send! :html (presentation.show-event/comment-form-modal model) {:selector "#comment-modal"
-                                                                         :patch-mode "inner"})
-        (send! :signals {:show-comment-modal true})))))

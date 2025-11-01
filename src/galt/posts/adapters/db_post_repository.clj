@@ -26,6 +26,11 @@
     (->> {:insert-into [:posts] :values [post]}
          (query-one db-access ,,,)))
 
+  (get-post [_ post-id]
+    (some->> {:select [:*] :from [:posts] :where [:= :id post-id]}
+             (query-one db-access ,,,)
+             (transform-row post-spec ,,,)))
+
   (list-posts [_ {:keys [group-id limit offset] :or {limit 10 offset 0}}]
     (let [base-q {:select [:posts.*
                           [:members.name :author]
