@@ -7,12 +7,14 @@
    [starfederation.datastar.clojure.adapter.http-kit :refer [->sse-response
                                                              on-close
                                                              on-open]]
+
    [starfederation.datastar.clojure.api :as d*]))
 
 (defn view-landing
   [{:keys [render layout] :as _deps} _req]
-  {:status 200
-   :body (render (layout {:content (landing-page/page nil)}))})
+  (let []
+    {:status 200
+     :body (render (layout {:content (landing-page/page {:new-user? false})}))}))
 
 (defn serve-file
   [{:keys [file-storage]} req]

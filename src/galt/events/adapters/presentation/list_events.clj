@@ -67,4 +67,4 @@
          "Online"]]]]]]
    [:div {:id "event-cards" :data-signals (:initial-signals model)}
     (map event-card (:events model))]
-   [:div {:data-on:intersect "@get('/events?patch-mode=append')"}]])
+   [:div {:data-on-intersect "@get('/events?patch-mode=append')"}]])

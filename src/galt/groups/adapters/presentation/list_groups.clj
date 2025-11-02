@@ -48,4 +48,4 @@
     [:input {:type "hidden" :name "limit" :value (:limit model) :data-bind "limit"}]]
    [:div {:id "group-rows" :data-signals (:initial-signals model)}
     (map group-row (:groups model))]
-   [:div {:data-on:intersect "@get('/groups?patch-mode=append')"}]])
+   [:div {:data-on-intersect "@get('/groups?patch-mode=append')"}]])

@@ -1,0 +1,15 @@
+{:landing/about-title "About GALT"
+ :landing/about-content  "GALT (Global Alliance for Libertarian Transformation) platform empowers individuals with libertarian and anarcho-capitalist ideals to connect, produce analysis, and propose solutions for reducing state coercion and restoring individual freedoms in local communities."
+ :landing.features/members
+ {:title "Find others"
+  :content "Create profiles with name, location, and description to find and connect with like-minded libertarians."}
+ :landing.features/groups
+ {:title "Join groups"
+  :content "Form or find communities, collaborate collaborate with others for more liberty"}
+ :landing.features/events
+ {:title "Events"
+  :content "Organize and fund events to bring more libertarians together"}
+ :landing.features/improve
+ {:title "Improve"
+  :content "GALT is open source. You can propose, implement or fund new features"}
+ }
