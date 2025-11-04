@@ -1,6 +1,7 @@
 (ns galt.core.views.landing-page
   (:require
-    [galt.shared.presentation.translations :refer [i18n]]))
+   [galt.core.infrastructure.version :as version]
+   [galt.shared.presentation.translations :refer [i18n]]))
 
 (defn- hero-banner [{:keys [new-user?]}]
   [:section.hero.is-primary.is-bold
@@ -47,13 +48,18 @@
     (hero-banner (select-keys model [:new-user?]))
     (about-section model)
     (features-section model)
-    [:footer.footer
+    #_[:footer.footer
      [:div.container
       [:div.columns
        [:div.column [:p "© 2025 GALT – Empowering Individual Liberty"]]
        [:div.column.has-text-right
-        [:a {:href "https://github.com/galt-network/galt"}
-         [:span.icon
-          [:i.fa.fa-brands.fa-github]]
-         "Source code"
-         ]]]]]])
+        [:p [:a {:href "https://github.com/galt-network/galt" :target "_blank"}
+          [:span.icon
+           [:i.fa.fa-brands.fa-github]]
+          "Source code"
+          ]]
+        [:p [:a {:href (str "https://github.com/galt-network/galt/tree/" (version/commit-hash))
+                 :target "_blank"}
+          [:span.icon
+           [:i.fa.fa-solid.fa-code-branch]]
+          "Version: " (version/commit-hash) " " (System/getenv "GALT_ENV")]]]]]]])

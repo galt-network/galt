@@ -12,10 +12,19 @@
 (defn clean [_]
   (b/delete {:path "target"}))
 
+(defn get-commit-hash
+  []
+  (b/git-process {:git-args "rev-parse --short HEAD"}))
+
+(defn collect-build-info
+  []
+  {:git-commit-hash (get-commit-hash)})
+
 (defn uber [_]
   (clean nil)
   (b/copy-dir {:src-dirs ["src" "resources"]
                :target-dir class-dir})
+  (spit (str class-dir "/build-info.edn") (pr-str (collect-build-info)))
   (b/compile-clj {:basis @basis
                   :ns-compile '[galt.main]
                   :class-dir class-dir})

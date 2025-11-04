@@ -1,6 +1,7 @@
 (ns galt.core.views.layout
   (:require
-    [hiccup2.core]))
+   [galt.core.infrastructure.version :as version]
+   [hiccup2.core]))
 
 (def item-icons
   {:profile [:fa :fa-user-o]
@@ -42,6 +43,23 @@
         [:img {:src (-> model :user :avatar)}]] (-> model :user :name)]
       (into [:div.navbar-dropdown.is-right] (map navbar-item (:dropdown model)))]]]])
 
+(defn footer
+  [_model]
+  [:footer.footer
+     [:div.container
+      [:div.columns
+       [:div.column [:p "© 2025 GALT – Empowering Individual Liberty"]]
+       [:div.column.has-text-right
+        [:p [:a {:href "https://github.com/galt-network/galt" :target "_blank"}
+          [:span.icon
+           [:i.fa.fa-brands.fa-github]]
+          "Source code"
+          ]]
+        [:p [:a {:href (str "https://github.com/galt-network/galt/tree/" (version/commit-hash))
+                 :target "_blank"}
+          [:span.icon
+           [:i.fa.fa-solid.fa-code-branch]]
+          "Version: " (version/commit-hash) " " (System/getenv "GALT_ENV")]]]]]])
 (defn content
   [hiccup]
   [:div.container {:id :content} hiccup])
@@ -58,7 +76,8 @@
             :data-class:is-danger "$notification-is-danger"
             :data-class:is-success "$notification-is-success"}
       [:button.delete {:data-on:click "$notification-visible = false"}]
-      [:p {:data-text "$notification-text"}]]]])
+      [:p {:data-text "$notification-text"}]]]
+   (footer model)])
 
 (def history-js
   "function galt_historyHandler(event) {
