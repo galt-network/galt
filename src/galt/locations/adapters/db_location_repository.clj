@@ -113,7 +113,18 @@
          (country/map->Country ,,,)))
 
   (add-location [_ location]
-    (->> (query db-access {:insert-into [:locations] :values [(map-without-nils location)] :returning [:*]})
+    (->> {:insert-into [:locations] :values [(map-without-nils location)] :returning [:*]}
+         (query db-access ,,,)
+         (first ,,,)
+         (transform-row location-spec ,,,)
+         (location/map->Location ,,,)))
+
+  (update-location [_ location-id attributes]
+    (->> {:update [:locations]
+          :set (map-without-nils attributes)
+          :where [:= :id location-id]
+          :returning [:*]}
+         (query db-access )
          (first ,,,)
          (transform-row location-spec ,,,)
          (location/map->Location ,,,)))

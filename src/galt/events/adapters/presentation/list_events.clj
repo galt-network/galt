@@ -41,10 +41,10 @@
         [:select {:name "period" :data-on:change "@get('/events?patch-mode=inner')" :data-bind "period"}
          [:option {:value "today"} "Today"]
          [:option {:value "tomorrow"} "Tomorrow"]
-         [:option {:value "this-week" :selected true} "This week"]
+         [:option {:value "this-week" } "This week"]
          [:option {:value "this-weekend"} "This weekend"]
          [:option {:value "next-week"} "Next week"]
-         [:option {:value "all"} "All"]]]]]]
+         [:option {:value "all" :selected true} "All"]]]]]]
     [:div.column
      [:div.field
       [:label.label "Type"]

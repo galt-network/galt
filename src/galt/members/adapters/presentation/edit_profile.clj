@@ -60,16 +60,16 @@
          :data-show "$uploaded-url"
          :data-init__delay.500ms (str "$uploaded-url = '" (:avatar member) "'")}]]]]
     [:div.column (when location
-                   {:data-on-load__delay.500ms
+                   {:data-init__delay.500ms
                     (str "galtMoveMarker(" (:latitude location)  "," (:longitude location) ")")})
      (location-views/searchable-map {:countries countries
                                      :location location
                                      :output-params
                                      {:city-id "city-id"
-                                     :country-code "country-code"
-                                     :location-name "location-name"
-                                     :latitude "latitude"
-                                     :longitude "longitude"}})]]
+                                      :country-code "country-code"
+                                      :location-name "location-name"
+                                      :latitude "latitude"
+                                      :longitude "longitude"}})]]
    [:div.field
     [:label.label {:for :member-description} "Profile description"]
     [:div.control

@@ -8,18 +8,12 @@
    [galt.payments.adapters.presentation.new-payment :as presentation.new-payment]
    [starfederation.datastar.clojure.api :as d*]))
 
-(def last-invoice (atom nil))
-(def last-req (atom nil))
-
 (defn new-payment
   [{:keys [membership-payment-use-case layout render]} req]
-  (reset! last-req req)
   (let [payment-type (get-in req [:params :payment-type])
         return-to (get-in req [:params :return-to])
         user-id (get-in req [:session :user-id])
         [status result] (membership-payment-use-case {:user-id user-id})
-        _ (reset! last-invoice result)
-
         sse-connection-id (:label result)
         datastar-action (d*-backend-action "/datastar-sse" :post {:connection-id sse-connection-id})
         model {:invoice-url (:bolt-11 result)

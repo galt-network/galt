@@ -49,6 +49,7 @@
    [galt.members.domain.use-cases.start-lnurl-login :refer [start-lnurl-login-use-case]]
    [galt.members.domain.use-cases.watch-lnurl-login :refer [watch-lnurl-login-use-case]]
    [galt.members.domain.use-cases.create-member :refer [create-member-use-case]]
+   [galt.members.domain.use-cases.update-member :refer [update-member-use-case]]
    [galt.posts.domain.use-cases.create-post :refer [create-post-use-case]]
    [galt.members.domain.user-repository :as ur :refer [find-user-by-id]]
    [galt.posts.domain.post-repository :as po-re]
@@ -319,6 +320,18 @@
              (partial create-member-use-case
                       {:add-location (partial lr/add-location location-repo)
                        :add-member (partial mr/add-member member-repo)}))
+           :config
+           {:member-repo (ds/ref [:storage :member])
+            :location-repo (ds/ref [:storage :location])}}
+
+     :update-member-use-case
+     #::ds{:start
+           (fn [{{:keys [location-repo member-repo]} ::ds/config}]
+             (partial update-member-use-case
+                      {:add-location (partial lr/add-location location-repo)
+                       :find-member-by-id (partial mr/find-member-by-id member-repo)
+                       :update-location (partial lr/update-location location-repo)
+                       :update-member (partial mr/update-member member-repo)}))
            :config
            {:member-repo (ds/ref [:storage :member])
             :location-repo (ds/ref [:storage :location])}}

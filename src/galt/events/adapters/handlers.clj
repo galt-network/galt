@@ -58,7 +58,7 @@
           (send! :signals {:offset next-offset :limit limit}))))
     (let [limit 5
           offset 0
-          [start-time end-time] (th/period-range :this-week)
+          [start-time end-time] (th/period-range :all)
           [status result] (list-events-use-case {:limit limit
                                                  :offset offset
                                                  :from-date start-time

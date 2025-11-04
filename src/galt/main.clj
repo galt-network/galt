@@ -5,7 +5,8 @@
     [galt.core.system :as system]
     [cider.nrepl :refer [cider-nrepl-handler]]
     [clojure.core.async :as async]
-    [galt.core.infrastructure.db-migrations :as db-migrations])
+    [galt.core.infrastructure.db-migrations :as db-migrations]
+    [galt.core.infrastructure.version])
   (:gen-class))
 
 (defonce nrepl-server (atom nil))
@@ -57,7 +58,6 @@
 (comment
   (require '[galt.groups.domain.group-repository :refer [list-groups find-groups-by-member]])
   (def repo (get-in @running-system [:donut.system/instances :storage :group]))
-  (list-groups repo)
   (find-groups-by-member repo 42)
   (get-in @running-system [:donut.system/instances :use-cases])
   )

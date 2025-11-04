@@ -52,8 +52,16 @@
               :id "city-id"
               :name (:city-id output-params)
               :data-bind "city-id"}]
-     [:input {:type :hidden :name (:latitude output-params) :id "latitude" :data-bind "latitude"}]
-     [:input {:type :hidden :name (:longitude output-params) :id "longitude" :data-bind "longitude"}]
+     [:input {:type :hidden
+              :name (:latitude output-params)
+              :id "latitude"
+              :data-bind "latitude"
+              :value (:latitude location)}]
+     [:input {:type :hidden
+              :name (:longitude output-params)
+              :id "longitude"
+              :data-bind "longitude"
+              :value (:longitude location)}]
      [:input {:type :hidden :name (:location-name output-params):id "location-name" :data-attr "{value: $search}"}]]]])
 
 (defn dropdown-item
@@ -74,5 +82,5 @@
    [:div.field
     [:div {:id "map"
            :style {:height "400px"}
-           :data-effect "if ($latitude && $longitude) { galtMoveMarker($latitude, $longitude) }"
+           :data-effect "if (typeof galtMoveMarker !== 'undefined' && ($latitude && $longitude)) { galtMoveMarker($latitude, $longitude) }"
            :data-on:update-coordinates "$latitude = evt.detail[0]; $longitude = evt.detail[1]"}]]])

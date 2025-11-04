@@ -27,6 +27,15 @@
          (transform-row member-spec ,,,)
          (member/map->Member ,,,)))
 
+  (update-member [_ member-id attributes]
+    (->> {:update [:members]
+          :set (map-without-nils attributes)
+          :where [:= :id member-id]
+          :returning [:*]}
+         (query-one db-access ,,,)
+         (transform-row member-spec ,,,)
+         (member/map->Member ,,,)))
+
   (find-members-by-name [_ s]
     (mr/find-members-by-name _ s nil))
 

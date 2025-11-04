@@ -4,8 +4,9 @@
    [galt.core.adapters.url-helpers :refer [add-query-params]]))
 
 (defn profile-view-model
-  [{:keys [member groups location]}]
+  [{:keys [member groups location edit-href]}]
   {:member? true
+   :edit-href edit-href
    :name (:name member)
    :description (:description member)
    :avatar (:avatar member)

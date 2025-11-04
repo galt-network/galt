@@ -16,7 +16,7 @@
    [galt.members.adapters.presentation.non-member-profile :as non-member-profile]
    [galt.members.adapters.presentation.profile :as presentation.profile]
    [galt.members.adapters.view-models :as view-models]
-   [galt.members.domain.member-repository :as mr]
+   [galt.members.domain.member-repository :as mr :refer [find-member-by-id]]
    [reitit.core]
    [starfederation.datastar.clojure.api :as d*]))
 
@@ -44,7 +44,9 @@
   (let [user-id (get-in req [:session :user-id])
         member-id (get-in req [:session :member-id])
         [status result] (show-profile-use-case {:member-id member-id :user-id user-id})
+        edit-href (link-for-route req :members.me/edit)
         profile-content (-> result
+                            (assoc ,,, :edit-href edit-href)
                             view-models/profile-view-model
                             presentation.profile/present
                             layout
@@ -77,25 +79,25 @@
                         render)})))
 
 (defn edit-my-profile
-  [{:keys [render location-repo layout]} req]
+  [{:keys [render location-repo member-repo layout]} req]
   (let [logged-in-user-id (get-in req [:session :user-id])
-        result {:location-id nil}
-        location (lr/find-location-by-id location-repo (:location-id result))
-        model {:member result
-               :location nil
+        member (find-member-by-id member-repo logged-in-user-id)
+        location (lr/find-location-by-id location-repo (:location-id member))
+        model {:member member
+               :location location
                :countries (lr/all-countries location-repo) ; TODO shouldn't pass this, refactor to locations
                :form
                {:action-name "Save"
-                :action-method "POST"
-                :action-target (link-for-route req :members)}}]
+                :action-method "PUT"
+                :action-target (link-for-route req :members/me)}}]
     {:status 200
      :body (-> {:content (presentation.edit-profile/present model)
                 :head-tags head-tags-for-maps}
                layout
                render)}))
 
-(defn create
-  [{:keys [create-member-use-case render layout]} req]
+(defn- member-input-port
+  [req]
   (let [params (get req :params)
         member {:id (get-in req [:session :user-id])
                 :name (:member-name params)
@@ -106,12 +108,14 @@
                   :longitude (parse-double (:longitude params))
                   :country-code (:country-code params)
                   :city-id (parse-long (:city-id params))
-                  :name (:location-name params)}
-        member-creation {:member member :location location}
-        model {:member member
-               :location location
-               :form (:form params)}
-        [status result] (create-member-use-case member-creation)]
+                  :name (:location-name params)}]
+    {:member member :location location}))
+
+(defn create
+  [{:keys [create-member-use-case render layout]} req]
+  (let [member-params (member-input-port req)
+        model (assoc member-params :form (get-in req [:params :form]))
+        [status result] (create-member-use-case member-params)]
     (match [status result]
            [:ok _] {:status 303
                     :headers {"Location" (link-for-route req :members/me)}
@@ -119,20 +123,15 @@
            [:error _] (-> model presentation.edit-profile/present layout render))))
 
 (defn update-my-profile
-  [deps req]
-  {:status 200 :body "Done"})
-
-; (defn search-members
-;   [{:keys [search-members-use-case]} req]
-;   (with-sse
-;     req
-;     (fn [send!]
-;       (let [query (:query (get-signals req))
-;             [status result] (search-members-use-case {:query query})
-;             panel-items (view-models/members-search-view-model result (partial link-for-route req))]
-;         (send! :html (presentation.members-list/search-results
-;                        (map presentation.members-list/panel-item panel-items)))))))
-
+  [{:keys [update-member-use-case render layout]} req]
+  (let [member-params (member-input-port req)
+        model (assoc member-params :form (get-in req [:params :form]))
+        [status result] (update-member-use-case member-params)]
+    (match [status result]
+           [:ok _] {:status 303
+                    :headers {"Location" (link-for-route req :members/me)}
+                    :session (assoc (:session req) :member-id (:id result))}
+           [:error _] (-> model presentation.edit-profile/present layout render))))
 
 (defn search-members
   [{:keys [member-repo]} req]
