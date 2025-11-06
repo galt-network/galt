@@ -130,12 +130,12 @@
          (location/map->Location ,,,)))
 
   (find-location-by-id [_ id]
-    (->> {:select [:*]
-          :from [:locations]
-          :where [:= :id id]}
-         (query-one db-access ,,,)
-         (transform-row location-spec ,,,)
-         (location/map->Location ,,,)))
+    (some->> {:select [:*]
+              :from [:locations]
+              :where [:= :id id]}
+             (query-one db-access ,,,)
+             (transform-row location-spec ,,,)
+             (location/map->Location ,,,)))
 
   (locations-by-id [_ id]
     (->> {:select [:*] :from [:locations] :where [:in :id (if (coll? id) id [id])]}

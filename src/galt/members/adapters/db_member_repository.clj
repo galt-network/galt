@@ -42,7 +42,7 @@
   (find-members-by-name [_ s group-id]
     (some->> {:select-distinct-on [[:members.id] :members.*]
               :from [:members]
-              :join [:group-memberships [:= :group_memberships.member_id :members.id]]
+              :left-join [:group-memberships [:= :group_memberships.member_id :members.id]]
               :where [:and
                       (if (nil? group-id) [:= 1 1] [:= :group_memberships.group_id group-id])
                       [:ilike :name (str "%" s "%")]]

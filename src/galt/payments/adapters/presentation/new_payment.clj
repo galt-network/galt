@@ -9,7 +9,7 @@
    [:h1.title.is-2 "Pay by scanning this QR code with your Lightning wallet"]
    (qr-code-img (:invoice-url model))
    [:pre (str model)]
-   [:input {:type "hidden" :data-on:load (:datastar-action model)}]
+   [:input {:type "hidden" :data-init (:datastar-action model)}]
    [:input {:type "text" :data-bind "payment-status"}]])
 
 (defn show-invoice-paid

@@ -82,5 +82,5 @@
    [:div.field
     [:div {:id "map"
            :style {:height "400px"}
-           :data-effect "if (typeof galtMoveMarker !== 'undefined' && ($latitude && $longitude)) { galtMoveMarker($latitude, $longitude) }"
+           :data-effect "if ($latitude && $longitude) { galtMoveMarker($latitude, $longitude) }"
            :data-on:update-coordinates "$latitude = evt.detail[0]; $longitude = evt.detail[1]"}]]])

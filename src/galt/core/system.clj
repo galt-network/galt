@@ -541,7 +541,6 @@
                    route-deps (get-in config [:route-deps])
                    core-router (core.routes/router route-deps)]
                (core.routes/merge-routers
-                 core-router
                  members-router
                  groups-router
                  locations-router
@@ -549,6 +548,7 @@
                  payments-router
                  posts-router
                  events-router
+                 core-router
                  comments-router
                  design-router
                  )))
@@ -563,6 +563,7 @@
             :comments/routes (ds/ref [:app :comments/routes])
             :design/routes (ds/ref [:app :design/routes])
             :route-deps (ds/ref [:app :route-deps])}}
+
      :route-handler
      #::ds{:start
            (fn [{:keys [::ds/config]}]

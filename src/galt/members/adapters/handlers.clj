@@ -45,21 +45,23 @@
         member-id (get-in req [:session :member-id])
         [status result] (show-profile-use-case {:member-id member-id :user-id user-id})
         edit-href (link-for-route req :members.me/edit)
-        profile-content (-> result
-                            (assoc ,,, :edit-href edit-href)
-                            view-models/profile-view-model
-                            presentation.profile/present
-                            layout
-                            render)
-        non-member-content (-> (add-query-params (link-for-route req :payments/new)
-                                                 {:type "galt-membership-payment" :return-to "/members/me"})
-                               non-member-profile/present
-                               layout
-                               render)]
+        profile-content (fn []
+                          (-> result
+                              (assoc ,,, :edit-href edit-href)
+                              view-models/profile-view-model
+                              presentation.profile/present
+                              layout
+                              render))
+        non-member-content (fn []
+                             (-> (add-query-params (link-for-route req :payments/new)
+                                                   {:type "galt-membership-payment" :return-to "/members/me"})
+                                 non-member-profile/present
+                                 layout
+                                 render))]
     (match [status result]
       [:ok {:member nil}] {:status 302 :headers {"Location" (link-for-route req :members.me/edit)}}
-      [:ok {:member _}] {:status 200 :body profile-content}
-      [:error _] {:status 400 :body non-member-content})))
+      [:ok {:member _}] {:status 200 :body (profile-content)}
+      [:error _] {:status 400 :body (non-member-content)})))
 
 (defn show-profile
   [{:keys [render layout show-profile-use-case]} req]
@@ -83,13 +85,16 @@
   (let [logged-in-user-id (get-in req [:session :user-id])
         member (find-member-by-id member-repo logged-in-user-id)
         location (lr/find-location-by-id location-repo (:location-id member))
+        [action-method action-target] (if member
+                                        ["PUT" (link-for-route req :members/me)]
+                                        ["POST" (link-for-route req :members)])
         model {:member member
                :location location
                :countries (lr/all-countries location-repo) ; TODO shouldn't pass this, refactor to locations
                :form
                {:action-name "Save"
-                :action-method "PUT"
-                :action-target (link-for-route req :members/me)}}]
+                :action-method action-method
+                :action-target action-target}}]
     {:status 200
      :body (-> {:content (presentation.edit-profile/present model)
                 :head-tags head-tags-for-maps}

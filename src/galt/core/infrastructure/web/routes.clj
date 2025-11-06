@@ -21,7 +21,8 @@
             :get (with-deps-layout core-handlers/view-landing)}]
       ["/datastar-sse" {:name :datastar-sse
                         :post (partial core-handlers/datastar-sse deps)}]
-      ["/files" {:post (partial core-handlers/store-file deps)}]
+      ["/files" {:post (partial core-handlers/store-file deps)
+                 :put (partial core-handlers/store-file deps)}]
       ["/files/*path" {:get (partial core-handlers/serve-file deps)
                        :conflicting true}]
       ["/assets/*" {:name :assets

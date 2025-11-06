@@ -52,7 +52,8 @@
            }]
          [:span.file-cta
           [:span.file-icon [:i.fas.fa-upload]]
-          [:span.file-label "Choose a file..."]]]]]
+          [:span.file-label "Choose a file..."]]]]]]
+     [:div.field
       [:figure.image.is-128x128
        [:img#member-avatar
         {:src (or (:avatar member) "/assets/images/avatar-128x128.png")

@@ -11,4 +11,5 @@
 
   (write-session [_ key data]
     (query-one db-access {:insert-into [:session_storage] :values [{:id key :data data}]}))
+
   (delete-session [_ key]))
