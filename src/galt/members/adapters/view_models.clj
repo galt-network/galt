@@ -33,9 +33,11 @@
 
 ; :tabs [{:name "All" :href (add-query-params (link-for-route :members/search))}]
 (defn members-search-view-model
-  [{:keys [members groups locations link-for-route active-tab]}]
+  [{:keys [members groups locations link-for-route active-tab initial-signals offset]}]
   (let [search-link (link-for-route :members)]
     {:active-tab (keyword active-tab)
+     :offset offset
+     :initial-signals initial-signals
      :tabs
      [{:name "All" :href (add-query-params search-link {:tab "all"}) :active? (= "all" active-tab)}
       {:name "Near you" :href (add-query-params search-link {:tab "nearby"}) :active? (= "nearby" active-tab)}]

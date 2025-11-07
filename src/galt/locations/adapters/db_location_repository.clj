@@ -2,6 +2,7 @@
   (:require
     [galt.locations.domain.location-repository :as lr :refer [LocationRepository]]
     [galt.core.adapters.db-access :refer [query query-one in-transaction]]
+    [honey.sql.helpers :refer [where]]
     [galt.locations.domain.entities.city :as city]
     [galt.locations.domain.entities.country :as country]
     [galt.locations.domain.entities.location :as location]
@@ -138,10 +139,12 @@
              (location/map->Location ,,,)))
 
   (locations-by-id [_ id]
-    (->> {:select [:*] :from [:locations] :where [:in :id (if (coll? id) id [id])]}
-         (query db-access ,,,)
-         (map #(transform-row location-spec %) ,,,)
-         (map #(location/map->Location %) ,,,)))
+    (if (seq id)
+      (->> {:select [:*] :from [:locations] :where [:in :id (if (coll? id) id [id])]}
+           (query db-access ,,,)
+           (map #(transform-row location-spec %) ,,,)
+           (map #(location/map->Location %) ,,,))
+      []))
 
   (locations-within-bounds [_ [[ne-lat ne-lng] [sw-lat sw-lng]]]
     (->> {:select [:*]

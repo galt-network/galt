@@ -1,8 +1,8 @@
 (ns galt.members.domain.use-cases.search-members)
 
 (defn search-members-use-case
-  [{:keys [find-members-by-name find-groups-by-member locations-by-id]} {:keys [query group-id]}]
-  (let [members (find-members-by-name query group-id)]
+  [{:keys [list-members find-groups-by-member locations-by-id]} {:keys [query offset group-id]}]
+  (let [members (list-members {:query query :group-id group-id :offset offset})]
     [:ok {:members members
           :locations (reduce (fn [acc loc] (assoc acc (:id loc) loc))
                              {}

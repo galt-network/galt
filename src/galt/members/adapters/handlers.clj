@@ -2,12 +2,14 @@
   (:require
    [clojure.core.match :refer [match]]
    [galt.core.adapters.link-generator :refer [link-for-route]]
+   [galt.core.adapters.number-helpers :refer [->int]]
    [galt.core.adapters.sse-helpers :refer [with-sse]]
    [galt.core.adapters.url-helpers :refer [add-query-params]]
    [galt.core.infrastructure.web.helpers :refer [get-signals]]
    [galt.core.views.components.dropdown-search :refer [dropdown-search-menu
                                                        id-element-name
                                                        show-results-signal-name]]
+   [galt.core.views.datastar-helpers :refer [js-literal]]
    [galt.groups.adapters.handlers :refer [head-tags-for-maps]]
    [galt.locations.domain.location-repository :as lr]
    [galt.members.adapters.presentation.edit-profile :as presentation.edit-profile]
@@ -24,15 +26,20 @@
   [{:keys [render search-members-use-case layout] :as deps} req]
   (let [active-tab (get-in req [:params :tab] "all")
         query (or (get-in req [:query-params "query"]) (get (get-signals req) :query))
-        [status result] (search-members-use-case {:query query})
+        offset (->int (get (get-signals req) :offset 0))
+        patch-mode (get-in req [:params :patch-mode])
+        [status result] (search-members-use-case {:query query :offset offset})
+        next-offset (+ 10 offset)
         model (view-models/members-search-view-model (merge result
                                                             {:active-tab active-tab
+                                                             :initial-signals (js-literal {:offset next-offset})
                                                              :link-for-route (partial link-for-route req)}))]
     (if (d*/datastar-request? req)
-      (let []
-        (with-sse req
-          (fn [send!]
-            (send! :html (presentation.members-list/search-results model)))))
+      (with-sse req
+        (fn [send!]
+          (send! :html (presentation.members-list/search-results model) {:selector "#search-results"
+                                                                         :patch-mode patch-mode})
+          (send! :signals {:offset next-offset})))
       {:status 200
        :body (-> {:content (presentation.members-list/present model)
                   :head-tags (when (= "nearby" active-tab) head-tags-for-maps)}

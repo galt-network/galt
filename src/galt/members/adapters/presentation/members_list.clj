@@ -46,10 +46,7 @@
 
 (defn search-results
   [model]
-  [:div {:id "search-results"}
-   (case (:active-tab model)
-     :nearby (members-map model)
-     (map panel-item (:members model)))])
+  (map panel-item (:members model)))
 
 (defn panel-tab
   [tab]
@@ -59,7 +56,7 @@
   [model]
   [:div
    [:nav.panel
-   [:p.panel-heading "Find members"]
+   ; [:p.panel-heading "Find members"]
    [:div.panel-block
     [:div.field.has-addons
      [:p {:class [:control :has-icons-left]}
@@ -67,10 +64,14 @@
                                   :name "query"
                                   :data-bind "query"
                                   :data-on:keyup "evt.keyCode === 13 && @get('/members')"
+                                  :data-signals (:initial-signals model)
                                   ; :data-on:keyup__debounce.500ms "@get('/members')"
                                   }]
       [:span {:class "icon is-left"}
        [:i {:class "fas fa-search" :aria-hidden "true"}]]]
      [:p.control [:button.button.is-primary {:data-on:click (d*-backend-action "/members")} "Search"]]]]
    [:p.panel-tabs (map panel-tab (:tabs model))]
-   (search-results model)]])
+   (case (:active-tab model)
+     :nearby (members-map model)
+     [:div#search-results (search-results model)])
+   [:div {:data-on-intersect "@get('/members?patch-mode=append')"}]]])

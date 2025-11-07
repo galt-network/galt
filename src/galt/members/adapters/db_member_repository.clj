@@ -1,7 +1,8 @@
 (ns galt.members.adapters.db-member-repository
   (:require
-    [galt.core.adapters.db-access :refer [query query-one]]
+    [galt.core.adapters.db-access :as db :refer [query query-one]]
     [galt.members.domain.entities.member :as member]
+    [honey.sql.helpers :refer [where limit]]
     [galt.core.adapters.db-result-transformations :refer [transform-row
                                                           defaults
                                                           ->local-date-time
@@ -60,10 +61,21 @@
   (list-members [_]
     (mr/list-members _ {:limit 10}))
 
-  (list-members [_ {:keys [limit order] :or {limit 10 order :name}}]
-    (some->> (query db-access {:select [:*] :from [:members] :order-by [order] :limit limit})
-             (map #(transform-row member-spec %) ,,,)
-             (map member/map->Member ,,,)))
+  (list-members [_ {:keys [query group-id limit order offset] :or {limit 10 offset 0 order :name}}]
+    (let [inner-query (cond-> {:select-distinct-on [[:members.id] :members.*]
+                               :from [:members]
+                               :left-join [[:group-memberships :gm] [:= :gm.member_id :members.id]]
+                               :order-by [:members.id]
+                               :limit limit
+                               ; :where [:and [:= 1 1]]
+                               :offset offset}
+                        (seq query) (where [:ilike :name (str "%" query "%")])
+                        group-id (where [:= :gm.group_id group-id]))]
+      (some->>
+        {:select [:*] :from inner-query :order-by order}
+        (db/query db-access ,,,)
+        (map #(transform-row member-spec %) ,,,)
+        (map member/map->Member ,,,))))
 
   (find-member-by-user-id [_ id]
     (some->> {:select [:*] :from [:members] :where [:= :id id]}

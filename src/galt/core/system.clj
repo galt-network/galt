@@ -274,7 +274,7 @@
      #::ds{:start
            (fn [{{:keys [member-repo group-repo location-repo]} ::ds/config}]
              (partial search-members-use-case
-                      {:find-members-by-name (partial mr/find-members-by-name member-repo)
+                      {:list-members (partial mr/list-members member-repo)
                        :locations-by-id (partial lr/locations-by-id location-repo)
                        :find-groups-by-member (partial gr/find-groups-by-member group-repo)}))
            :config
