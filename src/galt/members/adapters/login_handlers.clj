@@ -7,23 +7,29 @@
    [galt.core.infrastructure.web.sse-connection-store :refer [get-connection]]
    [galt.core.views.datastar-helpers :refer [d*-backend-action]]
    [galt.members.adapters.presentation.show-login :as presentation.show-login]
-   [galt.members.adapters.view-models :refer [login-result-view-model]]))
+   [galt.members.adapters.view-models :refer [login-result-view-model]]
+   [ring.middleware.session]
+   [starfederation.datastar.clojure.api :refer [datastar-request?]]))
 
 (defn show-login
   [{:keys [layout start-lnurl-login-use-case render gen-uuid]} req]
-  (let [message (decode-url-encoded (get-in req [:query-params "message"]))
-        session-id (or
-                     (get-in req [:cookies "ring-session" :value])
-                     (gen-uuid))
-        callback-path (link-for-route req :members.login/lnurl-auth)
-        datastar-action (d*-backend-action "/datastar-sse" :post {:connection-id session-id})
-        [_status lnurl] (start-lnurl-login-use-case {:session-id session-id
-                                                     :callback-path callback-path})
-        model {:message message
-               :lnurl lnurl
-               :datastar-action datastar-action}]
+  (if (datastar-request? req)
+    (let [message (decode-url-encoded (get-in req [:query-params "message"]))
+          session-id (get req :session/key)
+          callback-path (link-for-route req :members.login/lnurl-auth)
+          datastar-action (d*-backend-action "/datastar-sse" :post {:connection-id session-id})
+          [_status lnurl] (start-lnurl-login-use-case {:session-id session-id
+                                                       :callback-path callback-path})
+          model {:message message
+                 :lnurl lnurl
+                 :datastar-action datastar-action}]
+      (with-sse req
+        (fn [send!]
+          (send! :html (presentation.show-login/qr-code model)
+                 {:selector "#qr-code"}))))
     {:status 200
-     :body (-> model presentation.show-login/present layout render)}))
+     :session {:login-start (System/currentTimeMillis)}
+     :body (-> {} presentation.show-login/present layout render)}))
 
 (defn lnurl-auth-callback
   [{:keys [complete-lnurl-login-use-case] :as deps} req]

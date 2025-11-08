@@ -12,9 +12,8 @@
 
 (defn view-landing
   [{:keys [render layout] :as _deps} _req]
-  (let []
-    {:status 200
-     :body (render (layout {:content (landing-page/page {:new-user? false})}))}))
+  {:status 200
+   :body (render (layout {:content (landing-page/page {:new-user? false})}))})
 
 (defn serve-file
   [{:keys [file-storage]} req]
@@ -36,8 +35,6 @@
     (->sse-response
       req
       {on-open (fn [sse]
-                 (println ">>> datastar-sse on-open" sse connection-id)
                  (add-connection connection-id sse))
        on-close (fn [sse _status]
-                  (println ">>> datastar-sse on-close" sse connection-id)
                   (remove-connection connection-id))})))

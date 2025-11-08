@@ -15,12 +15,13 @@
 
   No other data is asked from you in order to use the platform.")
 
+(defn qr-code [model]
+  [:div {:data-init (:datastar-action model)}
+   (presentation.qr-code/qr-code-img (:lnurl model))])
+
 (defn present
   [model]
-  [:div.columns.is-centered {:data-init (:datastar-action model)
-                             ; :data-on:signal-patch "@get('/payments/new')"
-                             ; :data-on:signal-patch-filters "{include: /payment-status/}"
-                             }
+  [:div.columns.is-centered
    [:div.column.is-four-fifths
     (when (:message model) (errors-list (:message model)))
     [:div.content (render-markdown login-explanation)]
@@ -29,7 +30,8 @@
     [:div {:id "login-area"}
      [:div#login-area
       [:div.level
-       [:div.level-item (presentation.qr-code/qr-code-img (:lnurl model))]]]]]])
+       [:div.level-item
+        [:div#qr-code {:data-init "@get('/members/login?action=qr-code')"}]]]]]]])
 
 (defn login-result
   [model]
