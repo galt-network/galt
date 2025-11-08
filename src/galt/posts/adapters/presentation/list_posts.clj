@@ -1,7 +1,6 @@
 (ns galt.posts.adapters.presentation.list-posts
   (:require
-    [galt.core.adapters.time-helpers :as th :refer [relative-with-short]]
-    [galt.groups.adapters.presentation.show-group :refer [activity-card]]))
+    [galt.core.adapters.time-helpers :as th :refer [relative-with-short]]))
 
 (defn post-card
   [post]
@@ -24,45 +23,24 @@
 (defn present
   [model]
   [:div
-   [:div.columns
-    [:div.column.is-one-fifth
-     [:a.button {:href (:new-post-href model)}
+   [:div.level
+    [:div.level-left
+     [:div.level-item
+      [:div.field
+       [:label.label "Date range:"]
+       [:div.control
+        [:div.select
+         [:select {:name "period" :data-on:change "$offset = 0; @get('/posts?patch-mode=inner')" :data-bind "period"}
+          [:option {:value "today"} "Today"]
+          [:option {:value "this-week"} "This week"]
+          [:option {:value "this-month" :selected true} "This month"]
+          [:option {:value "this-year"} "This year"]
+          [:option {:value "all"} "All"]]]]]]]
+    [:div.level-right
+     [:div.level-item
+      [:a.button {:href (:new-post-href model)}
       [:span.icon [:i.fas.fa-calendar]]
-      [:span "New post"]]]]
-   [:div.columns
-    [:input {:type "hidden" :name "offset" :value (:offset model) :data-bind "offset"}]
-    [:input {:type "hidden" :name "limit" :value (:limit model) :data-bind "limit"}]
-    [:div.column
-     [:div.field
-      [:label.label "Date range:"]
-      [:div.control
-       [:div.select
-        [:select {:name "period" :data-on:change "@get('/posts?patch-mode=inner')" :data-bind "period"}
-         [:option {:value "today"} "Today"]
-         [:option {:value "this-week" :selected true} "This week"]
-         [:option {:value "this-month"} "This month"]
-         [:option {:value "this-year"} "This year"]
-         [:option {:value "all"} "All"]]]]]]
-    [:div.column
-     [:div.field
-      [:label.label "Type"]
-      [:div.control
-       [:div.radios
-        [:label.radio
-         [:input {:name "type"
-                  :type "radio"
-                  :value "live"
-                  :data-on:change "@get('/posts?patch-mode=inner')"
-                  :data-bind "type"}]
-         "Live"]
-        [:label.radio
-         [:input {:name "type"
-                  :type "radio"
-                  :value "online"
-                  :data-on:change "@get('/posts?patch-mode=inner')"
-                  :data-bind "type"
-                  }]
-         "Online"]]]]]]
-   [:div {:id "event-cards" :data-signals (:initial-signals model)}
+      [:span "New post"]]]]]
+   [:div {:id "post-cards" :data-signals (:initial-signals model)}
     (map post-card (:posts model))]
    [:div {:data-on-intersect "@get('/posts?patch-mode=append')"}]])

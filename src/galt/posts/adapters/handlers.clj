@@ -18,8 +18,11 @@
 
 (defn- list-posts-use-case
   [{:keys [post-repo]}
-   {:keys [limit offset]}]
-  (let [posts (pr/list-posts post-repo {:limit limit :offset offset})]
+   {:keys [limit offset from-date to-date]}]
+  (let [posts (pr/list-posts post-repo {:limit limit
+                                        :offset offset
+                                        :from-date from-date
+                                        :to-date to-date})]
     [:ok posts]))
 
 (defn list-posts
@@ -29,12 +32,12 @@
       (fn [send!]
         (let [signals (get-signals req)
               patch-mode (get-in req [:params :patch-mode])
-              limit (if (= patch-mode "inner") 5 (get signals :limit 5))
+              limit 10
               offset (if (= patch-mode "inner") 0 (get signals :offset 0))
               next-offset (+ limit offset)
-              [start-time end-time] (th/period-range (keyword (:period signals)))
-              type (:type signals)
-              command {:limit limit :offset offset}
+              period (keyword (get signals :period "this-month"))
+              [start-time end-time] (th/period-range period)
+              command {:limit limit :offset offset :from-date start-time :to-date end-time}
               [status result] (list-posts-use-case deps command)
               model (map (partial add-post-links req) result)]
           (send! :html (map presentation.list-posts/post-card model) {:selector "#post-cards"
@@ -42,8 +45,11 @@
           (send! :signals {:offset next-offset :limit limit}))))
     (let [limit 5
           offset 0
-          [start-time end-time] (th/period-range :this-week)
-          [status result] (list-posts-use-case deps {:limit limit :offset offset})
+          [start-time end-time] (th/period-range :this-month)
+          [status result] (list-posts-use-case deps {:limit limit
+                                                     :offset offset
+                                                     :start-time start-time
+                                                     :end-time end-time})
           model {:new-post-href (link-for-route req :posts/new)
                  :posts (map (partial add-post-links req) result)
                  :initial-signals "{offset: 5, limit: 5}"

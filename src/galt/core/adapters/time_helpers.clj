@@ -113,6 +113,8 @@
        :next-week [(jt/local-date-time next-monday midnight)
                    (jt/local-date-time (jt/plus next-monday (jt/days 7)) midnight)]
        :this-month [(jt/local-date-time first-month midnight) (jt/local-date-time next-first-month midnight)]
+       :this-year [(jt/local-date-time (jt/adjust today :first-day-of-year) midnight)
+                   (jt/local-date-time (jt/adjust today :first-day-of-next-year) midnight)]
        :all []
        (throw (ex-info "Invalid period keyword" {:kw kw}))))))
 

@@ -31,7 +31,7 @@
              (query-one db-access ,,,)
              (transform-row post-spec ,,,)))
 
-  (list-posts [_ {:keys [group-id limit offset] :or {limit 10 offset 0}}]
+  (list-posts [_ {:keys [group-id limit offset from-date to-date] :or {limit 10 offset 0}}]
     (let [base-q {:select [:posts.*
                           [:members.name :author]
                           [:members.avatar :author-avatar]
@@ -47,7 +47,10 @@
           final-q (cond-> base-q
                     group-id (where [:and
                                      [:= :target-type "group"]
-                                     [:in :target-id (if (coll? group-id) group-id [group-id])]]))]
+                                     [:in :target-id (if (coll? group-id) group-id [group-id])]])
+                    from-date (where [:>= :posts.publish-at from-date])
+                    to-date (where [:<= :posts.publish-at to-date])
+                    )]
       (->> (query db-access final-q)
            (map #(transform-row post-spec %) ,,,)))))
 
