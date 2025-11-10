@@ -16,22 +16,29 @@
   No other data is asked from you in order to use the platform.")
 
 (defn qr-code [model]
-  [:div {:data-init (:datastar-action model)}
+  [:div.mb-2 {:data-init (:datastar-action model)}
    (presentation.qr-code/qr-code-img (:lnurl model))])
+
+(defn already-logged-in
+  [model]
+  [:div
+   [:p "You are already logged in. To log in again, please log out first by clicking the following button"]
+   [:button.button.is-primary {:data-on:click "@post('/members/logout')"} "Log out"]])
 
 (defn present
   [model]
   [:div.columns.is-centered
    [:div.column.is-four-fifths
     (when (:message model) (errors-list (:message model)))
-    [:div.content (render-markdown login-explanation)]
     [:div.block.is-size-5.has-text-centered
-     [:div {:id "login-action-description"} "Scan the QR code with your Bitcoin Lightning wallet"]]
+     [:div {:id "login-action-description"} "To log in, scan the QR code with your Bitcoin Lightning wallet"]]
     [:div {:id "login-area"}
-     [:div#login-area
-      [:div.level
-       [:div.level-item
-        [:div#qr-code {:data-init "@get('/members/login?action=qr-code')"}]]]]]]])
+     [:div.level
+      [:div.level-item
+       [:div#qr-code {:data-init "@get('/members/login?action=qr-code')"}]]]]
+    [:div.box
+     [:div.content
+      (render-markdown login-explanation)]]]])
 
 (defn login-result
   [model]

@@ -27,12 +27,16 @@
         (fn [send!]
           (send! :html (presentation.show-login/qr-code model)
                  {:selector "#qr-code"}))))
-    {:status 200
-     :session {:login-start (System/currentTimeMillis)}
-     :body (-> {} presentation.show-login/present layout render)}))
+    (let [logged-in? (get-in req [:session :user-id])
+          content (if logged-in?
+                    (presentation.show-login/already-logged-in {})
+                    (presentation.show-login/present {}))]
+      {:status 200
+       :session {:login-start (System/currentTimeMillis)}
+       :body (-> content layout render)})))
 
 (defn lnurl-auth-callback
-  [{:keys [complete-lnurl-login-use-case] :as deps} req]
+  [{:keys [layout complete-lnurl-login-use-case] :as deps} req]
   (let [params (:params req)
         command {:challenge (:k1 params)
                  :signed-challenge (:sig params)
@@ -41,7 +45,7 @@
         session-id (:galt-session-id params)
         [status result] (complete-lnurl-login-use-case command)
         model (login-result-view-model status result)]
-    (send! (get-connection session-id) :html (presentation.show-login/login-result model))
+    (send! (get-connection session-id) :html (layout (presentation.show-login/login-result model)))
     (case status
       :ok {:status 200 :body (->json {:status "OK"})}
       :error {:status 200 :body (->json {:status "ERROR" :reason result})})))
@@ -53,7 +57,10 @@
     (fn [send!]
       (let [session-key (:session/key req)
             req-logged-out (assoc-in req [:session] nil)
+            result-model {:message-class "is-success"
+                          :message-header "Logged out"
+                          :message-body "You have successfully logged out"}
             model-after-logging-out ((:update-layout-model deps) req-logged-out)]
         (delete-session session-key)
         (send! :html (app-container (assoc model-after-logging-out
-                                           :content [:h1 "You have been logged out"])))))))
+                                           :content (presentation.show-login/login-result result-model))))))))

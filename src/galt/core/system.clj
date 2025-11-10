@@ -296,17 +296,19 @@
 
      :complete-lnurl-login-use-case
      #::ds{:start
-           (fn [{{:keys [session-store user-repo member-repo]} ::ds/config}]
+           (fn [{{:keys [session-store user-repo payment-repo member-repo]} ::ds/config}]
              (partial complete-lnurl-login-use-case
                       {:session-store session-store
                        :verify-signature verify-signature
                        :gen-uuid clj-uuid/v7
                        :find-user-by-pub-key (partial ur/find-user-by-pub-key user-repo)
                        :find-member-by-user-id (partial mr/find-member-by-user-id member-repo)
+                       :current-membership-payment (partial pr/current-membership-payment payment-repo)
                        :add-user (partial ur/add-user user-repo)}))
            :config
            {:session-store (ds/ref [:storage :session-store])
             :user-repo (ds/ref [:storage :user])
+            :payment-repo (ds/ref [:storage :payment])
             :member-repo (ds/ref [:storage :member])}}
 
      :watch-lnurl-login-use-case
