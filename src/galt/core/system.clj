@@ -51,6 +51,8 @@
    [galt.members.domain.use-cases.create-member :refer [create-member-use-case]]
    [galt.members.domain.use-cases.update-member :refer [update-member-use-case]]
    [galt.posts.domain.use-cases.create-post :refer [create-post-use-case]]
+   [galt.posts.domain.use-cases.update-post :refer [update-post-use-case]]
+   [galt.posts.domain.use-cases.delete-post :refer [delete-post-use-case]]
    [galt.members.domain.user-repository :as ur :refer [find-user-by-id]]
    [galt.posts.domain.post-repository :as po-re]
    [galt.events.domain.event-repository :as er]
@@ -412,6 +414,23 @@
            (fn [{{:keys [post-repo]} ::ds/config}]
              (partial create-post-use-case
                       {:add-post (partial po-re/add-post post-repo)}))
+           :config
+           {:post-repo (ds/ref [:storage :post])}}
+
+     :update-post-use-case
+     #::ds{:start
+           (fn [{{:keys [post-repo]} ::ds/config}]
+             (partial update-post-use-case
+                      {:get-post (partial po-re/get-post post-repo)
+                       :update-post (partial po-re/update-post post-repo)}))
+           :config
+           {:post-repo (ds/ref [:storage :post])}}
+
+     :delete-post-use-case
+     #::ds{:start
+           (fn [{{:keys [post-repo]} ::ds/config}]
+             (partial delete-post-use-case
+                      {:delete-post (partial po-re/delete-post post-repo)}))
            :config
            {:post-repo (ds/ref [:storage :post])}}
 

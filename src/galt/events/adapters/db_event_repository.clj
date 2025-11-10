@@ -34,7 +34,9 @@
              (query-one db-access ,,,)
              (transform-row event-spec ,,,)))
 
-  (update-event [_ event])
+  (update-event [_ event-id attrs])
+
+  (delete-event [_ event-id])
 
   (rsvp-event [_ event-id member-id])
 

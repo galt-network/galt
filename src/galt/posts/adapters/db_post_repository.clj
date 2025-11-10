@@ -27,9 +27,25 @@
          (query-one db-access ,,,)))
 
   (get-post [_ post-id]
-    (some->> {:select [:*] :from [:posts] :where [:= :id post-id]}
+    (some->> {:select [:posts.*
+                          [:members.name :author]
+                          [:members.avatar :author-avatar]
+                          [:members.id :author-id]
+                          [:members.slug :author-slug]]
+              :from [:posts]
+              :join [:members [:= :members.id :posts.author-id]]
+              :where [:= :posts.id post-id]}
              (query-one db-access ,,,)
              (transform-row post-spec ,,,)))
+
+  (update-post [_ id attrs]
+    (query db-access
+           {:update [:posts]
+            :set attrs
+            :where [:= :posts/id id]}))
+
+  (delete-post [_ id]
+    (query db-access {:delete-from [:posts] :where [:= :id id]}))
 
   (list-posts [_ {:keys [group-id limit offset from-date to-date] :or {limit 10 offset 0}}]
     (let [base-q {:select [:posts.*

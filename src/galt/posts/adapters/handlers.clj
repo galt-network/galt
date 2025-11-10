@@ -1,5 +1,6 @@
 (ns galt.posts.adapters.handlers
   (:require
+   [clojure.core.match :as m]
    [galt.core.adapters.link-generator :refer [link-for-route]]
    [galt.core.adapters.sse-helpers :refer [with-sse]]
    [galt.core.adapters.time-helpers :as th]
@@ -60,8 +61,10 @@
 
 (defn new-post
   [{:keys [render layout]} req]
-  (let [model {:target-id (get-in req [:query-params "target-id"])
-               :target-type (get-in req [:query-params "target-type"])}]
+  (let [model {:form-action (link-for-route req :posts)
+               :form-method "POST"
+               :post {:target-id (get-in req [:query-params "target-id"])
+                     :target-type (get-in req [:query-params "target-type"])}}]
     {:status 200 :body (-> model presentation.new-post/present layout render)}))
 
 (defn create-post
@@ -83,10 +86,44 @@
 
 (defn show-post
   [{:keys [render post-repo layout]} req]
-  (let [post-id (parse-uuid (get-in req [:path-params :id]))
+  (let [member-id (get-in req [:session :member-id])
+        post-id (parse-uuid (get-in req [:path-params :id]))
         post (pr/get-post post-repo post-id)
+        author-viewing? (= member-id (:author-id post))
         comments-url (link-for-route req :comments {:entity-id post-id :entity-type "posts"})
+        edit-href (link-for-route req :posts.by-id/edit {:id (:id post)})
         model {:post post
+               :edit-href (when author-viewing? edit-href)
                :comment-action (d*-backend-action comments-url :get)}]
     {:status http-status/ok
      :body (-> model presentation.show-post/present layout render)}))
+
+
+(defn edit-post
+  [{:keys [render post-repo layout]} req]
+  (let [post-id (parse-uuid (get-in req [:path-params :id]))
+        post (pr/get-post post-repo post-id)
+        model {:post post
+               :form-action (link-for-route req :posts.by-id/edit {:id post-id})
+               :form-method "PUT"}]
+    {:status http-status/ok
+     :body (-> model presentation.new-post/present layout render)}))
+
+(defn update-post
+  [{:keys [render update-post-use-case layout]} req]
+  (let [post-id (parse-uuid (get-in req [:path-params :id]))
+        member-id (get-in req [:session :member-id])
+        post {:title (get-in req [:params :title])
+              :content (get-in req [:params :content])}
+        command {:post-id post-id
+                 :updater-id member-id
+                 :post post}
+        [status result] (update-post-use-case command)
+        model {:post post
+               :form-action (link-for-route req :posts.by-id/edit {:id post-id})
+               :form-method "PUT"}]
+    (m/match [status result]
+           [:ok _] {:status http-status/see-other
+                    :headers {"Location" (link-for-route req :posts/by-id {:id post-id})}}
+           [:error _] {:status http-status/unprocessable-entity
+                       :body (-> (assoc model :errors result) presentation.new-post/present layout render)})))

@@ -3,19 +3,21 @@
     [galt.core.views.components :refer [errors-list]]))
 
 (defn present
-  [model]
+  [{:keys [post] :as model}]
   [:div
-   [:form {:method "POST" :action "/posts"}
-    [:input {:type "hidden" :name "target-type" :value (:target-type model)}]
-    [:input {:type "hidden" :name "target-id" :value (:target-id model)}]
+   (when (:errors model) (errors-list "Error in updating the post" (:errors model)))
+   [:form {:method "POST" :action (:form-action model)}
+    [:input {:type "hidden" :name "_method" :value (:form-method model)}]
+    [:input {:type "hidden" :name "target-type" :value (:target-type post)}]
+    [:input {:type "hidden" :name "target-id" :value (:target-id post)}]
     [:div.field
      [:label.label "Title"]
      [:div.control
-      [:input.input {:name "title" :value (:title model)}]]]
+      [:input.input {:name "title" :value (:title post)}]]]
     [:div.field
      [:label.label "Content"]
      [:div.control
-      [:textarea.textarea {:name "content"} (:content model)]]
+      [:textarea.textarea {:name "content" :rows 20} (:content post)]]
      [:p.help "Can use Markdown"]]
     [:div.field
      [:div.control

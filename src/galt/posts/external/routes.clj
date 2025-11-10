@@ -16,7 +16,12 @@
                       :name :posts/new
                       :conflicting true
                       :get (with-deps-layout handlers/new-post)}]
-       ["/posts/:id" {:id :posts
-                      :conflicting true
-                      :name :posts/by-id
-                      :get (with-deps-layout handlers/show-post)}]])))
+       ["/posts/:id"
+        ["" {:id :posts
+             :conflicting true
+             :name :posts/by-id
+             :get (with-deps-layout handlers/show-post)}]
+        ["/edit" {:id :posts
+                  :name :posts.by-id/edit
+                  :get (with-deps-layout handlers/edit-post)
+                  :put (with-deps-layout handlers/update-post)}]]])))
