@@ -36,7 +36,7 @@
        :body (-> content layout render)})))
 
 (defn lnurl-auth-callback
-  [{:keys [layout complete-lnurl-login-use-case] :as deps} req]
+  [{:keys [app-container complete-lnurl-login-use-case] :as deps} req]
   (let [params (:params req)
         command {:challenge (:k1 params)
                  :signed-challenge (:sig params)
@@ -44,8 +44,13 @@
                  :session-id (:galt-session-id params)}
         session-id (:galt-session-id params)
         [status result] (complete-lnurl-login-use-case command)
-        model (login-result-view-model status result)]
-    (send! (get-connection session-id) :html (layout (presentation.show-login/login-result model)))
+        model (login-result-view-model status result)
+        req-logged-in (assoc req :session (:session result))
+        model-after-logging-in ((:update-layout-model deps) req-logged-in)]
+    (send! (get-connection session-id)
+           :html (app-container (assoc model-after-logging-in
+                                       :content
+                                       (presentation.show-login/login-result model))))
     (case status
       :ok {:status 200 :body (->json {:status "OK"})}
       :error {:status 200 :body (->json {:status "ERROR" :reason result})})))

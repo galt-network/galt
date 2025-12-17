@@ -138,12 +138,22 @@
       {:status http-status/ok
        :body (-> model presentation.list-groups/present layout render)})))
 
+(defn shorten
+  [limit s]
+  (if (> (count s) limit)
+    (str (subs s 0 limit) "... (continues)")
+    s))
+
+(defn add-links
+  [link-gen])
 (defn show-group
   [{:keys [layout render show-group-use-case] :as deps} req]
   (let [group-id (get-in req [:path-params :id])
         viewing-user-id (get-in req [:session :user-id])
         [status result] (show-group-use-case {:viewing-user-id viewing-user-id
                                               :group-id (parse-uuid group-id)})
+        members-to-show 3
+        activity-content-to-show 300
         {:keys [group location members]} result
         model {:name (:name group)
                :description (:description group)
@@ -155,9 +165,16 @@
                :founded-at (time-helpers/relative-with-short (:created-at group))
                :new-post-href (-> (link-for-route req :posts/new)
                                   (add-query-params ,,, {:target-id group-id :target-type "group"}))
-               :members (map (fn [m] {:name (:name m)
-                                      :href (link-for-route req :members/by-id {:id (:id m)})})
-                             members)
-               :activity (:posts result)}]
+               :members (take members-to-show
+                              (map (fn [m] {:name (:name m)
+                                            :href (link-for-route req :members/by-id {:id (:id m)})})
+                                   members))
+               :more-members? (> (count members) members-to-show)
+               :more-members-message (str "And " (- (count members) members-to-show) " more")
+               :activity (->> (:posts result)
+                             (map (fn [p] (assoc p
+                                                 :content (shorten activity-content-to-show (:content p))
+                                                 :shortened? (> (count (:content p)) activity-content-to-show))) ,,,)
+                             (map (fn [p] (assoc p :href (link-for-route req :posts/by-id {:id (:id p)}))) ,,,))}]
     {:status 200 :body (render (layout {:content (presentation.show-group/present model)
                                         :head-tags head-tags-for-maps}))}))

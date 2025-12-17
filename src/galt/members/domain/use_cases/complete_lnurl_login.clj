@@ -21,11 +21,12 @@
                (add-user (gen-uuid) pub-key))
         member (find-member-by-user-id (:id user))
         payment (current-membership-payment (:id member))
-        membership-active? (jt/before? (jt/local-date-time) (jt/plus (:paid-at payment) (jt/years 1)))]
-    (ss/write-session session-store session-id {:user-id (:id user)
-                                                :membership-active? membership-active?
-                                                :member-id (:id member)})
-    {:user user :member member}))
+        membership-active? (jt/before? (jt/local-date-time) (jt/plus (:paid-at payment) (jt/years 1)))
+        updated-session {:user-id (:id user)
+                         :membership-active? membership-active?
+                         :member-id (:id member)}]
+    (ss/write-session session-store session-id updated-session)
+    {:user user :member member :session updated-session}))
 
 (s/def ::session-store fn?)
 (s/def ::verify-signature fn?)

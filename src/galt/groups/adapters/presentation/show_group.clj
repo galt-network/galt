@@ -17,6 +17,7 @@
       [:p {:class "subtitle is-6"} (:slug activity)]]]
     [:div {:class "content"}
      (render-markdown (:content activity))
+    [:a {:href (:href activity)} "Read the full text"]
      [:br]
      [:div
       "Published "
@@ -40,22 +41,25 @@
      [:div.column [:h1.title.has-text-centered (:name model)]]
      [:div.column.is-one-fifth
       [:div.buttons (for [action (:actions model)] (button action))]]]
+    [:container
+      [:div.field [:label.label "Description"]
+       [:div.control [:div.content (render-markdown (:description model))]]]
+      [:div.field [:label.label "Location"]
+       [:div.control [:p (:location-name model)]]]]
     [:div.columns
      [:div.column.is-one-third
-      [:div.field [:label.label "Description"]
-       [:div.control [:div.content (:description model)]]]
       [:div.field [:label.label "Language"]
        [:div.tags.are-medium
         (map (fn [lang] [:span.tag lang]) (:languages model))]]
-      [:div.field [:label.label "Location"]
-       [:div.control [:p (:location-name model)]]]
       [:div.field [:label.label "Founded At"]
        [:div.control [:p (:founded-at model)]]]
       [:div.field [:label.label "Members"]
-       [:div.control
+       [:div.control.content
         [:ul
-         (map (fn [member] [:a {:href (:href member)} [:li (:name member)]])
-              (:members model))]]]]
+         (map (fn [member] [:li [:a {:href (:href member)} (:name member)]])
+              (:members model))]
+        (when (:more-members? model)
+          [:ul (:more-members-message model)])]]]
      [:div.column
       [:div {:id "map"
              :style {:height "400px"}

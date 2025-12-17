@@ -4,13 +4,12 @@
     [starfederation.datastar.clojure.api :as d*]
     [starfederation.datastar.clojure.api.common :as d*-common]
     [starfederation.datastar.clojure.adapter.http-kit :refer [->sse-response on-open]]
-    [galt.core.infrastructure.web.helpers :refer [->json]]
-    [starfederation.datastar.clojure.api.common :as d*-api.common]))
+    [galt.core.infrastructure.web.helpers :refer [->json]]))
 
 (defn opts->d*-opts
   [opts]
-  (let [conversion-map {:selector d*-api.common/selector
-                        :patch-mode d*-api.common/patch-mode}]
+  (let [conversion-map {:selector d*-common/selector
+                        :patch-mode d*-common/patch-mode}]
     (reduce (fn [acc [k v]]
                  (if (contains? conversion-map k)
                    (assoc acc (get conversion-map k) v)
