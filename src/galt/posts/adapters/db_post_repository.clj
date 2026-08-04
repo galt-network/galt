@@ -78,4 +78,5 @@
 
 (comment
   (pr/list-posts @last-repo (parse-uuid "01997bba-dbe1-7067-9135-1a300d70e218"))
+  (pr/get-post @last-repo (parse-uuid "019a63de-d607-7b0d-aacb-5c223e87f2a4"))
   )

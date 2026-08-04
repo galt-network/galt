@@ -107,5 +107,6 @@
 
 (comment
   (mr/fuzzy-find-member @last-repo "G")
-  (mr/list-members @last-repo)
+  (def xm (mr/list-members @last-repo {:query "von Test" :limit 1000}))
+  (count xm)
   (member/map->Member nil))

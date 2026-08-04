@@ -1,7 +1,7 @@
 ## Development
 
 1. Start repl server
-  - `clojure -M:repl:dev -m nrepl.cmdline`
+  - `clojure -M:dev:repl -m nrepl.cmdline`
   - `clojure -M:dev:repl -m galt.main`
 2. Connect to the nREPL server
   - from Vim: `:ConjureConnect`

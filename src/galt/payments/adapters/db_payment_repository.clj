@@ -77,7 +77,9 @@
   (DbPaymentRepository. db-access))
 
 (comment
-  (def user-id (parse-uuid "019954c1-bc96-706d-85b2-4b9b01e197c7"))
-  (pr/current-membership-payment @last-repo user-id)
+  (def user-id (parse-uuid "0199c537-4231-70c1-af8e-fff11dfd8503"))
+  (def current (pr/current-membership-payment @last-repo user-id))
+  (require '[java-time.api :as jt])
+  (jt/before? (jt/local-date-time) (jt/plus (:paid-at current) (jt/years 1)))
   (require '[galt.payments.adapters.cln-gateway-responses :refer [responses]])
   (pr/add-membership-invoice @last-repo user-id (:invoice responses)))

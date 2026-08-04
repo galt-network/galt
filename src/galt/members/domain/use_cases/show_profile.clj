@@ -3,10 +3,10 @@
     [clojure.core.match :refer [match]]
     ))
 ; Data needed:
-;   - posts (show only titles of first 5, & produce link to posts page with search filter for that user)
-;   - created events
-;   - events participated by (if user configures to make his participation public)
-;   - comments posted (show 5 most recent or popular)
+;   - cards: posts (show only titles of first 5, & produce link to posts page with search filter for that user)
+;   - cards: created events
+;   - cards: events participated by (if user configures to make his participation public)
+;   - list: comments posted (show 5 most recent or popular)
 ;   - separate section for messages (only when user is logged in)
 (defn show-profile-use-case
   [{:keys [find-member-by-id

@@ -67,3 +67,6 @@
           [:ok (find-or-create-user-and-add-to-session deps {:pub-key user-pub-key
                                                              :session-id session-id})]
           [:error {:message "Signature check invalid"}])))))
+
+(comment
+  (ss/read-session @last-session-store @last-session-id))
