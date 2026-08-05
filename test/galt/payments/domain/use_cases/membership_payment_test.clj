@@ -8,20 +8,17 @@
 (def lightning-invoice-response
   {:payment-hash "hash"
    :expires-at 123
-   :bolt11 bolt11
+   :bolt-11 bolt11
    :payment-secret "paymentsecret..."
    :created-index 2})
 
 (deftest membership-payment-use-case-test
-  (let [invitation-id (random-uuid)
-        user-id (random-uuid)
-        invitation {:id invitation-id :max-usages 1}
-        invitation-usage {:invitation-id invitation-id :user-id user-id :invoice-id nil}
-        invoice {}
-        deps {:invitation-by-id (constantly invitation)
-              :invitation-usages-by-user (constantly invitation-usage)
-              :request-lightning-invoice (constantly lightning-invoice-response)}
-        command {:invitation-id (random-uuid) :user-id (random-uuid)}
-        [status {:keys [invitation-usage invoice payment-status]}] (membership-payment-use-case deps command)]
-    ; Mock lightning-node response, check for newly created invoice and its expired at
-    (is (= (:bolt11 invoice) bolt11))))
+  (let [user-id (random-uuid)
+        deps {:membership-invoices (constantly [])
+              :create-invoice (constantly lightning-invoice-response)
+              :add-membership-invoice (fn [_user-id v] v)}
+        [status invoice] (membership-payment-use-case deps {:user-id user-id})]
+    (is (= :ok status))
+    (is (= bolt11 (:bolt-11 invoice)))
+    (is (= 123 (:expires-at invoice)))
+    (is (= 960000 (:amount-msat invoice)))))

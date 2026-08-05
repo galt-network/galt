@@ -37,8 +37,9 @@
    [galt.locations.adapters.db-location-repository :refer [new-db-location-repository]]
    [galt.locations.domain.location-repository :as lr]
    [galt.locations.external.routes]
-   [galt.design.routes]
-   [galt.members.adapters.db-member-repository :refer [new-db-member-repository]]
+    [galt.design.routes]
+    [galt.world-map.external.routes]
+    [galt.members.adapters.db-member-repository :refer [new-db-member-repository]]
    [galt.members.adapters.db-user-repository :refer [new-db-user-repository]]
    [galt.members.domain.member-repository :as mr]
    [galt.payments.adapters.db-payment-repository :refer [new-db-payment-repository]]
@@ -189,7 +190,16 @@
               :write-session (partial write-session session-store)
               :delete-session (partial delete-session session-store)})
            :config
-           {:session-store (ds/ref [:storage :session-store])}}}
+           {:session-store (ds/ref [:storage :session-store])}}
+
+     :globo-sse
+     #::ds{:start
+           (fn [_]
+             {:storage (atom {:users {}
+                              :map-objects #{}
+                              :user-connections {}
+                              :messages []})
+              :sse-clients (atom {})})}}
 
     :gateways
     {:payment
@@ -474,6 +484,9 @@
                 :file-storage (config :file-storage)
                 :galt-url (config :galt-url)
                 :gen-uuid clj-uuid/v7
+                :globo-mount-path (config :globo-mount-path)
+                :globo-storage (get-in config [:globo-storage :storage])
+                :globo-sse-clients (get-in config [:globo-sse-clients :sse-clients])
                 :read-session (partial read-session (:session-store config))
                 :write-session (partial write-session (:session-store config))
                 :delete-session (partial delete-session (:session-store config))}
@@ -491,6 +504,9 @@
             :file-storage (ds/ref [:storage :file-storage])
             :galt-url (ds/ref [:env :galt-root-url])
             :session-store (ds/ref [:storage :session-store])
+            :globo-mount-path (ds/ref [:env :globo-mount-path])
+            :globo-storage (ds/ref [:storage :globo-sse])
+            :globo-sse-clients (ds/ref [:storage :globo-sse])
             :use-cases (ds/ref [:use-cases])
             }}
      :members/routes
@@ -541,12 +557,18 @@
              (galt.comments.external.routes/router (:route-deps config)))
            :config
            {:route-deps (ds/ref [:app :route-deps])}}
-     :design/routes
-     #::ds{:start
-           (fn [{:keys [::ds/config]}]
-             (galt.design.routes/router (:route-deps config)))
-           :config
-           {:route-deps (ds/ref [:app :route-deps])}}
+      :design/routes
+      #::ds{:start
+            (fn [{:keys [::ds/config]}]
+              (galt.design.routes/router (:route-deps config)))
+            :config
+            {:route-deps (ds/ref [:app :route-deps])}}
+      :world-map/routes
+      #::ds{:start
+            (fn [{:keys [::ds/config]}]
+              (galt.world-map.external.routes/router (:route-deps config)))
+            :config
+            {:route-deps (ds/ref [:app :route-deps])}}
      :router
      #::ds{:start
            (fn [{:keys [::ds/config]}]
@@ -557,22 +579,24 @@
                    payments-router (get-in config [:payments/routes])
                    posts-router (get-in config [:posts/routes])
                    events-router (get-in config [:events/routes])
-                   comments-router (get-in config [:comments/routes])
-                   design-router (get-in config [:design/routes])
-                   route-deps (get-in config [:route-deps])
-                   core-router (core.routes/router route-deps)]
-               (core.routes/merge-routers
-                 members-router
-                 groups-router
-                 locations-router
-                 invitations-router
-                 payments-router
-                 posts-router
-                 events-router
-                 core-router
-                 comments-router
-                 design-router
-                 )))
+                    comments-router (get-in config [:comments/routes])
+                    design-router (get-in config [:design/routes])
+                    world-map-router (get-in config [:world-map/routes])
+                    route-deps (get-in config [:route-deps])
+                    core-router (core.routes/router route-deps)]
+                (core.routes/merge-routers
+                  members-router
+                  groups-router
+                  locations-router
+                  invitations-router
+                  payments-router
+                  posts-router
+                  events-router
+                  core-router
+                  comments-router
+                  design-router
+                  world-map-router
+                  )))
            :config
            {:members/routes (ds/ref [:app :members/routes])
             :groups/routes (ds/ref [:app :groups/routes])
@@ -583,6 +607,7 @@
             :events/routes (ds/ref [:app :events/routes])
             :comments/routes (ds/ref [:app :comments/routes])
             :design/routes (ds/ref [:app :design/routes])
+            :world-map/routes (ds/ref [:app :world-map/routes])
             :route-deps (ds/ref [:app :route-deps])}}
 
      :route-handler

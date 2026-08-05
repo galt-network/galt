@@ -8,17 +8,20 @@ div#notification-container {
   right: 20px;
   z-index: 1000; /* Ensures it stays on top */
   width: 300px; /* Adjust as needed */
+  pointer-events: none; /* Let clicks pass through the box itself */
 }
 
 .notification {
   transform: translateY(100px); /* Start off-screen (below) */
   opacity: 0; /* Start invisible */
+  pointer-events: none; /* Don't block clicks when hidden */
   transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
 }
 
 .notification.is-visible {
   transform: translateY(0); /* Slide up to visible position */
   opacity: 1; /* Fully visible */
+  pointer-events: auto; /* Restore interaction when visible */
 }
 
 div.dropdown-item:hover {

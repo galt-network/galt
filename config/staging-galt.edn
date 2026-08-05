@@ -2,4 +2,5 @@
  :file-storage-root "/home/madis/www/staging.galt.is/uploads"
  :web-server-port 8083
  :cln-rest-url ""
- :cln-rune ""}
+ :cln-rune ""
+ :globo-mount-path "/world-map"}

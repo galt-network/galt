@@ -1,0 +1,55 @@
+/* World map page: sliding auto-hide navbar over full-bleed globe */
+
+#world-map-page {
+  height: 100vh;
+  overflow: hidden;
+}
+
+#world-map-navbar-wrap {
+  --handle-height: 1.5rem;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  transition: transform 0.35s ease-in-out;
+}
+
+#world-map-handle {
+  height: var(--handle-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+#world-map-handle i {
+  pointer-events: none;
+  font-size: 0.75rem;
+}
+
+#world-map-navbar {
+  background: #fff;
+}
+
+#world-map-navbar-wrap.hidden {
+  /* Slide the whole wrap up by the navbar height (wrap height minus the
+     handle), so the navbar goes fully off-screen and only the handle
+     strip remains visible at the top. */
+  transform: translateY(calc(-100% + var(--handle-height)));
+}
+
+/* Remove the inline margin-bottom: 2rem that layout/navbar sets */
+#world-map-navbar #navbar {
+  margin-bottom: 0 !important;
+}
+
+/* Fill viewport under the fixed navbar strip */
+#world-map-page #app {
+  height: 100vh;
+}
