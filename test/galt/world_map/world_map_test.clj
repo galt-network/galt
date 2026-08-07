@@ -2,11 +2,15 @@
   (:require
    [clojure.java.io :as io]
    [clojure.string :as str]
-   [clojure.test :refer [deftest is]]
+   [clojure.test :refer [deftest is testing]]
    [galt.core.infrastructure.web.helpers :as wh]
    [galt.members.domain.member-repository :as mr]
    [galt.members.domain.user-repository :as ur]
+   [galt.world-map.adapters.handlers :as handlers]
    [galt.world-map.external.routes :as routes]
+   [is.galt.globo.server :as globo-server]
+   [is.galt.globo.server.connections :as globo-connections]
+   [is.galt.globo.server.storage :as globo-storage]
    [org.httpkit.server :as hk]
    [reitit.ring :as rr]))
 
@@ -18,6 +22,14 @@
     (find-user-by-id [_ _] nil)
     (find-user-by-pub-key [_ _] nil)))
 
+(defn user-repo-with-name [name]
+  (reify ur/UserRepository
+    (add-user [_ _ _] nil)
+    (delete-user [_ _] nil)
+    (list-users [_] nil)
+    (find-user-by-id [_ _] (when name {:id "11111111-1111-1111-1111-111111111111" :name name}))
+    (find-user-by-pub-key [_ _] nil)))
+
 (defn member-repo-stub []
   (reify mr/MemberRepository
     (add-member [_ _] nil)
@@ -25,6 +37,19 @@
     (find-members-by-name [_ s] nil)
     (find-members-by-name [_ s group-id] nil)
     (find-member-by-id [_ _] nil)
+    (find-member-by-user-id [_ _] nil)
+    (list-members [_] nil)
+    (list-members [_ _] nil)
+    (fuzzy-find-member [_ s] nil)
+    (fuzzy-find-member [_ s group-id] nil)))
+
+(defn member-repo-with-name [name]
+  (reify mr/MemberRepository
+    (add-member [_ _] nil)
+    (update-member [_ _ _] nil)
+    (find-members-by-name [_ s] nil)
+    (find-members-by-name [_ s group-id] nil)
+    (find-member-by-id [_ _] (when name {:id "11111111-1111-1111-1111-111111111111" :name name}))
     (find-member-by-user-id [_ _] nil)
     (list-members [_] nil)
     (list-members [_ _] nil)
@@ -49,13 +74,16 @@
                                                     :user-connections {}
                                                     :messages []})
                                      sse-clients (atom {})}}]
-  {:globo-mount-path "/world-map"
-   :globo-storage storage
-   :globo-sse-clients sse-clients
-   :user-repo (user-repo-stub)
-   :member-repo (member-repo-stub)
-   :render wh/render-html
-   :with-layout wh/with-layout})
+  (let [globo (globo-server/create-globo
+               {:mount-path "/world-map"
+                :storage (globo-storage/in-memory-globo-storage storage)
+                :connections (globo-connections/in-memory-connection-store sse-clients)})]
+    {:globo globo
+     :globo-mount-path "/world-map"
+     :user-repo (user-repo-stub)
+     :member-repo (member-repo-stub)
+     :render wh/render-html
+     :with-layout wh/with-layout}))
 
 (defn test-handler
   [deps]
@@ -95,7 +123,7 @@
                        :messages []})
         sse-clients (atom {:conn1 ch})
         handler (test-handler (test-deps {:storage storage :sse-clients sse-clients}))
-        body "{\"type\":\"broadcast\",\"content\":\"hello\"}"
+        body "{\"type\":\"broadcast\",\"content\":{}}"
         resp (handler (->req :post "/world-map/send-message"
                              {:body (io/input-stream (.getBytes ^String body))
                               :user-id "u1"}))]
@@ -104,11 +132,70 @@
 
 (deftest send-message-error-paths-test
   (let [handler (test-handler (test-deps {}))]
-    ;; no clients -> 404
+    ;; valid message, no clients -> 404
     (is (= 404 (:status (handler (->req :post "/world-map/send-message"
+                                        {:body (io/input-stream (.getBytes "{\"type\":\"broadcast\",\"content\":{}}"))
+                                         :user-id "u1"})))))
+    ;; invalid message (missing content) -> 400
+    (is (= 400 (:status (handler (->req :post "/world-map/send-message"
                                         {:body (io/input-stream (.getBytes "{\"type\":\"broadcast\"}"))
                                          :user-id "u1"})))))
     ;; malformed json -> 400
     (is (= 400 (:status (handler (->req :post "/world-map/send-message"
                                         {:body (io/input-stream (.getBytes "{not json"))
                                          :user-id "u1"})))))))
+
+(defn- globo-storage-atom []
+  (atom {:users {} :map-objects #{} :user-connections {} :messages []}))
+
+(defn- name-seeding-deps
+  [{:keys [member-name user-name]}]
+  (let [storage (globo-storage-atom)]
+    {:storage storage
+     :globo (globo-server/create-globo
+             {:storage (globo-storage/in-memory-globo-storage storage)})
+     :member-repo (member-repo-with-name member-name)
+     :user-repo (user-repo-with-name user-name)}))
+
+(defn- seed-name
+  [deps user-id]
+  ((handlers/wrap-globo-user-name deps (fn [_] {:status 200})) {:user-id user-id}))
+
+(def test-user-id "11111111-1111-1111-1111-111111111111")
+
+(deftest galt-user-name-precedence-test
+  (testing "member profile name wins over generated user name"
+    (is (= "Alice" (handlers/galt-user-name
+                    (name-seeding-deps {:member-name "Alice" :user-name "Generated"})
+                    test-user-id))))
+  (testing "falls back to generated user name without a member profile"
+    (is (= "Generated" (handlers/galt-user-name
+                        (name-seeding-deps {:member-name nil :user-name "Generated"})
+                        test-user-id))))
+  (testing "nil when no name data exists"
+    (is (nil? (handlers/galt-user-name
+               (name-seeding-deps {:member-name nil :user-name nil})
+               test-user-id))))
+  (testing "nil for unparseable user-id"
+    (is (nil? (handlers/galt-user-name
+               (name-seeding-deps {:member-name "Alice" :user-name "Generated"})
+               "u1")))))
+
+(deftest wrap-globo-user-name-seeds-name-test
+  (testing "member name is seeded into globo storage on connection"
+    (let [deps (name-seeding-deps {:member-name "Alice" :user-name "Generated"})]
+      (seed-name deps test-user-id)
+      (is (= "Alice" (get-in @(:storage deps) [:users test-user-id :name])))))
+  (testing "generated user name is seeded without a member profile"
+    (let [deps (name-seeding-deps {:member-name nil :user-name "Generated"})]
+      (seed-name deps test-user-id)
+      (is (= "Generated" (get-in @(:storage deps) [:users test-user-id :name])))))
+  (testing "nothing is seeded when no name data exists"
+    (let [deps (name-seeding-deps {:member-name nil :user-name nil})]
+      (seed-name deps test-user-id)
+      (is (nil? (get-in @(:storage deps) [:users test-user-id]))))))
+
+(deftest wrap-globo-user-name-skips-anon-test
+  (let [deps (name-seeding-deps {:member-name "Alice" :user-name "Generated"})]
+    (seed-name deps "anon-123")
+    (is (nil? (get-in @(:storage deps) [:users "anon-123"])))))

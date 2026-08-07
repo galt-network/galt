@@ -37,9 +37,12 @@
    [galt.locations.adapters.db-location-repository :refer [new-db-location-repository]]
    [galt.locations.domain.location-repository :as lr]
    [galt.locations.external.routes]
-    [galt.design.routes]
-    [galt.world-map.external.routes]
-    [galt.members.adapters.db-member-repository :refer [new-db-member-repository]]
+   [galt.design.routes]
+   [galt.world-map.adapters.placeables :as wp-placeables]
+   [galt.world-map.domain.use-cases.publish-placeables :refer [publish-placeables-use-case]]
+   [galt.world-map.domain.use-cases.send-globo-message :refer [send-globo-message-use-case]]
+   [galt.world-map.external.routes]
+   [galt.members.adapters.db-member-repository :refer [new-db-member-repository]]
    [galt.members.adapters.db-user-repository :refer [new-db-user-repository]]
    [galt.members.domain.member-repository :as mr]
    [galt.payments.adapters.db-payment-repository :refer [new-db-payment-repository]]
@@ -69,11 +72,13 @@
    [galt.events.domain.use-cases.list-events :refer [list-events-use-case]]
    [galt.payments.external.routes]
    [galt.comments.external.routes]
-   [galt.events.external.routes]
-   [reitit.ring]
+    [galt.events.external.routes]
+    [is.galt.globo.server :as globo-server]
+    [reitit.ring]
    [ring.middleware.session.memory :as memory]
    [ring.middleware.session.store :refer [delete-session read-session
-                                          write-session]])
+                                          write-session]]
+   [taoensso.telemere :as tel])
   (:import
    [com.zaxxer.hikari HikariDataSource]))
 
@@ -194,12 +199,20 @@
 
      :globo-sse
      #::ds{:start
-           (fn [_]
-             {:storage (atom {:users {}
-                              :map-objects #{}
-                              :user-connections {}
-                              :messages []})
-              :sse-clients (atom {})})}}
+           (fn [{{:keys [mount-path placeables]} ::ds/config}]
+             (globo-server/create-globo
+              {:mount-path mount-path
+               :placeables placeables
+               :log-fn (fn [& args]
+                         (tel/log! {:level :warn
+                                    :msg (str (first args))
+                                    :data (second args)}))}))
+           :config
+           {:mount-path (ds/ref [:env :globo-mount-path])
+            :placeables (ds/ref [:storage :globo-placeables])}}
+
+     :globo-placeables
+     #::ds{:start (fn [_] (wp-placeables/per-user-placeables))}}
 
     :gateways
     {:payment
@@ -461,7 +474,21 @@
                       {:list-events (partial er/list-events event-repo)}))
            :config
            {:event-repo (ds/ref [:storage :event])}}
-     }
+
+     :publish-placeables-use-case
+     #::ds{:start
+           (fn [{{:keys [globo]} ::ds/config}]
+             (partial publish-placeables-use-case {:globo globo}))
+           :config
+           {:globo (ds/ref [:storage :globo-sse])}}
+
+     :send-globo-message-use-case
+     #::ds{:start
+           (fn [{{:keys [globo]} ::ds/config}]
+             (partial send-globo-message-use-case {:globo globo}))
+           :config
+           {:globo (ds/ref [:storage :globo-sse])}}
+      }
 
     :app
     {:route-deps
@@ -485,8 +512,7 @@
                 :galt-url (config :galt-url)
                 :gen-uuid clj-uuid/v7
                 :globo-mount-path (config :globo-mount-path)
-                :globo-storage (get-in config [:globo-storage :storage])
-                :globo-sse-clients (get-in config [:globo-sse-clients :sse-clients])
+                :globo (config :globo-sse)
                 :read-session (partial read-session (:session-store config))
                 :write-session (partial write-session (:session-store config))
                 :delete-session (partial delete-session (:session-store config))}
@@ -505,8 +531,7 @@
             :galt-url (ds/ref [:env :galt-root-url])
             :session-store (ds/ref [:storage :session-store])
             :globo-mount-path (ds/ref [:env :globo-mount-path])
-            :globo-storage (ds/ref [:storage :globo-sse])
-            :globo-sse-clients (ds/ref [:storage :globo-sse])
+            :globo-sse (ds/ref [:storage :globo-sse])
             :use-cases (ds/ref [:use-cases])
             }}
      :members/routes

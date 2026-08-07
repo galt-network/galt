@@ -1,7 +1,6 @@
 (ns galt.world-map.external.routes
   (:require
    [is.galt.globo.server.handlers :as globo-handlers]
-   [is.galt.globo.server.middleware :as globo-middleware]
    [reitit.ring :as rr]
    [galt.world-map.adapters.handlers :as handlers]))
 
@@ -15,14 +14,15 @@
   [deps]
   (let [mount-path (or (:globo-mount-path deps) "/world-map")
         with-world-map-layout (partial handlers/with-world-map-layout deps)
-        globo-deps {:storage (:globo-storage deps)
-                    :sse-clients (:globo-sse-clients deps)}
-        globo-connection-handler (-> (partial globo-handlers/new-connection-handler globo-deps)
+        globo (:globo deps)
+        globo-connection-handler (-> deps
+                                     (handlers/wrap-globo-user-name
+                                      (partial globo-handlers/new-connection-handler globo))
                                      handlers/wrap-globo-user-id
-                                     globo-middleware/wrap-error-response)
-        globo-send-message-handler (-> (partial globo-handlers/send-message-handler globo-deps)
+                                     handlers/wrap-error-logging)
+        globo-send-message-handler (-> (partial globo-handlers/send-message-handler globo)
                                        handlers/wrap-globo-user-id
-                                       globo-middleware/wrap-error-response)]
+                                       handlers/wrap-error-logging)]
     (rr/router
      [[(str mount-path)
        {:id :world-map

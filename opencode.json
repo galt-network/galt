@@ -1,0 +1,8 @@
+{"$schema": "https://opencode.ai/config.json",
+ "instructions": ["PROJECT_SUMMARY.md"],
+ "permission": {
+    "external_directory": {
+      "~/code/madis/globo/**": "allow"
+    }
+  }
+}

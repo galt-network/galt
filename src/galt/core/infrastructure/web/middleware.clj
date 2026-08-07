@@ -101,13 +101,15 @@
 (defn wrap-with-logger
   [handler]
    (fn [request]
-     (let [start-timestamp (System/currentTimeMillis)
-           finalize-log-data (partial log-data request start-timestamp)]
-       (try
-         (let [response (handler request)]
-           (reset! last-response response)
-           (tel/log! (finalize-log-data {:data {:status (:status response)}}))
-           response)
-         (catch Exception ex
-           (tel/log! (finalize-log-data {:data {:error ex}}))
-           (throw ex))))))
+     (if (re-find #"^/[^/]+/assets/" (or (:uri request) ""))
+       (handler request)
+       (let [start-timestamp (System/currentTimeMillis)
+             finalize-log-data (partial log-data request start-timestamp)]
+         (try
+           (let [response (handler request)]
+             (reset! last-response response)
+             (tel/log! (finalize-log-data {:data {:status (:status response)}}))
+             response)
+           (catch Exception ex
+             (tel/log! (finalize-log-data {:data {:error ex}}))
+             (throw ex)))))))
