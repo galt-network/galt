@@ -41,7 +41,7 @@
                                        (get-in member [:location :longitude])
                                        (render-html (profile-popup member))])
                                     (:members model)))
-     :data-init__delay.500ms "galtAddMarkers($locations)"
+     :data-init__delay.500ms "if (window.galtAddMarkers) { galtAddMarkers($locations) }"
      }]])
 
 (defn search-results

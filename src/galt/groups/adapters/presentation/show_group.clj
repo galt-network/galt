@@ -64,7 +64,7 @@
       [:div {:id "map"
              :style {:height "400px"}
              :data-init__delay.500ms
-             (str "galtMoveMarker(" (:latitude model)  "," (:longitude model) ")")}]]]]
+             (str "if (window.galtMoveMarker) { galtMoveMarker(" (:latitude model)  "," (:longitude model) ") }")}]]]]
    [:div
     [:h2.is-size-3 "Recent activity"]
     (map activity-card (:activity model))]])

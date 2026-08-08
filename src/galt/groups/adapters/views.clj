@@ -54,7 +54,7 @@
          :data-init__delay.500ms (str "$uploaded-url = '" (:avatar group) "'")}]]]]
     [:div.column (when location
                    {:data-init__delay.500ms
-                    (str "galtMoveMarker(" (:latitude location)  "," (:longitude location) ")")})
+                    (str "if (window.galtMoveMarker) { galtMoveMarker(" (:latitude location)  "," (:longitude location) ") }")})
      (location-views/searchable-map {:countries countries
                                      :location location
                                      :output-params

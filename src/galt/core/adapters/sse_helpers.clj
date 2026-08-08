@@ -91,17 +91,15 @@
     req
     {on-open
      (fn [sse]
-       ; Using future to do it in a separate thread, as the signal sender may sleep the thread to wait
-       (callback (partial send! sse))
-       (Thread/sleep 50)
-       #_ (future
+       ; Closing the SSE connection after the callback is important: Datastar's
+       ; fetch actions only resolve once the stream ends (e.g. the temporary
+       ; submit blocker on @post forms is removed only then).
+       ; The sleep is needed because without it the connection closes before
+       ; the events are flushed to the client (1ms fails, 10ms works).
+       (d*/with-open-sse
+         sse
          (callback (partial send! sse))
-         ; TODO Figure out why this is necessary?
-         ;      Without this the SSE connection closes before any signals are sent
-         ;      It seems to depend on the time waited. With 1ms no events but with 10 they get sent
-         (Thread/sleep 50)
-         (d*/close-sse! sse))
-       )}))
+         (Thread/sleep 50)))}))
 
 (defn close!
   [sse]
