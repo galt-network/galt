@@ -33,6 +33,7 @@
                             :name :members.me/edit
                             :get (with-deps-layout members/edit-my-profile)}]
        ["/members/login" {:id :login
+                          :name :members/login
                           :conflicting true
                           :get (with-deps-layout login-handlers/show-login)}]
        ["/members/logout" {:id :login

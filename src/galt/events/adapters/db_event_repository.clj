@@ -60,7 +60,27 @@
                         from-date (where [:>= :events.start-time from-date])
                         to-date (where [:<= :events.start-time to-date]))]
       (->> (query db-access final-query)
-           (map #(transform-row event-spec %) ,,,)))))
+           (map #(transform-row event-spec %) ,,,))))
+
+  (count-events [_]
+    (->> {:select [[:%count.*]] :from [:events]}
+         (query db-access ,,,)
+         (first ,,,)
+         :count))
+
+  (list-recent-events [_ {:keys [limit] :or {limit 5}}]
+    (->> {:select [:events.*
+                   [:members.name :author]
+                   [:members.avatar :author-avatar]
+                   [:members.id :author-id]
+                   [:members.slug :author-slug]]
+          :from [:events]
+          :join [:members [:= :members.id :events.author-id]]
+          :where [:= :events.hidden false]
+          :order-by [[:events.created-at :desc]]
+          :limit limit}
+         (query db-access ,,,)
+         (map #(transform-row event-spec %) ,,,))))
 
 (def dba (atom nil))
 (defn new-db-event-repository

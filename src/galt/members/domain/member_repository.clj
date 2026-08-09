@@ -7,4 +7,5 @@
   (find-member-by-id [this id])
   (find-member-by-user-id [this id])
   (list-members [this] [this params])
-  (fuzzy-find-member [this s] [this s group-id]))
+  (fuzzy-find-member [this s] [this s group-id])
+  (count-members [this]))

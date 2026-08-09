@@ -1,19 +1,43 @@
 (ns galt.core.adapters.handlers
   (:require
+   [galt.core.adapters.link-generator :refer [link-for-route]]
    [galt.core.adapters.sse-helpers :refer [with-sse]]
    [galt.core.infrastructure.web.sse-connection-store :refer [add-connection
-                                                              remove-connection]]
+                                                               remove-connection]]
    [galt.core.views.landing-page :as landing-page]
    [starfederation.datastar.clojure.adapter.http-kit :refer [->sse-response
-                                                             on-close
-                                                             on-open]]
+                                                              on-close
+                                                              on-open]]
 
    [starfederation.datastar.clojure.api :as d*]))
 
 (defn view-landing
-  [{:keys [render layout] :as _deps} _req]
-  {:status 200
-   :body (render (layout {:content (landing-page/page {:new-user? false})}))})
+  [{:keys [render layout landing-page-use-case layout-model] :as _deps} req]
+  (let [user-id (get-in req [:session :user-id])
+        member-id (get-in req [:session :member-id])
+        [status result] (landing-page-use-case {:member-id member-id})
+        with-links (fn [items route]
+                     (map #(assoc % :href (link-for-route req route {:id (:id %)}))
+                          items))]
+    (case status
+      :ok
+      (let [model (merge result
+                         {:authenticated? (some? user-id)
+                          :user (get-in layout-model [:navbar :user])
+                          :groups-href (link-for-route req :groups)
+                          :members-href (link-for-route req :members)
+                          :events-href (link-for-route req :events)
+                          :map-href "/world-map"
+                          :login-href (link-for-route req :members/login)
+                          :recent-groups (with-links (:recent-groups result) :groups/by-id)
+                          :recent-posts (with-links (:recent-posts result) :posts/by-id)
+                          :recent-events (with-links (:recent-events result) :events/by-id)
+                          :my-groups (when member-id
+                                       (with-links (:my-groups result) :groups/by-id))})]
+        {:status 200
+         :body (render (layout {:content (landing-page/page model)}))})
+      {:status 500
+       :body (render (layout {:content (landing-page/page {})}))})))
 
 (defn serve-file
   [{:keys [file-storage]} req]

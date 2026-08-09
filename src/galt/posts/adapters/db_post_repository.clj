@@ -68,7 +68,21 @@
                     to-date (where [:<= :posts.publish-at to-date])
                     )]
       (->> (query db-access final-q)
-           (map #(transform-row post-spec %) ,,,)))))
+           (map #(transform-row post-spec %) ,,,))))
+
+  (list-recent-posts [_ {:keys [limit] :or {limit 5}}]
+    (->> {:select [:posts.*
+                   [:members.name :author]
+                   [:members.avatar :author-avatar]
+                   [:members.id :author-id]
+                   [:members.slug :author-slug]]
+          :from [:posts]
+          :join [:members [:= :members.id :posts.author-id]]
+          :where [:= :posts.hidden false]
+          :order-by [[:posts.created-at :desc]]
+          :limit limit}
+         (query db-access ,,,)
+         (map #(transform-row post-spec %) ,,,))))
 
 (def last-repo (atom nil))
 

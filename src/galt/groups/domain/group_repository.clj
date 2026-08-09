@@ -8,5 +8,7 @@
   (find-groups-by-member [this member-id])
   (list-members [this group-id params])
   (list-groups [this params])
+  (count-groups [this])
+  (list-recent-groups [this params])
   (find-membership-by-member [this group-id member-id])
   (delete-group [this group-id]))

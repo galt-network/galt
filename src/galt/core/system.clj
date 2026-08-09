@@ -6,6 +6,7 @@
    [donut.system :as ds]
    [galt.core.adapters.db-access]
    [galt.core.adapters.postgres-db-access :refer [new-db-access]]
+   [galt.core.domain.use-cases.landing-page :refer [landing-page-use-case]]
    [galt.core.infrastructure.bitcoin.bouncy-castle-verify :refer [verify-signature]]
    [galt.core.infrastructure.bitcoin.lnurl :refer [generate-lnurl]]
    [galt.core.infrastructure.database :as database]
@@ -482,12 +483,29 @@
            :config
            {:globo (ds/ref [:storage :globo-sse])}}
 
-     :send-globo-message-use-case
+      :send-globo-message-use-case
+      #::ds{:start
+            (fn [{{:keys [globo]} ::ds/config}]
+              (partial send-globo-message-use-case {:globo globo}))
+            :config
+            {:globo (ds/ref [:storage :globo-sse])}}
+
+     :landing-page-use-case
      #::ds{:start
-           (fn [{{:keys [globo]} ::ds/config}]
-             (partial send-globo-message-use-case {:globo globo}))
+           (fn [{{:keys [group-repo member-repo event-repo post-repo]} ::ds/config}]
+             (partial landing-page-use-case
+                      {:count-members (partial mr/count-members member-repo)
+                       :count-groups (partial gr/count-groups group-repo)
+                       :count-events (partial er/count-events event-repo)
+                       :list-recent-groups (partial gr/list-recent-groups group-repo)
+                       :list-recent-posts (partial po-re/list-recent-posts post-repo)
+                       :list-recent-events (partial er/list-recent-events event-repo)
+                       :find-groups-by-member (partial gr/find-groups-by-member group-repo)}))
            :config
-           {:globo (ds/ref [:storage :globo-sse])}}
+           {:group-repo (ds/ref [:storage :group])
+            :member-repo (ds/ref [:storage :member])
+            :event-repo (ds/ref [:storage :event])
+            :post-repo (ds/ref [:storage :post])}}
       }
 
     :app

@@ -103,6 +103,20 @@
          (transform-row group-membership-spec ,,,)
          (map->GroupMembership ,,,)))
 
+  (count-groups [_]
+    (->> {:select [[:%count.*]] :from [:groups]}
+         (query db-access ,,,)
+         (first ,,,)
+         :count))
+
+  (list-recent-groups [_ {:keys [limit] :or {limit 5}}]
+    (->> {:select [:*] :from [:groups]
+          :order-by [[:created-at :desc]]
+          :limit limit}
+         (query db-access ,,,)
+         (map #(transform-row group-spec %) ,,,)
+         (map map->Group ,,,)))
+
   (delete-group [_ group-id]
     (query db-access {:delete-from [:groups]
                       :where [:= :id group-id]})))

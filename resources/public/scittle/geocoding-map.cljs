@@ -99,6 +99,23 @@
 
 (setup-map)
 
+(defn init-marker-from-location-inputs
+  "Moves the marker to the location rendered by the server into the
+  #latitude / #longitude hidden inputs, if present. Runs at script
+  evaluation time (after DOMContentLoaded), so initial marker placement
+  does not depend on Datastar effects racing this script."
+  []
+  (let [lat-el (.getElementById js/document "latitude")
+        lng-el (.getElementById js/document "longitude")
+        lat (some-> lat-el .-value js/parseFloat)
+        lng (some-> lng-el .-value js/parseFloat)]
+    (when (and lat lng
+               (not (js/isNaN lat))
+               (not (js/isNaN lng)))
+      (move-marker @last-map lat lng))))
+
+(init-marker-from-location-inputs)
+
 ; (add-marker @last-map 13.698993899755807, -89.19142489999999)
 ; (fly-to @last-map 13.698993899755807, -89.19142489999999)
 

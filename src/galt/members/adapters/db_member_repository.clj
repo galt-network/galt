@@ -83,6 +83,12 @@
              (transform-row member-spec ,,,)
              (member/map->Member ,,,)))
 
+  (count-members [_]
+    (->> {:select [[:%count.*]] :from [:members]}
+         (query db-access ,,,)
+         (first ,,,)
+         :count))
+
   (fuzzy-find-member [_ s]
     (mr/fuzzy-find-member _ s nil))
 
