@@ -1,5 +1,20 @@
 {:galt-root-url "https://staging.galt.is"
  :file-storage-root "/home/madis/www/staging.galt.is/uploads"
+ :asset-store {:type :s3
+               :storage-root "/home/madis/www/staging.galt.is/uploads"
+               :root-url "https://staging.galt.is"
+               :bucket "<R2_BUCKET>"
+               :endpoint "https://<ACCOUNT_ID>.r2.cloudflarestorage.com"
+               :region "auto"
+               :public-base-url "https://media.galt.is"
+               :public-prefix "public"
+               :private-prefix "private"
+               :access-key nil
+               :secret-key nil
+               :upload-config {:image-max-bytes 26214400
+                                :video-max-bytes 104857600
+                                :model-max-bytes 104857600
+                                :archive-max-bytes 104857600}}
  :web-server-port 8083
  :cln-rest-url ""
  :cln-rune ""

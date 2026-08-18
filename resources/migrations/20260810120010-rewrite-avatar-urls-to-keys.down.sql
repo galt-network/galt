@@ -1,0 +1,1 @@
+-- No-op: avatar key rewrite is one-way.

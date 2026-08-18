@@ -49,7 +49,12 @@
   io.github.babashka/sci.nrepl {:mvn/version "0.0.2"}
 
   ; Map
-  is.mad/globo {:local/root "../globo"}}
+  is.mad/globo {:local/root "../globo"}
+
+  ; AWS API (S3-compatible object storage: R2, B2, MinIO)
+  com.cognitect.aws/api {:mvn/version "0.8.838"}
+  com.cognitect.aws/endpoints {:mvn/version "871.2.50.3"}
+  com.cognitect.aws/s3 {:mvn/version "871.2.49.4"}}
 
  :aliases
  {:repl {:extra-paths ["dev"]

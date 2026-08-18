@@ -20,6 +20,7 @@
   (nrepl/start! {:nrepl-port 1339 :websocket-port 1340})
 
   (keys @galt.main/running-system)
+  (deref galt.main/running-system)
   (require '[galt.members.domain.user-repository :refer [list-users]])
   (require '[galt.members.adapters.db-user-repository :refer [new-db-user-repository]])
   (require '[clj-uuid])

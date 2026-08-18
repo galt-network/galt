@@ -28,3 +28,13 @@
     (is (= 200 (:status (handler (->req :post "/groups/new" {:user-id 1 :member-id 2})))))
     (is (= 302 (:status (handler (->req :delete "/explode" {:user-id 1 :member-id 2})))))
     (is (= 200 (:status (handler (->req :delete "/explode" {:admin true})))))))
+
+(deftest wrap-with-logger-rethrows-original-exception
+  (let [boom (ex-info "upload exploded" {:op :put-object})
+        handler (middleware/wrap-with-logger (fn [_] (throw boom)))
+        caught (try
+                 (handler {:uri "/files" :request-method :post :remote-addr "127.0.0.1"})
+                 nil
+                 (catch Throwable t t))]
+    (is (identical? boom caught)
+        "the original handler exception must propagate, not a ClassCastException from log-data")))

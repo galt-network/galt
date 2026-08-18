@@ -5,12 +5,15 @@
    [clojure.java.io]
    [donut.system :as ds]
    [galt.core.adapters.db-access]
+   [galt.core.adapters.db-asset-repository :refer [new-db-asset-repository]]
+   [galt.core.adapters.link-generator :refer [link-for-route]]
    [galt.core.adapters.postgres-db-access :refer [new-db-access]]
    [galt.core.domain.use-cases.landing-page :refer [landing-page-use-case]]
+   [galt.core.domain.use-cases.upload-asset :refer [upload-asset-use-case]]
    [galt.core.infrastructure.bitcoin.bouncy-castle-verify :refer [verify-signature]]
    [galt.core.infrastructure.bitcoin.lnurl :refer [generate-lnurl]]
-   [galt.core.infrastructure.database :as database]
-   [galt.core.infrastructure.disk-file-storage :as file-storage]
+    [galt.core.infrastructure.asset-stores :as asset-stores]
+    [galt.core.infrastructure.database :as database]
    [galt.core.infrastructure.name-generator :as name-generator]
    [galt.core.infrastructure.web.helpers :as web-helpers] ; TODO see if can be removed
    [galt.core.infrastructure.web.routes :as core.routes]
@@ -95,6 +98,8 @@
 
 (defonce galt-session-atom (atom {}))
 
+(defonce router-atom (atom nil))
+
 (def system
   {::ds/defs
    {:env {}
@@ -170,14 +175,18 @@
            :config
            {:db-access (ds/ref [:storage :db-access])}}
 
+     :asset
+     #::ds{:start
+           (fn [{:keys [::ds/config]}] (new-db-asset-repository (:db-access config)))
+           :config
+           {:db-access (ds/ref [:storage :db-access])}}
+
      :file-storage
      #::ds{:start
-           (fn [opts]
-             {:content-response (partial file-storage/content-response (get-in opts [::ds/config]))
-              :store-content (partial file-storage/store-content (get-in opts [::ds/config]))})
+           (fn [{:keys [::ds/config]}]
+             (asset-stores/new-file-storage config))
            :config
-           {:storage-root (ds/ref [:env :file-storage-root])
-            :root-url (ds/ref [:env :galt-root-url])}}
+           {:asset-store (ds/ref [:env :asset-store])}}
 
      :galt-session
      #::ds{:start
@@ -501,12 +510,27 @@
                        :list-recent-posts (partial po-re/list-recent-posts post-repo)
                        :list-recent-events (partial er/list-recent-events event-repo)
                        :find-groups-by-member (partial gr/find-groups-by-member group-repo)}))
+            :config
+            {:group-repo (ds/ref [:storage :group])
+             :member-repo (ds/ref [:storage :member])
+             :event-repo (ds/ref [:storage :event])
+             :post-repo (ds/ref [:storage :post])}}
+
+     :upload-asset-use-case
+     #::ds{:start
+           (fn [{{:keys [file-storage asset-repo asset-store-config]} ::ds/config}]
+             (partial upload-asset-use-case
+                      {:asset-store (:store file-storage)
+                       :asset-repo asset-repo
+                       :upload-config (:upload-config asset-store-config)
+                       :public-prefix (:public-prefix file-storage)
+                       :private-prefix (:private-prefix file-storage)}))
            :config
-           {:group-repo (ds/ref [:storage :group])
-            :member-repo (ds/ref [:storage :member])
-            :event-repo (ds/ref [:storage :event])
-            :post-repo (ds/ref [:storage :post])}}
+           {:file-storage (ds/ref [:storage :file-storage])
+            :asset-repo (ds/ref [:storage :asset])
+            :asset-store-config (ds/ref [:env :asset-store])}}
       }
+
 
     :app
     {:route-deps
@@ -527,6 +551,10 @@
                 :db-access (config :db-access)
                 :generate-name name-generator/generate
                 :file-storage (config :file-storage)
+                :asset-url (:asset-url (config :file-storage))
+                :asset-key (:asset-key (config :file-storage))
+                :link-for-route (fn [route-name & [path-params]]
+                                  (link-for-route @router-atom route-name path-params))
                 :galt-url (config :galt-url)
                 :gen-uuid clj-uuid/v7
                 :globo-mount-path (config :globo-mount-path)
@@ -627,19 +655,20 @@
                     world-map-router (get-in config [:world-map/routes])
                     route-deps (get-in config [:route-deps])
                     core-router (core.routes/router route-deps)]
-                (core.routes/merge-routers
-                  members-router
-                  groups-router
-                  locations-router
-                  invitations-router
-                  payments-router
-                  posts-router
-                  events-router
-                  core-router
-                  comments-router
-                  design-router
-                  world-map-router
-                  )))
+                (let [router (core.routes/merge-routers
+                               members-router
+                               groups-router
+                               locations-router
+                               invitations-router
+                               payments-router
+                               posts-router
+                               events-router
+                               core-router
+                               comments-router
+                               design-router
+                               world-map-router)]
+                  (reset! router-atom router)
+                  router)))
            :config
            {:members/routes (ds/ref [:app :members/routes])
             :groups/routes (ds/ref [:app :groups/routes])

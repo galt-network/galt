@@ -12,11 +12,11 @@
    [starfederation.datastar.clojure.api :refer [datastar-request?]]))
 
 (defn show-login
-  [{:keys [layout start-lnurl-login-use-case render gen-uuid]} req]
+  [{:keys [layout start-lnurl-login-use-case render gen-uuid link-for-route]} req]
   (if (datastar-request? req)
     (let [message (decode-url-encoded (get-in req [:query-params "message"]))
           session-id (get req :session/key)
-          callback-path (link-for-route req :members.login/lnurl-auth)
+          callback-path (link-for-route :members.login/lnurl-auth)
           datastar-action (d*-backend-action "/datastar-sse" :post {:connection-id session-id})
           [_status lnurl] (start-lnurl-login-use-case {:session-id session-id
                                                        :callback-path callback-path})

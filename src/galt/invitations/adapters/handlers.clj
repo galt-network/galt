@@ -17,15 +17,15 @@
    ))
 
 (defn new-invitation
-  [{:keys [render layout]} req]
+  [{:keys [render layout link-for-route]} req]
   (let [model {:form (get-in req [:params])
-               :form-action (link-for-route req :invitations/new)
+               :form-action (link-for-route :invitations/new)
                :expiration-min "2025-09-12"
                :expiration-max "2026-01-01"}]
     {:status 200 :body (-> model new-invitation/present layout render)}))
 
 (defn create-invitation
-  [{:keys [create-invitation-use-case gen-uuid]} req]
+  [{:keys [create-invitation-use-case gen-uuid link-for-route]} req]
   (let [params (get req :params)
         invitation {:id (gen-uuid)
                     :inviting-member-id (get-in req [:session :member-id])
@@ -34,7 +34,7 @@
                     :expires-at (jt/local-date (:expires-at params))
                     :max-usages (Integer/parseInt (:max-usages params))}
         [status result] (create-invitation-use-case {:invitation invitation})]
-    {:status 303 :headers {"Location" (link-for-route req :invitations/by-id {:id (:id result)})}}))
+    {:status 303 :headers {"Location" (link-for-route :invitations/by-id {:id (:id result)})}}))
 
 (defn show-invitation
   [{:keys [render layout invitation-repo]} req]
@@ -53,7 +53,7 @@
                                         :page-title "New Invitation"}))}))
 
 (defn create-invitation-request
-  [{:keys [create-invitation-request-use-case render layout]} req]
+  [{:keys [create-invitation-request-use-case render layout link-for-route]} req]
   (let [from-user-id (get-in req [:session :user-id])
         to-member-id (get-in req [:params :member-name-id])
         to-group-id (get-in req [:params :group-name-id])
@@ -69,12 +69,12 @@
                                     invitation-request/present
                                     layout
                                     render)}
-      :ok {:status 303 :headers {"Location" (link-for-route req :invitations)}})))
+      :ok {:status 303 :headers {"Location" (link-for-route :invitations)}})))
 
 (defn list-invitations
-  [{:keys [render invitation-dashboard-use-case layout]} req]
+  [{:keys [render invitation-dashboard-use-case layout link-for-route]} req]
   (let [[status result] (invitation-dashboard-use-case {:member-id (get-in req [:session :member-id])})
-        active (map #(assoc % :href (link-for-route req :invitations/by-id {:id (:id %)})) (:active result))
+        active (map #(assoc % :href (link-for-route :invitations/by-id {:id (:id %)})) (:active result))
         model {:active active
                :inactive (:inactive result)}]
     {:status 200 :body (render (layout (dashboard/present model))) }))

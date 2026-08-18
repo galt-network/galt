@@ -33,7 +33,7 @@
 
 ; :tabs [{:name "All" :href (add-query-params (link-for-route :members/search))}]
 (defn members-search-view-model
-  [{:keys [members groups locations link-for-route active-tab initial-signals offset]}]
+  [{:keys [members groups locations link-for-route active-tab initial-signals offset asset-url]}]
   (let [search-link (link-for-route :members)]
     {:active-tab (keyword active-tab)
      :offset offset
@@ -45,8 +45,8 @@
      :members
      (map
        (fn [m]
-         {:name (:name m)
-          :avatar (:avatar m)
+          {:name (:name m)
+           :avatar (asset-url (:avatar m))
           :member-since (str (th/relative-time (:created-at m))
                              " ("
                              (th/short-format (:created-at m))

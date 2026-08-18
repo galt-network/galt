@@ -34,12 +34,12 @@
     {:status http-status/created :body (-> {:events events} presentation.list-events/present layout render)}))
 
 (defn add-event-links
-  [req event]
-  (assoc event :event-link (link-for-route req :events/by-id {:id (:id event)})))
+  [deps event]
+  (assoc event :event-link ((:link-for-route deps) :events/by-id {:id (:id event)})))
 
 ; TODO refactor so that use-case query params are sent only once (to avoid discrepancies)
 (defn list-events
-  [{:keys [render list-events-use-case layout]} req]
+  [{:keys [render list-events-use-case layout asset-url] :as deps} req]
   (if (datastar-request? req)
     (with-sse req
       (fn [send!]
@@ -52,7 +52,8 @@
               type (:type signals)
               command {:limit limit :offset offset :from-date start-time :to-date end-time :type type}
               [status result] (list-events-use-case command)
-              model (map (partial add-event-links req) result)]
+              model (map (fn [e] (-> (add-event-links deps e) (update :author-avatar asset-url)))
+                          result)]
           (send! :html (map presentation.list-events/event-card model) {:selector "#event-cards"
                                                                          :patch-mode patch-mode})
           (send! :signals {:offset next-offset :limit limit}))))
@@ -63,8 +64,9 @@
                                                  :offset offset
                                                  :from-date start-time
                                                  :to-date end-time})
-          model {:new-event-href (link-for-route req :events/new)
-                 :events (map (partial add-event-links req) result)
+          model {:new-event-href ((:link-for-route deps) :events/new)
+                 :events (map (fn [e] (-> (add-event-links deps e) (update :author-avatar asset-url)))
+                              result)
                  :initial-signals "{offset: 5, limit: 5}"
                  :offset offset
                  :limit limit}]
@@ -72,10 +74,10 @@
        :body (-> model presentation.list-events/present layout render)})))
 
 (defn show-event
-  [{:keys [layout event-repo render]} req]
+  [{:keys [layout event-repo render link-for-route]} req]
   (let [event-id (parse-uuid (get-in req [:path-params :id]))
         event (er/get-event event-repo event-id)
-        comments-url (link-for-route req :comments {:entity-id event-id :entity-type "events"})
+        comments-url (link-for-route :comments {:entity-id event-id :entity-type "events"})
         model {:event event
                :comment-action (d*-backend-action comments-url :get)}]
     {:status http-status/ok :body (-> model presentation.show-event/present layout render)}))

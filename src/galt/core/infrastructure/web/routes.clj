@@ -25,6 +25,9 @@
                  :put (partial core-handlers/store-file deps)}]
       ["/files/*path" {:get (partial core-handlers/serve-file deps)
                        :conflicting true}]
+      ["/private-assets/*path" {:get {:handler (partial core-handlers/serve-private-asset deps)
+                                      :min-role :user}
+                                :conflicting true}]
       ["/assets/*" {:name :assets
                     :conflicting true
                     :handler (-> (rr/create-resource-handler)

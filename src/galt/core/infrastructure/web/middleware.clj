@@ -1,14 +1,13 @@
 (ns galt.core.infrastructure.web.middleware
   (:require
-    [starfederation.datastar.clojure.api :as d*]
-    [galt.core.adapters.sse-helpers :refer [with-sse]]
-    [taoensso.telemere :as tel]
-    [ring.middleware.session.store :as ss]
-    [reitit.core]
-    [clojure.string :as str]
+   [starfederation.datastar.clojure.api :as d*]
+   [galt.core.adapters.sse-helpers :refer [with-sse]]
+   [taoensso.telemere :as tel]
+   [ring.middleware.session.store :as ss]
+   [reitit.core]
+   [clojure.string :as str]
 
-    [galt.core.adapters.url-helpers :refer [add-query-params]]
-    ))
+   [galt.core.adapters.url-helpers :refer [add-query-params]]))
 
 (defn wrap-method-override
   "Adds support for PUT, DELETE and PATCH methods via _method POST(<form>) parameter"
@@ -63,12 +62,22 @@
       (when session-id
         (let [old-value (ss/read-session store session-id)
               new-value (merge old-value props)]
-        (ss/write-session store session-id new-value)))
+          (ss/write-session store session-id new-value)))
       res)))
 
 (defn- duration-from
   [start-timestamp]
   (- (System/currentTimeMillis) start-timestamp))
+
+(defn- deep-merge
+  "Like merge-with merge but keeps the last (rightmost) value when keys
+  conflict on non-map values. Used by log-data so that e.g. `:level :info`
+  colliding with `:level :warn` yields :warn instead of a ClassCastException
+  from `(merge :info :warn)`."
+  [& maps]
+  (if (every? map? maps)
+    (apply merge-with deep-merge maps)
+    (last maps)))
 
 (defn- log-data [request start-timestamp final-data]
   (let [route-path (get-in request [:uri])
@@ -83,16 +92,15 @@
         updated-log-level (if (get-in final-data [:data :error])
                             {:level :warn}
                             {})]
-    (merge-with
-      merge
-      {:level :info
-       :msg message
-       :data {:duration (duration-from start-timestamp)
-              :path route-path
-              :session-id session-id
-              :user-id user-id}}
-      final-data
-      updated-log-level)))
+    (deep-merge
+     {:level :info
+      :msg message
+      :data {:duration (duration-from start-timestamp)
+             :path route-path
+             :session-id session-id
+             :user-id user-id}}
+     final-data
+     updated-log-level)))
 
 ; Info about logged out namespace & line number
 ;  https://cljdoc.org/d/com.taoensso/telemere/1.1.0/api/taoensso.telemere#help:signal-content
@@ -100,16 +108,16 @@
 
 (defn wrap-with-logger
   [handler]
-   (fn [request]
-     (if (re-find #"^/[^/]+/assets/" (or (:uri request) ""))
-       (handler request)
-       (let [start-timestamp (System/currentTimeMillis)
-             finalize-log-data (partial log-data request start-timestamp)]
-         (try
-           (let [response (handler request)]
-             (reset! last-response response)
-             (tel/log! (finalize-log-data {:data {:status (:status response)}}))
-             response)
-           (catch Exception ex
-             (tel/log! (finalize-log-data {:data {:error ex}}))
-             (throw ex)))))))
+  (fn [request]
+    (if (re-find #"^/[^/]+/assets/" (or (:uri request) ""))
+      (handler request)
+      (let [start-timestamp (System/currentTimeMillis)
+            finalize-log-data (partial log-data request start-timestamp)]
+        (try
+          (let [response (handler request)]
+            (reset! last-response response)
+            (tel/log! (finalize-log-data {:data {:status (:status response)}}))
+            response)
+          (catch Exception ex
+            (tel/log! (finalize-log-data {:data {:error ex}}))
+            (throw ex)))))))

@@ -5,12 +5,12 @@
     [clojure.string :as str]))
 
 (defn navbar-model
-  [{:keys [user-repo member-repo]} req]
+  [{:keys [user-repo member-repo asset-url]} req]
   (let [route-id (get-in req [:reitit.core/match :data :id])
         user-id (get-in req [:session :user-id])
         user (find-user-by-id user-repo user-id)
         member (mr/find-member-by-user-id member-repo user-id)
-        avatar (get member :avatar "/assets/images/profile-user-account.svg")
+        avatar (asset-url (get member :avatar "/assets/images/profile-user-account.svg"))
         name (or (get member :name) (get user :name) "Login")
         logged-in? (not (nil? user))
         login-user {:name name

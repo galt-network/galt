@@ -17,45 +17,45 @@
                                  :href (href-for-step route-name)})]
     (map ->step step-route-names)))
 
-(defn href-for-step [router id step]
-  (link-for-route router step {:id id}))
+(defn href-for-step [link-gen id step]
+  (link-gen step {:id id}))
 
 (defn steps
-  [{:keys [render layout]} req]
+  [{:keys [render layout link-for-route]} req]
   (let [invitation-id (get-in req [:path-params :id])
-        steps (steps-model :invitations.steps/start (partial href-for-step req invitation-id))]
+        steps (steps-model :invitations.steps/start (partial href-for-step link-for-route invitation-id))]
     {:status 200 :body (-> steps steps/steps-progress layout render)}))
 
 (defn show-start
-  [{:keys [render layout]} req]
+  [{:keys [render layout link-for-route]} req]
   (let [invitation-id (get-in req [:path-params :id])
-        href-for-step (partial href-for-step req invitation-id)
+        href-for-step (partial href-for-step link-for-route invitation-id)
         steps (steps-model :invitations.steps/start href-for-step)
         model {:steps steps
                :next-step (href-for-step :invitations.steps/login)}]
     {:status 200 :body (-> model steps/start layout render)}))
 
 (defn show-login
-  [{:keys [render start-lnurl-login-use-case layout]} req]
+  [{:keys [render start-lnurl-login-use-case layout link-for-route]} req]
   (let [invitation-id (get-in req [:path-params :id])
-        steps (steps-model :invitations.steps/login (partial href-for-step req invitation-id))
+        steps (steps-model :invitations.steps/login (partial href-for-step link-for-route invitation-id))
         session-id (get-in req [:cookies "ring-session" :value])
-        callback-path (link-for-route req :invitations.steps/lnurl-callback {:id invitation-id})
+        callback-path (link-for-route :invitations.steps/lnurl-callback {:id invitation-id})
         [status lnurl] (start-lnurl-login-use-case {:session-id session-id
                                                     :callback-path callback-path})
-        status-url (link-for-route req :invitations.steps/login-status {:id invitation-id})
+        status-url (link-for-route :invitations.steps/login-status {:id invitation-id})
         model {:steps steps
                :lnurl lnurl
                :status-poll-action (d*-backend-action status-url)}]
     {:status 200 :body (-> model steps/login layout render)}))
 
 (defn login-status
-  [{:keys [watch-lnurl-login-use-case]} req]
+  [{:keys [watch-lnurl-login-use-case link-for-route]} req]
   (let [invitation-id (get-in req [:path-params :id])
         [status result] (watch-lnurl-login-use-case {:session-id (:session/key req)})
         login-status (:status result)
         result-message (:message result)
-        next-step-url (link-for-route req :invitations.steps/payment {:id invitation-id})]
+        next-step-url (link-for-route :invitations.steps/payment {:id invitation-id})]
     (with-sse req
       (fn [send!]
         (case login-status

@@ -25,11 +25,11 @@
    (scittle-tag "geocoding-map.cljs")])
 
 (defn new-group
-  [{:keys [render layout location-repo content new-group-use-case]} req]
+  [{:keys [render layout location-repo content new-group-use-case link-for-route]} req]
   (let [countries (lr/all-countries location-repo) ; TODO move this to locations UI & handler
         model {:form {:action-name "Create"
                       :action-method :post
-                      :action-target (link-for-route req :groups)}
+                      :action-target (link-for-route :groups)}
                :countries countries
                :group {}}
         [status result] (new-group-use-case {:user-id (get-in req [:session :user-id])})]
@@ -40,11 +40,11 @@
 
 ; TODO add spec for deps (to have repo key with correct type)
 (defn create-group
-  [{:keys [render layout content add-group-use-case] :as deps} req]
+  [{:keys [render layout content add-group-use-case asset-key] :as deps} req]
   (let [params (get req :params)
         group-creation {:founder-id (get-in req [:session :member-id])
                         :name (:group-name params)
-                        :avatar (:uploaded-url params)
+                        :avatar (asset-key (:uploaded-url params))
                         :description (:group-description params)
                         :location
                         {:latitude (parse-double (:latitude params))
@@ -54,7 +54,7 @@
                          :city-id (->int (:city-id params))}}
         [status group errors] (add-group-use-case group-creation)]
     (case status
-      :ok {:status 303 :headers {"Location" (link-for-route req :groups/by-id {:id (:id group)})}}
+      :ok {:status 303 :headers {"Location" ((:link-for-route deps) :groups/by-id {:id (:id group)})}}
       :error {:status 400
               :body (-> (views/error-messages errors)
                         content
@@ -62,19 +62,20 @@
                         render)})))
 
 (defn edit-group
-  [{:keys [edit-group-use-case location-repo content render layout]} req]
+  [{:keys [edit-group-use-case location-repo content render layout asset-url link-for-route]} req]
   (let [group-id (parse-uuid (get-in req [:path-params :id]))
         logged-in-user-id (get-in req [:session :user-id])
         [status result] (edit-group-use-case {:group-id group-id :editor-id logged-in-user-id})
+        result (if result (update result :avatar asset-url) result)
         location (lr/find-location-by-id location-repo (:location-id result))
-        delete-url (link-for-route req :groups/by-id {:id group-id})
+        delete-url (link-for-route :groups/by-id {:id group-id})
         model {:group result
                :location location
                :countries (lr/all-countries location-repo) ; TODO shouldn't pass this, refactor to locations
                :form
                {:action-name "Save"
                 :action-method "PUT"
-                :action-target (link-for-route req :groups/by-id {:id group-id})
+                :action-target (link-for-route :groups/by-id {:id group-id})
                 :delete-action (d*-backend-action delete-url :delete)}}]
     (if (= status :ok)
       {:status 200 :body (render (layout {:content (views/edit-group model)
@@ -82,12 +83,12 @@
       {:status 401 :body (render (layout (content (views/error-messages [(:message result)]))))})))
 
 (defn update-group
-  [{:keys [update-group-use-case]} req]
+  [{:keys [update-group-use-case link-for-route]} req]
   (let [group-id (get-in req [:path-params :id])
         command {:group {:id (parse-uuid group-id)} :location {}}
         [status result] (update-group-use-case command)]
     (if (= :ok status)
-      {:status 303 :headers {"Location" (link-for-route req :groups/by-id {:id (:id result)})}}
+      {:status 303 :headers {"Location" (link-for-route :groups/by-id {:id (:id result)})}}
       {:status 401 :body result})))
 
 (defn delete-group
@@ -100,11 +101,11 @@
                     (send! :js "window.location.href = 'https://dev.galt.is/groups'")))))
 
 (defn add-group-links
-  [req group]
-  (assoc group :group-link (link-for-route req :groups/by-id {:id (:id group)})))
+  [deps group]
+  (assoc group :group-link ((:link-for-route deps) :groups/by-id {:id (:id group)})))
 
 (defn list-groups
-  [{:keys [render list-groups-use-case layout] :as deps} req]
+  [{:keys [render list-groups-use-case layout asset-url] :as deps} req]
   (if (d*/datastar-request? req)
     (with-sse req
       (fn [send!]
@@ -117,8 +118,9 @@
               command {:limit limit :offset offset :query query-str}
               [status result] (list-groups-use-case command)
               model (->> (:groups result)
-                         (map (partial add-group-links req) ,,,)
-                         (map (fn [g] (assoc g :location (get-in result [:locations (:id g)]))) ,,,))]
+                         (map (partial add-group-links deps) ,,,)
+                         (map (fn [g] (assoc g :location (get-in result [:locations (:id g)]))) ,,,)
+                         (map #(update % :avatar asset-url)))]
           (send! :html (map presentation.list-groups/group-row model) {:selector "#group-rows"
                                                                        :patch-mode patch-mode})
           (send! :signals {:offset next-offset :limit limit}))))
@@ -126,9 +128,9 @@
           offset 0
           [status result] (list-groups-use-case {:query "" :limit limit :offset offset})
           groups (->> (:groups result)
-                         (map (partial add-group-links req) ,,,)
+                         (map (partial add-group-links deps) ,,,)
                          (map (fn [g] (assoc g :location (get-in result [:locations (:id g)]))) ,,,))
-          model {:new-group-href (link-for-route req :groups/new)
+          model {:new-group-href ((:link-for-route deps) :groups/new)
                  :groups groups
                  :location (:locations result)
                  :initial-signals "{offset: 5, limit: 5}"
@@ -157,24 +159,24 @@
         {:keys [group location members]} result
         model {:name (:name group)
                :description (:description group)
-               :avatar (:avatar group)
+               :avatar ((:asset-url deps) (:avatar group))
                :languages ["Spanish" "English"]
                :location-name (:name location)
                :latitude (:latitude location)
                :longitude (:longitude location)
                :founded-at (time-helpers/relative-with-short (:created-at group))
-               :new-post-href (-> (link-for-route req :posts/new)
+               :new-post-href (-> ((:link-for-route deps) :posts/new)
                                   (add-query-params ,,, {:target-id group-id :target-type "group"}))
                :members (take members-to-show
                               (map (fn [m] {:name (:name m)
-                                            :href (link-for-route req :members/by-id {:id (:id m)})})
+                                            :href ((:link-for-route deps) :members/by-id {:id (:id m)})})
                                    members))
                :more-members? (> (count members) members-to-show)
                :more-members-message (str "And " (- (count members) members-to-show) " more")
                :activity (->> (:posts result)
-                             (map (fn [p] (assoc p
-                                                 :content (shorten activity-content-to-show (:content p))
-                                                 :shortened? (> (count (:content p)) activity-content-to-show))) ,,,)
-                             (map (fn [p] (assoc p :href (link-for-route req :posts/by-id {:id (:id p)}))) ,,,))}]
+                              (map (fn [p] (assoc p
+                                                  :content (shorten activity-content-to-show (:content p))
+                                                  :shortened? (> (count (:content p)) activity-content-to-show))) ,,,)
+                              (map (fn [p] (assoc p :href ((:link-for-route deps) :posts/by-id {:id (:id p)}))) ,,,))}]
     {:status 200 :body (render (layout {:content (presentation.show-group/present model)
                                         :head-tags head-tags-for-maps}))}))

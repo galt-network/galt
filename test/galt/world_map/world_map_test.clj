@@ -83,7 +83,9 @@
      :user-repo (user-repo-stub)
      :member-repo (member-repo-stub)
      :render wh/render-html
-     :with-layout wh/with-layout}))
+     :with-layout wh/with-layout
+     :asset-url (fn [k] k)
+     :asset-key (fn [k] k)}))
 
 (defn test-handler
   [deps]

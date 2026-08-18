@@ -104,10 +104,10 @@
     [:link {:rel "stylesheet" :href "https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css"}]
     [:link {:rel "stylesheet" :href "/assets/css/style.css"}]
     [:script {:type :module
-              :src "https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.0-RC.6/bundles/datastar.js"}]
+              :src "https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.2/bundles/datastar.js"}]
     [:script {:src "https://kit.fontawesome.com/cb70718952.js" :crossorigin "anonymous"}]
-    [:script {:src "https://cdn.jsdelivr.net/npm/scittle@0.7.27/dist/scittle.js"}]
-    [:script {:src "https://cdn.jsdelivr.net/npm/scittle@0.7.27/dist/scittle.nrepl.js"}]
+    [:script {:src "https://cdn.jsdelivr.net/npm/scittle@0.8.32/dist/scittle.js"}]
+    [:script {:src "https://cdn.jsdelivr.net/npm/scittle@0.8.32/dist/scittle.nrepl.js"}]
     [:script "var SCITTLE_NREPL_WEBSOCKET_PORT = 1340;"]
     [:script {:src "/assets/galt_js_helpers.js"}]
     (reverse (into (list) (:head-tags model)))]

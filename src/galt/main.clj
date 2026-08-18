@@ -6,6 +6,7 @@
     [cider.nrepl :refer [cider-nrepl-handler]]
     [clojure.core.async :as async]
     [galt.core.infrastructure.db-migrations :as db-migrations]
+    [galt.core.infrastructure.assets-export :as assets-export]
     [galt.core.infrastructure.version])
   (:gen-class))
 
@@ -49,6 +50,13 @@
     (do
       (println "Running database migrations")
       (db-migrations/migrate!))
+    "assets"
+    (case (second args)
+      "export-public"
+      (let [out-dir (or (nth args 2 nil) "assets-export")]
+        (println "Exporting public assets to" out-dir)
+        (println (assets-export/export-public! (system/get-config) out-dir)))
+      (println "Usage: assets export-public [out-dir]"))
     ; If no commands given, start the system
     (do
       (println "Starting the GALT system")

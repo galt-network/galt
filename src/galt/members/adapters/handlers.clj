@@ -23,7 +23,7 @@
    [starfederation.datastar.clojure.api :as d*]))
 
 (defn show-members-list
-  [{:keys [render search-members-use-case layout] :as deps} req]
+  [{:keys [render search-members-use-case layout asset-url] :as deps} req]
   (let [active-tab (get-in req [:params :tab] "all")
         query (or (get-in req [:query-params "query"]) (get (get-signals req) :query))
         offset (->int (get (get-signals req) :offset 0))
@@ -33,7 +33,8 @@
         model (view-models/members-search-view-model (merge result
                                                             {:active-tab active-tab
                                                              :initial-signals (js-literal {:offset next-offset})
-                                                             :link-for-route (partial link-for-route req)}))]
+                                                             :link-for-route (:link-for-route deps)
+                                                             :asset-url asset-url}))]
     (if (d*/datastar-request? req)
       (with-sse req
         (fn [send!]
@@ -47,36 +48,38 @@
                  render)})))
 
 (defn show-my-profile
-  [{:keys [render layout show-profile-use-case]} req]
+  [{:keys [render layout show-profile-use-case asset-url link-for-route]} req]
   (let [user-id (get-in req [:session :user-id])
         member-id (get-in req [:session :member-id])
         [status result] (show-profile-use-case {:member-id member-id :user-id user-id})
-        edit-href (link-for-route req :members.me/edit)
+        edit-href (link-for-route :members.me/edit)
         profile-content (fn []
                           (-> result
+                              (update :member (fn [m] (if m (update m :avatar asset-url) m)))
                               (assoc ,,, :edit-href edit-href)
                               view-models/profile-view-model
                               presentation.profile/present
                               layout
                               render))
         non-member-content (fn []
-                             (-> (add-query-params (link-for-route req :payments/new)
+                             (-> (add-query-params (link-for-route :payments/new)
                                                    {:type "galt-membership-payment" :return-to "/members/me"})
                                  non-member-profile/present
                                  layout
                                  render))]
     (match [status result]
-      [:ok {:member nil}] {:status 302 :headers {"Location" (link-for-route req :members.me/edit)}}
+      [:ok {:member nil}] {:status 302 :headers {"Location" (link-for-route :members.me/edit)}}
       [:ok {:member _}] {:status 200 :body (profile-content)}
       [:error _] {:status 400 :body (non-member-content)})))
 
 (defn show-profile
-  [{:keys [render layout show-profile-use-case]} req]
+  [{:keys [render layout show-profile-use-case asset-url]} req]
   (let [member-id (parse-uuid (get-in req [:path-params :id]))
         [status result] (show-profile-use-case {:member-id member-id})]
     (case status
       :ok {:status 200
            :body (-> result
+                     (update :member (fn [m] (if m (update m :avatar asset-url) m)))
                      view-models/profile-view-model
                      presentation.profile/present
                      layout
@@ -88,13 +91,14 @@
                         render)})))
 
 (defn edit-my-profile
-  [{:keys [render location-repo member-repo layout]} req]
+  [{:keys [render location-repo member-repo layout asset-url link-for-route]} req]
   (let [logged-in-user-id (get-in req [:session :user-id])
-        member (find-member-by-id member-repo logged-in-user-id)
+        member (some-> (find-member-by-id member-repo logged-in-user-id)
+                       (update :avatar asset-url))
         location (lr/find-location-by-id location-repo (:location-id member))
         [action-method action-target] (if member
-                                        ["PUT" (link-for-route req :members/me)]
-                                        ["POST" (link-for-route req :members)])
+                                        ["PUT" (link-for-route :members/me)]
+                                        ["POST" (link-for-route :members)])
         model {:member member
                :location location
                :countries (lr/all-countries location-repo) ; TODO shouldn't pass this, refactor to locations
@@ -109,12 +113,12 @@
                render)}))
 
 (defn- member-input-port
-  [req]
+  [{:keys [asset-key]} req]
   (let [params (get req :params)
         member {:id (get-in req [:session :user-id])
                 :name (:member-name params)
                 :slug (:member-slug params)
-                :avatar (:uploaded-url params)
+                :avatar (asset-key (:uploaded-url params))
                 :description (:member-description params)}
         location {:latitude (parse-double (:latitude params))
                   :longitude (parse-double (:longitude params))
@@ -124,24 +128,24 @@
     {:member member :location location}))
 
 (defn create
-  [{:keys [create-member-use-case render layout]} req]
-  (let [member-params (member-input-port req)
+  [{:keys [create-member-use-case render layout] :as deps} req]
+  (let [member-params (member-input-port deps req)
         model (assoc member-params :form (get-in req [:params :form]))
         [status result] (create-member-use-case member-params)]
     (match [status result]
            [:ok _] {:status 303
-                    :headers {"Location" (link-for-route req :members/me)}
+                    :headers {"Location" ((:link-for-route deps) :members/me)}
                     :session (assoc (:session req) :member-id (:id result))}
            [:error _] (-> model presentation.edit-profile/present layout render))))
 
 (defn update-my-profile
-  [{:keys [update-member-use-case render layout]} req]
-  (let [member-params (member-input-port req)
+  [{:keys [update-member-use-case render layout] :as deps} req]
+  (let [member-params (member-input-port deps req)
         model (assoc member-params :form (get-in req [:params :form]))
         [status result] (update-member-use-case member-params)]
     (match [status result]
            [:ok _] {:status 303
-                    :headers {"Location" (link-for-route req :members/me)}
+                    :headers {"Location" ((:link-for-route deps) :members/me)}
                     :session (assoc (:session req) :member-id (:id result))}
            [:error _] (-> model presentation.edit-profile/present layout render))))
 
