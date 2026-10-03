@@ -1,4 +1,9 @@
-Clojure project (GALT). Project context is preloaded: see PROJECT_SUMMARY.md.
+# Project
+Clojure project (GALT)
+
+Before non-trivial Clojure work, read `PROJECT_SUMMARY.md` at the repo root and treat it as the map of modules, entry points, and tools. If it is missing or stale, say so instead of guessing structure.
+
+Also follow `LLM_CODE_STYLE.md` at the repo root when present; it matches the global Clojure style rules.
 
 ## Clojure workflow
 - Use clojure-mcp tools for all Clojure work: `clojure_eval`, `clojure_edit` / `clojure_edit_replace_sexp`, `scratch_pad`. Prefer structural editing over raw file edits.

@@ -5,3 +5,5 @@ Session.vim
 target
 resources/uploads
 .clojure-mcp
+*.mmdb
+data/geoip/

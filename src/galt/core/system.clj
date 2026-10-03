@@ -38,8 +38,9 @@
    [galt.invitations.domain.use-cases.invitation-dashboard :refer [invitation-dashboard-use-case]]
    [galt.invitations.external.routes]
    [galt.posts.external.routes]
-   [galt.locations.adapters.db-location-repository :refer [new-db-location-repository]]
-   [galt.locations.domain.location-repository :as lr]
+    [galt.locations.adapters.db-location-repository :refer [new-db-location-repository]]
+    [galt.locations.adapters.geoip :as geoip]
+    [galt.locations.domain.location-repository :as lr]
    [galt.locations.external.routes]
    [galt.design.routes]
    [galt.world-map.adapters.placeables :as wp-placeables]
@@ -66,7 +67,8 @@
    [galt.events.domain.event-repository :as er]
    [galt.posts.adapters.db-post-repository :refer [new-db-post-repository]]
    [galt.comments.domain.comment-repository :as cr]
-   [galt.comments.adapters.db-comment-repository :refer [new-db-comment-repository]]
+    [galt.comments.adapters.db-comment-repository :refer [new-db-comment-repository]]
+    [galt.connect.adapters.db-search-repository :refer [new-db-search-repository]]
    [galt.members.external.routes]
    [galt.payments.adapters.cln-payment-gateway :refer [new-cln-payment-gateway]]
    [galt.payments.domain.payment-gateway :as pg]
@@ -75,8 +77,9 @@
    [galt.events.domain.use-cases.add-event :refer [add-event-use-case]]
    [galt.events.domain.use-cases.list-events :refer [list-events-use-case]]
    [galt.payments.external.routes]
-   [galt.comments.external.routes]
-    [galt.events.external.routes]
+    [galt.comments.external.routes]
+     [galt.connect.external.routes]
+     [galt.events.external.routes]
     [is.galt.globo.server :as globo-server]
     [reitit.ring]
    [ring.middleware.session.memory :as memory]
@@ -169,11 +172,17 @@
            :config
            {:db-access (ds/ref [:storage :db-access])}}
 
-     :comment
-     #::ds{:start
-           (fn [{:keys [::ds/config]}] (new-db-comment-repository (:db-access config)))
-           :config
-           {:db-access (ds/ref [:storage :db-access])}}
+      :comment
+      #::ds{:start
+            (fn [{:keys [::ds/config]}] (new-db-comment-repository (:db-access config)))
+            :config
+            {:db-access (ds/ref [:storage :db-access])}}
+
+      :search
+      #::ds{:start
+            (fn [{:keys [::ds/config]}] (new-db-search-repository (:db-access config)))
+            :config
+            {:db-access (ds/ref [:storage :db-access])}}
 
      :asset
      #::ds{:start
@@ -547,8 +556,15 @@
                 :invitation-repo (config :invitation-repo)
                 :post-repo (config :post-repo)
                 :event-repo (config :event-repo)
-                :comment-repo (config :comment-repo)
-                :db-access (config :db-access)
+                 :comment-repo (config :comment-repo)
+                 :search-repo (config :search-repo)
+                 :infer-location (geoip/make-infer-location
+                                  {:mmdb-path (or (System/getenv "GALT_GEOIP_MMDB")
+                                                  (:geoip-mmdb config)
+                                                  "data/geoip/dbip-city-lite.mmdb")
+                                   :find-member (partial mr/find-member-by-id (config :member-repo))
+                                   :find-location (partial lr/find-location-by-id (config :location-repo))})
+                 :db-access (config :db-access)
                 :generate-name name-generator/generate
                 :file-storage (config :file-storage)
                 :asset-url (:asset-url (config :file-storage))
@@ -571,11 +587,13 @@
             :invitation-repo (ds/ref [:storage :invitation])
             :post-repo (ds/ref [:storage :post])
             :event-repo (ds/ref [:storage :event])
-            :comment-repo (ds/ref [:storage :comment])
-            :db-access (ds/ref [:storage :db-access])
+             :comment-repo (ds/ref [:storage :comment])
+             :search-repo (ds/ref [:storage :search])
+             :db-access (ds/ref [:storage :db-access])
             :file-storage (ds/ref [:storage :file-storage])
-            :galt-url (ds/ref [:env :galt-root-url])
-            :session-store (ds/ref [:storage :session-store])
+             :galt-url (ds/ref [:env :galt-root-url])
+             :geoip-mmdb (ds/ref [:env :geoip-mmdb])
+             :session-store (ds/ref [:storage :session-store])
             :globo-mount-path (ds/ref [:env :globo-mount-path])
             :globo-sse (ds/ref [:storage :globo-sse])
             :use-cases (ds/ref [:use-cases])
@@ -640,6 +658,12 @@
               (galt.world-map.external.routes/router (:route-deps config)))
             :config
             {:route-deps (ds/ref [:app :route-deps])}}
+      :connect/routes
+      #::ds{:start
+            (fn [{:keys [::ds/config]}]
+              (galt.connect.external.routes/router (:route-deps config)))
+            :config
+            {:route-deps (ds/ref [:app :route-deps])}}
      :router
      #::ds{:start
            (fn [{:keys [::ds/config]}]
@@ -653,6 +677,7 @@
                     comments-router (get-in config [:comments/routes])
                     design-router (get-in config [:design/routes])
                     world-map-router (get-in config [:world-map/routes])
+                    connect-router (get-in config [:connect/routes])
                     route-deps (get-in config [:route-deps])
                     core-router (core.routes/router route-deps)]
                 (let [router (core.routes/merge-routers
@@ -666,7 +691,8 @@
                                core-router
                                comments-router
                                design-router
-                               world-map-router)]
+                               world-map-router
+                               connect-router)]
                   (reset! router-atom router)
                   router)))
            :config
@@ -679,8 +705,9 @@
             :events/routes (ds/ref [:app :events/routes])
             :comments/routes (ds/ref [:app :comments/routes])
             :design/routes (ds/ref [:app :design/routes])
-            :world-map/routes (ds/ref [:app :world-map/routes])
-            :route-deps (ds/ref [:app :route-deps])}}
+             :world-map/routes (ds/ref [:app :world-map/routes])
+             :connect/routes (ds/ref [:app :connect/routes])
+             :route-deps (ds/ref [:app :route-deps])}}
 
      :route-handler
      #::ds{:start

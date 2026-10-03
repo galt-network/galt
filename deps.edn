@@ -51,6 +51,9 @@
   ; Map
   is.mad/globo {:local/root "../globo"}
 
+  ; GeoIP (DB-IP MMDB is MaxMind-compatible)
+  com.maxmind.geoip2/geoip2 {:mvn/version "4.3.1"}
+
   ; AWS API (S3-compatible object storage: R2, B2, MinIO)
   com.cognitect.aws/api {:mvn/version "0.8.838"}
   com.cognitect.aws/endpoints {:mvn/version "871.2.50.3"}

@@ -19,12 +19,13 @@
         login-item {:id :login :title "Log in" :href "/members/login"}
         logout-item {:id :logout :title "Log out" :data-on:click "@post('/members/logout')"}
         session-item (if logged-in? logout-item login-item)]
-    {:user login-user
-     :items [{:title "Members" :href "/members" :selected? (= :members route-id) }
-             {:title "Groups" :href "/groups" :selected? (= :groups route-id)}
-             {:title "Posts" :href "/posts" :selected? (= :posts route-id)}
-             {:title "Events" :href "/events" :selected? (= :events route-id)}
-             {:title "World map" :href "/world-map" :selected? (= :world-map route-id)}]
+     {:user login-user
+      :items [{:title "Connect" :href "/connect" :selected? (= :connect route-id)}
+              {:title "Members" :href "/members" :selected? (= :members route-id)}
+              {:title "Groups" :href "/groups" :selected? (= :groups route-id)}
+              {:title "Posts" :href "/posts" :selected? (= :posts route-id)}
+              {:title "Events" :href "/events" :selected? (= :events route-id)}
+              {:title "World map" :href "/world-map" :selected? (= :world-map route-id)}]
      :dropdown [{:id :profile :title "Profile" :href "/members/me" :selected? (= :profile route-id)}
                 {:id :invitations :title "Invitations" :href "/invitations" :selected? (= :invitations route-id)}
                 session-item]}))

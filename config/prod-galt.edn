@@ -15,4 +15,5 @@
                                 :model-max-bytes 104857600
                                 :archive-max-bytes 104857600}}
  :web-server-port 8080
- :globo-mount-path "/world-map"}
+ :globo-mount-path "/world-map"
+ :geoip-mmdb "data/geoip/dbip-city-lite.mmdb"}
