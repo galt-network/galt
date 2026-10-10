@@ -3,6 +3,7 @@
    [clj-uuid]
    [clojure.edn]
    [clojure.java.io]
+    [clojure.string :as str]
    [donut.system :as ds]
    [galt.core.adapters.db-access]
    [galt.core.adapters.db-asset-repository :refer [new-db-asset-repository]]
@@ -12,8 +13,8 @@
    [galt.core.domain.use-cases.upload-asset :refer [upload-asset-use-case]]
    [galt.core.infrastructure.bitcoin.bouncy-castle-verify :refer [verify-signature]]
    [galt.core.infrastructure.bitcoin.lnurl :refer [generate-lnurl]]
-    [galt.core.infrastructure.asset-stores :as asset-stores]
-    [galt.core.infrastructure.database :as database]
+   [galt.core.infrastructure.asset-stores :as asset-stores]
+   [galt.core.infrastructure.database :as database]
    [galt.core.infrastructure.name-generator :as name-generator]
    [galt.core.infrastructure.web.helpers :as web-helpers] ; TODO see if can be removed
    [galt.core.infrastructure.web.routes :as core.routes]
@@ -38,9 +39,9 @@
    [galt.invitations.domain.use-cases.invitation-dashboard :refer [invitation-dashboard-use-case]]
    [galt.invitations.external.routes]
    [galt.posts.external.routes]
-    [galt.locations.adapters.db-location-repository :refer [new-db-location-repository]]
-    [galt.locations.adapters.geoip :as geoip]
-    [galt.locations.domain.location-repository :as lr]
+   [galt.locations.adapters.db-location-repository :refer [new-db-location-repository]]
+   [galt.locations.adapters.geoip :as geoip]
+   [galt.locations.domain.location-repository :as lr]
    [galt.locations.external.routes]
    [galt.design.routes]
    [galt.world-map.adapters.placeables :as wp-placeables]
@@ -67,21 +68,21 @@
    [galt.events.domain.event-repository :as er]
    [galt.posts.adapters.db-post-repository :refer [new-db-post-repository]]
    [galt.comments.domain.comment-repository :as cr]
-    [galt.comments.adapters.db-comment-repository :refer [new-db-comment-repository]]
-    [galt.connect.adapters.db-search-repository :refer [new-db-search-repository]]
+   [galt.comments.adapters.db-comment-repository :refer [new-db-comment-repository]]
+   [galt.connect.adapters.db-search-repository :refer [new-db-search-repository]]
    [galt.members.external.routes]
-   [galt.payments.adapters.cln-payment-gateway :refer [new-cln-payment-gateway]]
+   [galt.payments.adapters.btcpay-payment-gateway :refer [new-btcpay-payment-gateway]]
    [galt.payments.domain.payment-gateway :as pg]
    [galt.payments.domain.use-cases.membership-payment :refer [membership-payment-use-case]]
    [galt.payments.domain.use-cases.update-invoice :refer [update-invoice-use-case]]
    [galt.events.domain.use-cases.add-event :refer [add-event-use-case]]
    [galt.events.domain.use-cases.list-events :refer [list-events-use-case]]
    [galt.payments.external.routes]
-    [galt.comments.external.routes]
-     [galt.connect.external.routes]
-     [galt.events.external.routes]
-    [is.galt.globo.server :as globo-server]
-    [reitit.ring]
+   [galt.comments.external.routes]
+   [galt.connect.external.routes]
+   [galt.events.external.routes]
+   [is.galt.globo.server :as globo-server]
+   [reitit.ring]
    [ring.middleware.session.memory :as memory]
    [ring.middleware.session.store :refer [delete-session read-session
                                           write-session]]
@@ -89,6 +90,33 @@
   (:import
    [com.zaxxer.hikari HikariDataSource]))
 
+(defn read-dotenv
+  "Process env wins over this. shortcut: unquoted KEY=VALUE in cwd, no export prefix. Upgrade if values are quoted."
+  [path]
+  (reduce (fn [m line]
+            (if-let [[_ k v] (re-matches #"([A-Za-z_][A-Za-z0-9_]*)=(.*)" line)]
+              (assoc m k v)
+              m))
+          {}
+          (try (str/split-lines (slurp path))
+               (catch Exception _ []))))
+
+(defn env-overrides
+  "Process env wins, then .env, then EDN. Never invents a host port."
+  [cfg]
+  (let [file-env (read-dotenv ".env")
+        lookup (fn [name] (or (System/getenv name) (get file-env name)))
+        host-port (lookup "APP_HOST_PORT")
+        root (or (lookup "GALT_ROOT_URL")
+                 (when (seq host-port) (str "http://127.0.0.1:" host-port)))
+        or-env (fn [env-name k] (or (lookup env-name) (get cfg k)))]
+    (cond-> (assoc cfg
+                   :btcpay-url (or-env "BTCPAY_URL" :btcpay-url)
+                   :btcpay-api-key (or-env "BTCPAY_API_KEY" :btcpay-api-key)
+                   :btcpay-store-id (or-env "BTCPAY_STORE_ID" :btcpay-store-id)
+                   :btcpay-webhook-secret (or-env "BTCPAY_WEBHOOK_SECRET" :btcpay-webhook-secret))
+      (System/getenv "APP_PORT") (assoc :web-server-port (parse-long (System/getenv "APP_PORT")))
+      root (assoc :galt-root-url root))))
 
 (defn get-config
   ([]
@@ -97,7 +125,8 @@
    (-> config-path
        clojure.java.io/file
        slurp
-       clojure.edn/read-string)))
+       clojure.edn/read-string
+       env-overrides)))
 
 (defonce galt-session-atom (atom {}))
 
@@ -172,17 +201,17 @@
            :config
            {:db-access (ds/ref [:storage :db-access])}}
 
-      :comment
-      #::ds{:start
-            (fn [{:keys [::ds/config]}] (new-db-comment-repository (:db-access config)))
-            :config
-            {:db-access (ds/ref [:storage :db-access])}}
+     :comment
+     #::ds{:start
+           (fn [{:keys [::ds/config]}] (new-db-comment-repository (:db-access config)))
+           :config
+           {:db-access (ds/ref [:storage :db-access])}}
 
-      :search
-      #::ds{:start
-            (fn [{:keys [::ds/config]}] (new-db-search-repository (:db-access config)))
-            :config
-            {:db-access (ds/ref [:storage :db-access])}}
+     :search
+     #::ds{:start
+           (fn [{:keys [::ds/config]}] (new-db-search-repository (:db-access config)))
+           :config
+           {:db-access (ds/ref [:storage :db-access])}}
 
      :asset
      #::ds{:start
@@ -199,7 +228,7 @@
 
      :galt-session
      #::ds{:start
-           (fn [_] galt-session-atom )}
+           (fn [_] galt-session-atom)}
 
      :session-store
      #::ds{:start
@@ -236,21 +265,20 @@
     :gateways
     {:payment
      #::ds{:start
-           (fn [{{:keys [node-url rune]} ::ds/config}]
-             (new-cln-payment-gateway node-url rune))
+           (fn [{{:keys [url store-id api-key]} ::ds/config}]
+             (new-btcpay-payment-gateway url store-id api-key))
            :config
-           {:node-url (ds/ref [:env :cln-rest-url])
-            :rune (ds/ref [:env :cln-rune])}}}
+           {:url (ds/ref [:env :btcpay-url]) :store-id (ds/ref [:env :btcpay-store-id]) :api-key (ds/ref [:env :btcpay-api-key])}}}
 
     :use-cases
     {:create-invitation-request-use-case
      #::ds{:start
            (fn [{{:keys [user-repo invitation-repo]} ::ds/config}]
              (partial
-               create-invitation-request-use-case
-               {:find-user-by-id (partial find-user-by-id user-repo)
-                :user-invitation-requests (partial ir/user-invitation-requests invitation-repo)
-                :add-invitation-request (partial ir/add-invitation-request invitation-repo)}))
+              create-invitation-request-use-case
+              {:find-user-by-id (partial find-user-by-id user-repo)
+               :user-invitation-requests (partial ir/user-invitation-requests invitation-repo)
+               :add-invitation-request (partial ir/add-invitation-request invitation-repo)}))
            :config
            {:user-repo (ds/ref [:storage :user])
             :invitation-repo (ds/ref [:storage :invitation])}}
@@ -259,10 +287,10 @@
      #::ds{:start
            (fn [{{:keys [db group-repo]} ::ds/config}]
              (partial
-               invitation-dashboard-use-case
-               {:query (partial galt.core.adapters.postgres-db-access/query db)
-                :find-groups-by-member (partial gr/find-groups-by-member group-repo)
-                :pub-key->name name-generator/generate}))
+              invitation-dashboard-use-case
+              {:query (partial galt.core.adapters.postgres-db-access/query db)
+               :find-groups-by-member (partial gr/find-groups-by-member group-repo)
+               :pub-key->name name-generator/generate}))
            :config
            {:db (ds/ref [:storage :db])
             :group-repo (ds/ref [:storage :group])}}
@@ -271,8 +299,8 @@
      #::ds{:start
            (fn [{{:keys [invitation-repo]} ::ds/config}]
              (partial
-               create-invitation-use-case
-               {:add-invitation (partial ir/add-invitation invitation-repo)}))
+              create-invitation-use-case
+              {:add-invitation (partial ir/add-invitation invitation-repo)}))
            :config
            {:invitation-repo (ds/ref [:storage :invitation])}}
 
@@ -285,8 +313,7 @@
                        :list-groups (partial gr/list-groups group-repo)
                        :add-group (partial gr/add-group group-repo)
                        :add-location (partial lr/add-location location-repo)
-                       :gen-uuid clj-uuid/v7
-                       }))
+                       :gen-uuid clj-uuid/v7}))
            :config
            {:group-repo (ds/ref [:storage :group])
             :member-repo (ds/ref [:storage :member])
@@ -501,12 +528,12 @@
            :config
            {:globo (ds/ref [:storage :globo-sse])}}
 
-      :send-globo-message-use-case
-      #::ds{:start
-            (fn [{{:keys [globo]} ::ds/config}]
-              (partial send-globo-message-use-case {:globo globo}))
-            :config
-            {:globo (ds/ref [:storage :globo-sse])}}
+     :send-globo-message-use-case
+     #::ds{:start
+           (fn [{{:keys [globo]} ::ds/config}]
+             (partial send-globo-message-use-case {:globo globo}))
+           :config
+           {:globo (ds/ref [:storage :globo-sse])}}
 
      :landing-page-use-case
      #::ds{:start
@@ -519,11 +546,11 @@
                        :list-recent-posts (partial po-re/list-recent-posts post-repo)
                        :list-recent-events (partial er/list-recent-events event-repo)
                        :find-groups-by-member (partial gr/find-groups-by-member group-repo)}))
-            :config
-            {:group-repo (ds/ref [:storage :group])
-             :member-repo (ds/ref [:storage :member])
-             :event-repo (ds/ref [:storage :event])
-             :post-repo (ds/ref [:storage :post])}}
+           :config
+           {:group-repo (ds/ref [:storage :group])
+            :member-repo (ds/ref [:storage :member])
+            :event-repo (ds/ref [:storage :event])
+            :post-repo (ds/ref [:storage :post])}}
 
      :upload-asset-use-case
      #::ds{:start
@@ -537,48 +564,47 @@
            :config
            {:file-storage (ds/ref [:storage :file-storage])
             :asset-repo (ds/ref [:storage :asset])
-            :asset-store-config (ds/ref [:env :asset-store])}}
-      }
-
+            :asset-store-config (ds/ref [:env :asset-store])}}}
 
     :app
     {:route-deps
      #::ds{:start
            (fn [{:keys [::ds/config]}]
              (merge
-               {:app-container layout/app-container
-                :render web-helpers/render-html
-                :with-layout web-helpers/with-layout
-                :group-repo (config :group-repo)
-                :user-repo (config :user-repo)
-                :member-repo (config :member-repo)
-                :location-repo (config :location-repo)
-                :invitation-repo (config :invitation-repo)
-                :post-repo (config :post-repo)
-                :event-repo (config :event-repo)
-                 :comment-repo (config :comment-repo)
-                 :search-repo (config :search-repo)
-                 :infer-location (geoip/make-infer-location
-                                  {:mmdb-path (or (System/getenv "GALT_GEOIP_MMDB")
-                                                  (:geoip-mmdb config)
-                                                  "data/geoip/dbip-city-lite.mmdb")
-                                   :find-member (partial mr/find-member-by-id (config :member-repo))
-                                   :find-location (partial lr/find-location-by-id (config :location-repo))})
-                 :db-access (config :db-access)
-                :generate-name name-generator/generate
-                :file-storage (config :file-storage)
-                :asset-url (:asset-url (config :file-storage))
-                :asset-key (:asset-key (config :file-storage))
-                :link-for-route (fn [route-name & [path-params]]
-                                  (link-for-route @router-atom route-name path-params))
-                :galt-url (config :galt-url)
-                :gen-uuid clj-uuid/v7
-                :globo-mount-path (config :globo-mount-path)
-                :globo (config :globo-sse)
-                :read-session (partial read-session (:session-store config))
-                :write-session (partial write-session (:session-store config))
-                :delete-session (partial delete-session (:session-store config))}
-               (config :use-cases)))
+              {:app-container layout/app-container
+               :render web-helpers/render-html
+               :with-layout web-helpers/with-layout
+               :group-repo (config :group-repo)
+               :user-repo (config :user-repo)
+               :member-repo (config :member-repo)
+               :location-repo (config :location-repo)
+               :invitation-repo (config :invitation-repo)
+               :post-repo (config :post-repo)
+               :event-repo (config :event-repo)
+               :comment-repo (config :comment-repo)
+               :search-repo (config :search-repo)
+               :infer-location (geoip/make-infer-location
+                                {:mmdb-path (or (System/getenv "GALT_GEOIP_MMDB")
+                                                (:geoip-mmdb config)
+                                                "data/geoip/dbip-city-lite.mmdb")
+                                 :find-member (partial mr/find-member-by-id (config :member-repo))
+                                 :find-location (partial lr/find-location-by-id (config :location-repo))})
+               :db-access (config :db-access)
+               :generate-name name-generator/generate
+               :file-storage (config :file-storage)
+               :asset-url (:asset-url (config :file-storage))
+               :asset-key (:asset-key (config :file-storage))
+               :link-for-route (fn [route-name & [path-params]]
+                                 (link-for-route @router-atom route-name path-params))
+               :galt-url (config :galt-url)
+               :btcpay-webhook-secret (config :btcpay-webhook-secret)
+               :gen-uuid clj-uuid/v7
+               :globo-mount-path (config :globo-mount-path)
+               :globo (config :globo-sse)
+               :read-session (partial read-session (:session-store config))
+               :write-session (partial write-session (:session-store config))
+               :delete-session (partial delete-session (:session-store config))}
+              (config :use-cases)))
            :config
            {:group-repo (ds/ref [:storage :group])
             :user-repo (ds/ref [:storage :user])
@@ -587,17 +613,17 @@
             :invitation-repo (ds/ref [:storage :invitation])
             :post-repo (ds/ref [:storage :post])
             :event-repo (ds/ref [:storage :event])
-             :comment-repo (ds/ref [:storage :comment])
-             :search-repo (ds/ref [:storage :search])
-             :db-access (ds/ref [:storage :db-access])
+            :comment-repo (ds/ref [:storage :comment])
+            :search-repo (ds/ref [:storage :search])
+            :db-access (ds/ref [:storage :db-access])
             :file-storage (ds/ref [:storage :file-storage])
-             :galt-url (ds/ref [:env :galt-root-url])
-             :geoip-mmdb (ds/ref [:env :geoip-mmdb])
-             :session-store (ds/ref [:storage :session-store])
+            :galt-url (ds/ref [:env :galt-root-url])
+            :btcpay-webhook-secret (ds/ref [:env :btcpay-webhook-secret])
+            :geoip-mmdb (ds/ref [:env :geoip-mmdb])
+            :session-store (ds/ref [:storage :session-store])
             :globo-mount-path (ds/ref [:env :globo-mount-path])
             :globo-sse (ds/ref [:storage :globo-sse])
-            :use-cases (ds/ref [:use-cases])
-            }}
+            :use-cases (ds/ref [:use-cases])}}
      :members/routes
      #::ds{:start
            (fn [{:keys [::ds/config]}]
@@ -646,24 +672,24 @@
              (galt.comments.external.routes/router (:route-deps config)))
            :config
            {:route-deps (ds/ref [:app :route-deps])}}
-      :design/routes
-      #::ds{:start
-            (fn [{:keys [::ds/config]}]
-              (galt.design.routes/router (:route-deps config)))
-            :config
-            {:route-deps (ds/ref [:app :route-deps])}}
-      :world-map/routes
-      #::ds{:start
-            (fn [{:keys [::ds/config]}]
-              (galt.world-map.external.routes/router (:route-deps config)))
-            :config
-            {:route-deps (ds/ref [:app :route-deps])}}
-      :connect/routes
-      #::ds{:start
-            (fn [{:keys [::ds/config]}]
-              (galt.connect.external.routes/router (:route-deps config)))
-            :config
-            {:route-deps (ds/ref [:app :route-deps])}}
+     :design/routes
+     #::ds{:start
+           (fn [{:keys [::ds/config]}]
+             (galt.design.routes/router (:route-deps config)))
+           :config
+           {:route-deps (ds/ref [:app :route-deps])}}
+     :world-map/routes
+     #::ds{:start
+           (fn [{:keys [::ds/config]}]
+             (galt.world-map.external.routes/router (:route-deps config)))
+           :config
+           {:route-deps (ds/ref [:app :route-deps])}}
+     :connect/routes
+     #::ds{:start
+           (fn [{:keys [::ds/config]}]
+             (galt.connect.external.routes/router (:route-deps config)))
+           :config
+           {:route-deps (ds/ref [:app :route-deps])}}
      :router
      #::ds{:start
            (fn [{:keys [::ds/config]}]
@@ -674,27 +700,27 @@
                    payments-router (get-in config [:payments/routes])
                    posts-router (get-in config [:posts/routes])
                    events-router (get-in config [:events/routes])
-                    comments-router (get-in config [:comments/routes])
-                    design-router (get-in config [:design/routes])
-                    world-map-router (get-in config [:world-map/routes])
-                    connect-router (get-in config [:connect/routes])
-                    route-deps (get-in config [:route-deps])
-                    core-router (core.routes/router route-deps)]
-                (let [router (core.routes/merge-routers
-                               members-router
-                               groups-router
-                               locations-router
-                               invitations-router
-                               payments-router
-                               posts-router
-                               events-router
-                               core-router
-                               comments-router
-                               design-router
-                               world-map-router
-                               connect-router)]
-                  (reset! router-atom router)
-                  router)))
+                   comments-router (get-in config [:comments/routes])
+                   design-router (get-in config [:design/routes])
+                   world-map-router (get-in config [:world-map/routes])
+                   connect-router (get-in config [:connect/routes])
+                   route-deps (get-in config [:route-deps])
+                   core-router (core.routes/router route-deps)]
+               (let [router (core.routes/merge-routers
+                             members-router
+                             groups-router
+                             locations-router
+                             invitations-router
+                             payments-router
+                             posts-router
+                             events-router
+                             core-router
+                             comments-router
+                             design-router
+                             world-map-router
+                             connect-router)]
+                 (reset! router-atom router)
+                 router)))
            :config
            {:members/routes (ds/ref [:app :members/routes])
             :groups/routes (ds/ref [:app :groups/routes])
@@ -705,9 +731,9 @@
             :events/routes (ds/ref [:app :events/routes])
             :comments/routes (ds/ref [:app :comments/routes])
             :design/routes (ds/ref [:app :design/routes])
-             :world-map/routes (ds/ref [:app :world-map/routes])
-             :connect/routes (ds/ref [:app :connect/routes])
-             :route-deps (ds/ref [:app :route-deps])}}
+            :world-map/routes (ds/ref [:app :world-map/routes])
+            :connect/routes (ds/ref [:app :connect/routes])
+            :route-deps (ds/ref [:app :route-deps])}}
 
      :route-handler
      #::ds{:start

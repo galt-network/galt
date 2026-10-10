@@ -1,0 +1,20 @@
+;; Example users for scripts/lnurl-login.bb
+;;
+;; Each user is a simulated Lightning wallet identity used to log into GALT
+;; during development. A user needs exactly one of:
+;;
+;;   :hex-seed  32 bytes of BIP39 entropy, hex encoded
+;;              (generate a fresh one with: bb scripts/lnurl-login.bb --generate-hex-seed)
+;;   :mnemonic  a BIP39 mnemonic phrase (12/15/18/21/24 words)
+;;              (generate a fresh one with: bb scripts/lnurl-login.bb --generate-mnemonic)
+;;
+;; Optional:
+;;   :passphrase  BIP39 passphrase (defaults to "")
+;;
+;; The same seed always derives the same GALT account, so keep these stable if
+;; you want a user's member/profile/payment state to persist between runs.
+
+{:users
+ {"alice"   {:hex-seed "b6e48609e8fd3599214f2f9e33577530c9d1151d50ef03d348a72ef3c4377b3e"}
+  "bob"     {:hex-seed "1cc28a29e8dd87e9b2fd02cfc673180d7f2343db8000d798593c56c739869660"}
+  "charlie" {:mnemonic "circle banana immune cruel jacket square unknown bird hungry display bleak burst turkey congress man walk sunny attract spatial urban level wire essence traffic"}}}

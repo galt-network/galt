@@ -1,9 +1,12 @@
 .lsp
 Session.vim
 .nrepl-port
+.env
 .rebel_readline_history
 target
 resources/uploads
 .clojure-mcp
 *.mmdb
 data/geoip/
+data/countries-states-cities-database/
+.btcpay/

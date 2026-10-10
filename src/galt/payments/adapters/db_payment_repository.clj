@@ -1,9 +1,9 @@
 (ns galt.payments.adapters.db-payment-repository
   (:require
-    [galt.core.adapters.db-access :refer [query query-one]]
-    [galt.core.adapters.db-result-transformations :refer [transform-row defaults ->local-date-time]]
-    [galt.payments.domain.payment-repository :refer [PaymentRepository] :as pr]
-    [galt.payments.domain.entities.membership-payment :refer [map->MembershipPayment]]))
+   [galt.core.adapters.db-access :refer [query query-one]]
+   [galt.core.adapters.db-result-transformations :refer [transform-row defaults ->local-date-time]]
+   [galt.payments.domain.payment-repository :refer [PaymentRepository] :as pr]
+   [galt.payments.domain.entities.membership-payment :refer [map->MembershipPayment]]))
 
 (def invoice-spec
   {:invoices/id defaults
@@ -40,8 +40,8 @@
           :set (update params :status (fn [status] [:cast status :invoicestatus]))
           :where (if (string? id-or-label) [:= :label id-or-label] [:= :id id-or-label])
           :returning [:*]}
-         (query-one db-access ,,,)
-         (transform-row invoice-spec ,,,)))
+         (query-one db-access)
+         (transform-row invoice-spec)))
 
   (membership-invoices [_ user-id]
     (->> {:select [:invoices.*]
@@ -49,27 +49,27 @@
           :join [[:galt_membership_payments :gmp] [:= :gmp.invoice_id :invoices.id]]
           :where [:= :gmp.user_id user-id]
           :order-by [[:invoices.created_at :desc]]}
-         (query db-access ,,,)
-         (map #(transform-row invoice-spec %) ,,,)))
+         (query db-access)
+         (map #(transform-row invoice-spec %))))
 
   (invoice-by-label [_ label]
     (some->>
-      {:select [:*] :from [:invoices] :where [:= :label label]}
-      (query-one db-access ,,,)
-      (transform-row invoice-spec ,,,)))
+     {:select [:*] :from [:invoices] :where [:= :label label]}
+     (query-one db-access)
+     (transform-row invoice-spec)))
 
   (current-membership-payment [_ user-id]
     (some->>
-      {:select [:invoices.*]
-       :from [:invoices]
-       :join [[:galt_membership_payments :gmp] [:= :gmp.invoice_id :invoices.id]]
-       :where [:and
-               [:= :gmp.user_id user-id]
-               [:= :invoices/status [:cast "paid" :invoicestatus]]]
-       :order-by [[:invoices.created_at :desc]]
-       :limit 1}
-      (query-one db-access ,,,)
-      (transform-row invoice-spec ,,,))))
+     {:select [:invoices.*]
+      :from [:invoices]
+      :join [[:galt_membership_payments :gmp] [:= :gmp.invoice_id :invoices.id]]
+      :where [:and
+              [:= :gmp.user_id user-id]
+              [:= :invoices/status [:cast "paid" :invoicestatus]]]
+      :order-by [[:invoices.created_at :desc]]
+      :limit 1}
+     (query-one db-access)
+     (transform-row invoice-spec))))
 
 (def last-repo (atom nil))
 (defn new-db-payment-repository [db-access]
@@ -80,6 +80,4 @@
   (def user-id (parse-uuid "0199c537-4231-70c1-af8e-fff11dfd8503"))
   (def current (pr/current-membership-payment @last-repo user-id))
   (require '[java-time.api :as jt])
-  (jt/before? (jt/local-date-time) (jt/plus (:paid-at current) (jt/years 1)))
-  (require '[galt.payments.adapters.cln-gateway-responses :refer [responses]])
-  (pr/add-membership-invoice @last-repo user-id (:invoice responses)))
+  (jt/before? (jt/local-date-time) (jt/plus (:paid-at current) (jt/years 1))))

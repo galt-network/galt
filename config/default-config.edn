@@ -16,7 +16,5 @@
                                 :model-max-bytes 104857600
                                 :archive-max-bytes 104857600}}
  :web-server-port 8081
- :cln-rest-url "http://localhost:3010"
- :cln-rune "<your rune here>"
  :globo-mount-path "/world-map"
  :geoip-mmdb "data/geoip/dbip-city-lite.mmdb"}

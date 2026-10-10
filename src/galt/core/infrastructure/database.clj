@@ -8,7 +8,9 @@
 
 (defn make-config
   [config]
-  {:jdbcUrl (str "jdbc:postgresql://localhost:5432/" (get config :database "galt"))
+  {:jdbcUrl (str "jdbc:postgresql://" (or (System/getenv "DB_HOST") "localhost")
+                ":" (or (System/getenv "DB_PORT") "5432")
+                "/" (get config :database "galt"))
    :user (get config :user "postgres")
    :password (get config :password "postgres")
    :maximumPoolSize (get config :maximumPoolSize 4)

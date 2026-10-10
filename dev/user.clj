@@ -1,8 +1,9 @@
 (ns user
   (:require
     [clj-reload.core :as reload]
-    [galt.main]
-    [galt.core.system]))
+    [galt.core.infrastructure.db-migrations :as db-migrations]
+    [galt.core.system]
+    [galt.main]))
 
 (alter-var-root #'*warn-on-reflection* (constantly true))
 
@@ -16,6 +17,7 @@
   (go!)
   (galt.main/start-system! :dev)
 
+  (db-migrations/migrate!)
   (require '[sci.nrepl.browser-server :as nrepl])
   (nrepl/start! {:nrepl-port 1339 :websocket-port 1340})
 

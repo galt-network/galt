@@ -8,6 +8,14 @@
   (or (nil? expires-at)
       (> (System/currentTimeMillis) expires-at)))
 
+(defn- active-membership?
+  "True when there is a paid membership payment that is less than a year old.
+   A user without a member profile or without a paid membership is not active."
+  [payment]
+  (if-let [paid-at (:paid-at payment)]
+    (jt/before? (jt/local-date-time) (jt/plus paid-at (jt/years 1)))
+    false))
+
 (defn- find-or-create-user-and-add-to-session
   [{:keys [session-store
            gen-uuid
@@ -20,8 +28,9 @@
                (find-user-by-pub-key pub-key)
                (add-user (gen-uuid) pub-key))
         member (find-member-by-user-id (:id user))
-        payment (current-membership-payment (:id member))
-        membership-active? (jt/before? (jt/local-date-time) (jt/plus (:paid-at payment) (jt/years 1)))
+        payment (when-let [member-id (:id member)]
+                  (current-membership-payment member-id))
+        membership-active? (active-membership? payment)
         updated-session {:user-id (:id user)
                          :membership-active? membership-active?
                          :member-id (:id member)}]

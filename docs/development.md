@@ -1,5 +1,7 @@
 ## Development
 
+BTCPay regtest (Lightning invoices, both containerized and host Galt): [btcpay.md](btcpay.md).
+
 1. Start repl server
   - `clojure -M:dev:repl -m nrepl.cmdline`
   - `clojure -M:dev:repl -m galt.main`

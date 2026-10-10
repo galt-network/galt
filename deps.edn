@@ -72,4 +72,34 @@
           :ns-default build}
   :outdated {;; Note that it is `:deps`, not `:extra-deps`
              :deps {com.github.liquidz/antq {:mvn/version "RELEASE"}}
-             :main-opts ["-m" "antq.core"]}}}
+             :main-opts ["-m" "antq.core"]}
+  :nrepl {:extra-paths ["dev" "test"]
+          :extra-deps {org.clojure/clojure {:mvn/version "1.12.5"}
+                       io.github.tonsky/clj-reload {:mvn/version "1.0.0"}
+                       tortue/spy {:mvn/version "2.15.0"}
+                       ring/ring-mock {:mvn/version "0.6.2"}
+                       http-kit.fake/http-kit.fake {:mvn/version "0.2.2"}
+                       nubank/matcher-combinators {:mvn/version "3.10.0"}}
+          :main-opts ["-m" "nrepl.cmdline"]}
+  :clj-contain {:name "galt-dev"
+                :ports [{:name :app :container 8081}]
+                :networks ["galt-btcpay_default"]
+                :opencode-config true
+                :env {:GALT_ENV "dev"
+                      :APP_PORT "8081"
+                      :DB_HOST "postgres"
+                      :DB_PORT "5432"
+                      :MIGRATUS_DATABASE "galt_dev"
+                      :MIGRATUS_USER "galt"
+                      :MIGRATUS_PASSWORD "galtpass"
+                      :BTCPAY_URL "http://btcpayserver:49392"
+                      :GALT_WEBHOOK_URL "http://galt-dev:8081/payments/btcpay-webhook"
+                      }
+                :mounts ["/home/madis/code/madis/galt/data/countries-states-cities-database/world.sql:/home/madis/code/madis/galt/data/countries-states-cities-database/world.sql:z"]
+                :services [{:name "postgres"
+                            :image "docker.io/library/postgres:18-alpine"
+                            :port 5432
+                            :env {:POSTGRES_USER "galt"
+                                  :POSTGRES_PASSWORD "galtpass"
+                                  :POSTGRES_DB "galt_dev"}
+                            :volume {:name "pg" :dest "/var/lib/postgresql"}}]}}}

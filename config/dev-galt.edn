@@ -1,3 +1,24 @@
 {:galt-root-url "https://dev.galt.is"
  :file-storage-root "resources/uploads"
- :web-server-port 8081}
+ :asset-store {
+               :type :s3
+               ; :type :disk
+               :storage-root "resources/uploads"
+               :root-url "https://dev.galt.is"
+               :bucket "galt-media-dev"
+               :endpoint "https://e58cb0720ecc0a067ef67e87eede2b3b.r2.cloudflarestorage.com"
+               :region "auto"
+               :public-base-url "https://media.dev.galt.is"
+               :public-prefix "public"
+               :private-prefix "private"
+               :access-key "539f9a6684d165169323d8fd255e5c09"
+               :secret-key "fe7b6e75c621bd06e1cc0b685ef212dcb88565700c6e84a359d0a02e2c5055ec"
+               :upload-config {:image-max-bytes 26214400
+                               :video-max-bytes 104857600
+                               :model-max-bytes 104857600
+                               :archive-max-bytes 104857600}}
+ :web-server-port 8081
+ :btcpay-url "http://btcpay.galt.test:49392"
+ :galt-webhook-url "http://host.containers.internal:8081/payments/btcpay-webhook"
+ :globo-mount-path "/world-map"
+ :geoip-mmdb "data/geoip/dbip-city-lite.mmdb"}

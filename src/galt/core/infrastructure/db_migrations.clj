@@ -10,7 +10,9 @@
 (defn datasource-config
   ([] (datasource-config database-name))
   ([db-name]
-    {:jdbcUrl (str "jdbc:postgresql://localhost:5432/" db-name)
+    {:jdbcUrl (str "jdbc:postgresql://" (or (System/getenv "DB_HOST") "localhost")
+                  ":" (or (System/getenv "DB_PORT") "5432")
+                  "/" db-name)
      :user database-user
      :password database-pass}))
 
@@ -27,7 +29,13 @@
 
 (def init-config (assoc-in config [:db :datasource] (get-datasource (datasource-config "postgres"))))
 
-(defn init! [] (migratus/init init-config))
+(defn init! []
+  (try
+    (migratus/init init-config)
+    (catch java.sql.SQLException e
+      (if (= "42P04" (.getSQLState e))
+        (println "database already exists; skipping init")
+        (throw e)))))
 (defn migrate! [] (migratus/migrate config))
 
 (comment

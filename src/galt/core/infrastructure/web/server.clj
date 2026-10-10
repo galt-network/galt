@@ -3,7 +3,7 @@
     [org.httpkit.server :as hk-server]))
 
 (defn start! [handler & {:as opts}]
-  (let [opts (merge {:port 8081 :join? false}
+  (let [opts (merge {:port 8081 :join? false :ip "0.0.0.0"}
                     opts)]
     (println "Starting server with opts:" opts "with handler:" handler)
     (hk-server/run-server handler opts)))

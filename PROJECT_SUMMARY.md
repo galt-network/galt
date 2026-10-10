@@ -22,10 +22,11 @@ Key principles:
 - `build.clj` - Build script using `tools.build`. Creates uberjar: `clj -T:build uber`
 - `start-nrepl.sh` - Convenience script to start an nREPL server
 - `start-ssh-tunnel.sh` - Convenience script for SSH tunnel to dev DB
+- `scripts/btcpay.bb` - Local regtest BTCPay Server plus a payer CLN. See `docs/btcpay.md`. Not started by clj-contain.
 
 ### System Configuration
 - `src/galt/core/system.clj` - Donut System dependency graph. Defines all components: DB, repositories, use cases, routes, web server. ~630 lines, the central wiring file. Uses `get-config` for env-driven config loading.
-- `config/default-config.edn` - Default config (localhost:8081, file storage, CLN REST URL)
+- `config/default-config.edn` - Default config (localhost:8081, file storage)
 - `config/dev-galt.edn`, `config/staging-galt.edn`, `config/prod-galt.edn` - Environment-specific configs
 
 ### Core Infrastructure (`src/galt/core/infrastructure/`)
@@ -50,7 +51,7 @@ Each module follows the pattern: `adapters/`, `domain/` (with `entities/` and `u
 - `src/galt/groups/` - Group management (create, edit, delete, list, show, memberships)
 - `src/galt/members/` - Member profiles, LNURL authentication, search
 - `src/galt/invitations/` - Invitation system (requests, creation, dashboard)
-- `src/galt/payments/` - Bitcoin Lightning payments (CLN integration, membership invoices)
+- `src/galt/payments/` - Lightning membership payments via BTCPay Greenfield (`BTC-LN`). `scripts/btcpay.bb` is the local regtest stack.
 - `src/galt/posts/` - Posts within groups (CRUD)
 - `src/galt/events/` - Event management (add, list)
 - `src/galt/comments/` - Comments on posts and events (has `adapters/presentation.clj` instead of a `presentation/` dir)
@@ -224,7 +225,7 @@ The system is organized into tiers:
 
 1. **`:env`** - Environment variables and config values
 2. **`:storage`** - Database connection, repositories (group, member, user, location, invitation, payment, post, event, comment), file storage, session store
-3. **`:gateways`** - External service gateways (CLN payment gateway)
+3. **`:gateways`** - External service gateways (BTCPay payment gateway)
 4. **`:use-cases`** - Business logic functions wired with repository/gateway dependencies
 5. **`:app`** - Route dependencies, individual routers per module, merged router, route handler, web server
 

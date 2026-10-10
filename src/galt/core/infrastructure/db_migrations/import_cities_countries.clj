@@ -22,7 +22,9 @@
     (let [db-user (System/getenv "MIGRATUS_USER")
           db-password (System/getenv "MIGRATUS_PASSWORD")
           db-name (System/getenv "MIGRATUS_DATABASE")
-          db-url (str "postgresql://" db-user ":" db-password "@localhost:5432/" db-name)
+          db-url (str "postgresql://" db-user ":" db-password "@"
+                      (or (System/getenv "DB_HOST") "localhost") ":"
+                      (or (System/getenv "DB_PORT") "5432") "/" db-name)
           result (sh/sh "psql" "-d" db-url "-f" world-path)]
       (if (not (zero? (:exit result)))
         (throw (ex-info "Error importing world geodata" result))

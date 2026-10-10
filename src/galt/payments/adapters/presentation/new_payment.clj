@@ -1,6 +1,7 @@
 (ns galt.payments.adapters.presentation.new-payment
   (:require
    [galt.core.views.components :refer [errors-list]]
+   [galt.core.views.datastar-helpers :refer [d*-backend-action]]
    [galt.members.adapters.presentation.qr-code :refer [qr-code-img]]))
 
 (defn show-invoice-payable
@@ -9,7 +10,6 @@
    [:h1.title.is-2 "Pay by scanning this QR code with your Lightning wallet"]
    (qr-code-img (:invoice-url model))
    [:pre (str model)]
-   [:input {:type "hidden" :data-init (:datastar-action model)}]
    [:input {:type "text" :data-bind "payment-status"}]])
 
 (defn show-invoice-paid
@@ -33,11 +33,14 @@
       "paid" (show-invoice-paid model)
       :error (errors-list "Error processing the invoice" (:message model)))])
 
+(defn refetch-action
+  [return-to]
+  (if return-to
+    (d*-backend-action "/payments/new" :get {:return-to return-to})
+    "@get('/payments/new')"))
+
 (defn present
-  [model]
-  [:div {:data-on:load (:datastar-action model)
-         :data-on:signal-patch "@get('/payments/new')"
-         ; FIXME datastar logs an error on the following:
-         :data-on:signal-patch-filters "{include: /payment-status/}"
-         }
+  [{:keys [datastar-action return-to] :as model}]
+  [:div {:data-init datastar-action
+         :data-on-signal-patch (refetch-action return-to)}
    (payment-container model)])
