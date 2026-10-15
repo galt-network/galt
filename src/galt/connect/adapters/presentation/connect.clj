@@ -7,6 +7,11 @@
   [types t]
   (or (nil? types) (contains? types t)))
 
+(defn near-me-notice
+  [dropped?]
+  (when dropped?
+    [:p "Near me was dropped"]))
+
 (defn hit-card
   [hit]
   [:article.media
@@ -15,7 +20,9 @@
     [:span.title.is-5.ml-2
      (if-let [href (:href hit)]
        [:a {:href href} (:title hit)]
-       (:title hit))]]])
+       (:title hit))]
+    (when-let [snippet (:snippet hit)]
+      [:p snippet])]])
 
 (def ^:private refetch-inner
   "$offset = 0; @get('/connect?patch-mode=inner')")
@@ -105,6 +112,8 @@
                         ["next-week" "Next week"]]
              :let [selected? (= (or (:period model) "all") v)]]
          [:option (cond-> {:value v} selected? (assoc :selected true)) label])]]]]
+   [:div#connect-notice
+    (near-me-notice (:near-me-dropped? model))]
    [:div#connect-hits
     (map hit-card (:hits model))]
    [:div {:data-on-intersect "@get('/connect?patch-mode=append')"}]

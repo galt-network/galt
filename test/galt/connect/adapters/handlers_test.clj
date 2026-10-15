@@ -3,13 +3,14 @@
    [clojure.string :as str]
    [clojure.test :refer [deftest is]]
    [galt.connect.adapters.handlers :as handlers]
-    [galt.connect.adapters.memory-search-repository :as memory]
-    [galt.core.adapters.sse-helpers :as sse]
-    [galt.core.adapters.time-helpers :as th]
-    [galt.core.infrastructure.web.helpers :refer [->json]]
-    [java-time.api :as jt]
-    [ring.middleware.params :refer [wrap-params]]
-    [ring.mock.request :as mock]))
+   [galt.connect.adapters.memory-search-repository :as memory]
+   [galt.connect.domain.use-cases.search :as search]
+   [galt.core.adapters.sse-helpers :as sse]
+   [galt.core.adapters.time-helpers :as th]
+   [galt.core.infrastructure.web.helpers :refer [->json]]
+   [java-time.api :as jt]
+   [ring.middleware.params :refer [wrap-params]]
+   [ring.mock.request :as mock]))
 
 (defn- stub-deps [& {:as extra}]
   (merge {:render identity
@@ -52,6 +53,27 @@
   (let [body (str (:body (call (stub-deps) (mock/request :get "/connect"))))]
     (is (str/includes? body "Ada"))
     (is (str/includes? body "/members"))))
+
+(deftest connect-page-shows-snippet-on-a-hit
+  (let [deps (stub-deps :search-repo
+                        (memory/new-memory-search-repository
+                         [{:type :member :id 1 :title "Ada" :description "Engineer"
+                           :snippet "Ada the engineer" :activity-at 1}]))
+        body (str (:body (call deps (mock/request :get "/connect"))))]
+    (is (str/includes? body "Ada the engineer"))))
+
+(deftest connect-page-says-near-me-was-dropped
+  (with-redefs [search/search (fn [_ _] [:ok {:hits [] :near-me-dropped? true}])]
+    (is (str/includes?
+         (str (:body (call (stub-deps) (mock/request :get "/connect"))))
+         "Near me was dropped"))))
+
+(deftest connect-page-does-not-say-near-me-was-dropped
+  (let [body (str (:body (call (stub-deps) (mock/request :get "/connect"))))]
+    (is (not (str/includes? body "Near me was dropped")))
+    (is (str/includes? body "Search"))
+    (is (str/includes? body "Date range"))
+    (is (str/includes? body "Near me"))))
 
 (deftest connect-page-filters-by-query
   (let [deps (stub-deps :search-repo
@@ -194,6 +216,13 @@
             loc-html (:html (first (filter #(= "#connect-location" (get-in % [:opts :selector])) htmls)))]
         (is (str/includes? hits-html "Far Bob"))
         (is (str/includes? loc-html "Near me"))))))
+
+(deftest connect-datastar-says-near-me-was-dropped
+  (with-redefs [sse/with-sse capture-sse
+                search/search (fn [_ _] [:ok {:hits [] :near-me-dropped? true}])]
+    (let [htmls (sent-html (call (stub-deps) (datastar-req {})))
+          notice (:html (first (filter #(= "#connect-notice" (get-in % [:opts :selector])) htmls)))]
+      (is (str/includes? (str notice) "Near me was dropped")))))
 
 (deftest connect-datastar-inner-resets-offset
   (let [deps (stub-deps)]

@@ -86,7 +86,7 @@
 (defn show-connect
   [{:keys [render layout link-for-route] :as deps} req]
   (let [command (command-from deps req)
-        [_status hits] (search/search deps command)
+        [_status {:keys [hits near-me-dropped?]}] (search/search deps command)
         hits (map #(assoc % :href (hit-href link-for-route %)) hits)
         patch-mode (or (get-in req [:query-params "patch-mode"])
                        (get-in req [:params :patch-mode])
@@ -98,6 +98,9 @@
             (send! :html (presentation/location-bar (:location command))
                    {:selector "#connect-location"
                     :patch-mode "inner"}))
+          (send! :html (or (presentation/near-me-notice near-me-dropped?) "")
+                 {:selector "#connect-notice"
+                  :patch-mode "inner"})
           (send! :html (map presentation/hit-card hits)
                  {:selector "#connect-hits"
                   :patch-mode patch-mode})
@@ -110,6 +113,7 @@
                            :geo (if (:location command) "" "off")})))
       {:status http-status/ok
        :body (-> {:hits hits
+                  :near-me-dropped? near-me-dropped?
                   :query (:query command)
                   :types (:types command)
                   :period (or (get-in req [:query-params "period"])
