@@ -30,11 +30,12 @@
     {:status 200 :body @sent}))
 
 (defn- datastar-req
-  [signals]
-  (-> (mock/request :get "/connect")
-      (mock/header "datastar-request" "true")
-      (mock/query-string {"datastar" (->json signals)
-                          "patch-mode" "inner"})))
+  ([signals] (datastar-req signals "inner"))
+  ([signals patch-mode]
+   (-> (mock/request :get "/connect")
+       (mock/header "datastar-request" "true")
+       (mock/query-string {"datastar" (->json signals)
+                           "patch-mode" patch-mode}))))
 
 (defn- sent-html [resp]
   (->> (:body resp)
@@ -220,9 +221,10 @@
 (deftest connect-datastar-says-near-me-was-dropped
   (with-redefs [sse/with-sse capture-sse
                 search/search (fn [_ _] [:ok {:hits [] :near-me-dropped? true}])]
-    (let [htmls (sent-html (call (stub-deps) (datastar-req {})))
-          notice (:html (first (filter #(= "#connect-notice" (get-in % [:opts :selector])) htmls)))]
-      (is (str/includes? (str notice) "Near me was dropped")))))
+    (doseq [patch-mode ["inner" "append"]]
+      (let [htmls (sent-html (call (stub-deps) (datastar-req {} patch-mode)))
+            notice (:html (first (filter #(= "#connect-notice" (get-in % [:opts :selector])) htmls)))]
+        (is (str/includes? (str notice) "Near me was dropped"))))))
 
 (deftest connect-datastar-inner-resets-offset
   (let [deps (stub-deps)]

@@ -3,6 +3,7 @@
     [clojure.string :as str]
     [clojure.test :refer [deftest is]]
     [galt.connect.adapters.memory-search-repository :as memory]
+    [galt.connect.domain.search-repository :as search-repo]
     [galt.connect.domain.use-cases.search :as search]
     [java-time.api :as jt]))
 
@@ -37,6 +38,17 @@
    {:type :event :id 2 :title "Bitcoin Meetup" :description "One hour of talks" :activity-at 2}
    {:type :group :id 3 :title "Weekly Notes" :description "Writers corner" :activity-at 3}
    {:type :post :id 4 :title "Monthly Gathering" :description "Agenda inside" :activity-at 4}])
+
+(def origin {:lat 0.0 :lng 0.0 :radius-km 100})
+
+(def near-and-far
+  [{:type :member :id 1 :title "Local Pottery" :description "Tartu studio" :activity-at 2
+    :lat 0.05 :lng 0.0}
+   {:type :event :id 2 :title "Distant Bitcoin" :description "Tallinn meetup" :activity-at 1
+    :lat 40.0 :lng 40.0}])
+
+(defn- dropped-near-me? [hits command]
+  (:near-me-dropped? (second (search-with hits command))))
 
 (deftest query-matches-whole-words-in-any-order
   (is (= ["Bitcoin Meetup"] (map :title (search-hits text-hits {:query "meetup bitcoin"}))))
@@ -173,3 +185,45 @@
   (let [hits [{:type :group :id 1 :title "Rustaceans" :description "Code group" :activity-at 1}
               {:type :event :id 2 :title "Rustaceons" :description "Once a year" :activity-at 9}]]
     (is (= ["Rustaceans" "Rustaceons"] (map :title (search-hits hits {:query "rustaceans"}))))))
+
+(deftest a-query-with-no-local-hits-is-retried-without-near-me
+  (is (= ["Distant Bitcoin"] (map :title (search-hits near-and-far {:query "bitcoin" :location origin}))))
+  (is (dropped-near-me? near-and-far {:query "bitcoin" :location origin})))
+
+(deftest the-retry-is-reported-even-when-it-finds-nothing
+  (is (empty? (search-hits near-and-far {:query "bitcoin pottery" :location origin})))
+  (is (dropped-near-me? near-and-far {:query "bitcoin pottery" :location origin})))
+
+(deftest an-empty-query-never-drops-near-me
+  (is (= ["Local Pottery"] (map :title (search-hits near-and-far {:query "  " :location origin}))))
+  (is (not (dropped-near-me? near-and-far {:query "  " :location origin})))
+  (is (not (dropped-near-me? near-and-far {:query "?!." :location origin}))))
+
+(deftest a-query-with-local-hits-stays-inside-the-radius
+  (let [hits [{:type :member :id 1 :title "Local Bitcoin" :activity-at 2 :lat 0.05 :lng 0.0}
+              {:type :event :id 2 :title "Distant Bitcoin" :activity-at 9 :lat 40.0 :lng 40.0}]]
+    (is (= ["Local Bitcoin"] (map :title (search-hits hits {:query "bitcoin" :location origin}))))
+    (is (not (dropped-near-me? hits {:query "bitcoin" :location origin})))))
+
+(deftest an-explicit-location-follows-the-one-retry-rule
+  (let [place (assoc origin :label "Tartu")]
+    (is (= ["Distant Bitcoin"] (map :title (search-hits near-and-far {:query "bitcoin" :location place}))))
+    (is (dropped-near-me? near-and-far {:query "bitcoin" :location place}))))
+
+(deftest later-pages-of-a-dropped-search-stay-outside-the-radius
+  (let [hits (mapv (fn [i] {:type :event :id i :title (str "Bitcoin " i)
+                            :activity-at i :lat 40.0 :lng 40.0})
+                   (range 1 13))
+        command {:query "bitcoin" :location origin :offset 10 :limit 10}]
+    (is (= ["Bitcoin 2" "Bitcoin 1"] (map :title (search-hits hits command))))
+    (is (dropped-near-me? hits command))))
+
+(deftest the-search-does-not-retry-a-second-time
+  (let [calls (atom 0)
+        inner (memory/new-memory-search-repository near-and-far)
+        counting (reify search-repo/SearchRepository
+                   (candidates [_ command]
+                     (swap! calls inc)
+                     (search-repo/candidates inner command)))]
+    (search/search {:search-repo counting} {:query "bitcoin" :location origin})
+    (is (= 2 @calls))))

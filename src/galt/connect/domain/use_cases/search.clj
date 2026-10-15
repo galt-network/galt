@@ -9,9 +9,16 @@
   (when (seq (str/replace (str query) #"[^\p{L}\p{N}]" ""))
     query))
 
+(defn- ranked
+  [search-repo command]
+  (rank/rank (repo/candidates search-repo command) command))
+
 (defn search
   [{:keys [search-repo]} {:keys [limit offset] :or {limit 10 offset 0} :as command}]
   (let [command (update command :query text-query)
-        hits (rank/rank (repo/candidates search-repo command) command)]
-    [:ok {:hits (->> hits (drop offset) (take limit))
-          :near-me-dropped? false}]))
+        local (ranked search-repo command)
+        dropped? (boolean (and (:query command) (:location command) (empty? local)))]
+    [:ok {:hits (->> (if dropped? (ranked search-repo (dissoc command :location)) local)
+                     (drop offset)
+                     (take limit))
+          :near-me-dropped? dropped?}]))
