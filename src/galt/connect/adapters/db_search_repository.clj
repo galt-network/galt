@@ -7,9 +7,19 @@
    [honey.sql :as sql]))
 
 (def ^:private ts-match (keyword "@@"))
+(def ^:private word-similar (keyword "<%"))
 
-;; honey.sql has no built-in operator for Postgres text search @@.
+;; honey.sql has no built-in operator for Postgres text search @@ or trigram <% .
 (sql/register-op! ts-match)
+(sql/register-op! word-similar)
+
+(def ^:private typo-min-length 5)
+
+;; shortcut: a fixed minimum word length stands in for pg_trgm's word_similarity
+;; threshold; align both if a real corpus shows them disagreeing.
+(defn- typo-word?
+  [word]
+  (>= (count word) typo-min-length))
 
 (def all-types #{:member :group :event :post})
 
@@ -28,7 +38,9 @@
              :lng (:longitude row)
              :start-time (->ldt (:start_time row))
              :publish-at (->ldt (:publish_at row))}
-      (some? (:title_match row)) (assoc :match (if (:title_match row) :title :body))
+      (some? (:title_match row)) (assoc :match (cond (:title_match row) :title
+                                                      (:typo_match row) :title-fuzzy
+                                                      :else :body))
       (some? (:snippet row)) (assoc :snippet (str/replace (:snippet row) #"</?b>" "")))))
 
 (defn- doc-text
@@ -43,17 +55,34 @@
   [query]
   [:plainto_tsquery [:inline "english"] [:inline query]])
 
+(defn- query-words
+  [query]
+  (->> (str/split (str query) #"\s+")
+       (remove str/blank?)))
+
+(defn- word-where
+  [title-col desc-col word]
+  (cond-> [[ts-match (ts-doc title-col desc-col) (ts-query word)]
+           [:= [:cast (ts-query word) :text] [:inline ""]]]
+    (typo-word? word) (conj [word-similar [:inline word] title-col])))
+
 (defn- text-where
   [title-col desc-col query]
-  (when (seq query)
-    [ts-match (ts-doc title-col desc-col) (ts-query query)]))
+  (when-let [words (seq (query-words query))]
+    (into [:and [:<> [:cast (ts-query (str/join " " words)) :text] [:inline ""]]]
+          (map #(into [:or] (word-where title-col desc-col %)) words))))
 
 (defn- query-selects
   [title-col desc-col query]
-  (when (seq query)
-    [[[ts-match (ts-doc title-col) (ts-query query)] :title_match]
-     [[:ts_headline [:inline "english"] (doc-text title-col desc-col) (ts-query query)]
-      :snippet]]))
+  (when-let [words (seq (query-words query))]
+    (into [[[ts-match (ts-doc title-col) (ts-query (str/join " " words))] :title_match]
+           [[:ts_headline [:inline "english"] (doc-text title-col desc-col)
+             (ts-query (str/join " " words))]
+            :snippet]]
+          (when (some typo-word? words)
+            [[(into [:or] (map #(vector word-similar [:inline %] title-col)
+                               (filter typo-word? words)))
+              :typo_match]]))))
 
 (defn- geo-where
   [location]

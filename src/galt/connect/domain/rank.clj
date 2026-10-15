@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as str]))
 
-(def ^:private match-order {:title 0 :body 1})
+(def ^:private match-order {:title 0 :title-fuzzy 1 :body 2})
 
 (defn rank
   [hits {:keys [query]}]

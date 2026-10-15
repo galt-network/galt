@@ -32,6 +32,12 @@
    {:type :event :id 1 :title "Bitcoin Meetup" :description "Monthly gathering" :activity-at 2}
    {:type :post :id 2 :title "Weekly notes" :description "We talked about bitcoin" :activity-at 1}])
 
+(def typo-hits
+  [{:type :member :id 1 :title "Rustaceans" :description "We meet to talk about code" :activity-at 1}
+   {:type :event :id 2 :title "Bitcoin Meetup" :description "One hour of talks" :activity-at 2}
+   {:type :group :id 3 :title "Weekly Notes" :description "Writers corner" :activity-at 3}
+   {:type :post :id 4 :title "Monthly Gathering" :description "Agenda inside" :activity-at 4}])
+
 (deftest query-matches-whole-words-in-any-order
   (is (= ["Bitcoin Meetup"] (map :title (search-hits text-hits {:query "meetup bitcoin"}))))
   (is (= ["Bitcoin Meetup"] (map :title (search-hits text-hits {:query "monthly meetup"})))))
@@ -125,3 +131,45 @@
               {:type :member :id 2 :title "Removed" :activity-at 1 :deleted? true}
               {:type :group :id 3 :title "Keeper" :activity-at 0 :deleted? true}]]
     (is (= ["Visible" "Keeper"] (map :title (search-hits hits {}))))))
+
+(deftest a-mistyped-member-name-still-returns-that-member
+  (is (= ["Rustaceans"] (map :title (search-hits typo-hits {:query "rustaceons"})))))
+
+(deftest a-mistyped-group-name-still-returns-that-hit
+  (is (= ["Weekly Notes"] (map :title (search-hits typo-hits {:query "weekley"})))))
+
+(deftest a-mistyped-event-name-still-returns-that-hit
+  (is (= ["Bitcoin Meetup"] (map :title (search-hits typo-hits {:query "bitcoinn"})))))
+
+(deftest a-mistyped-post-title-still-returns-that-hit
+  (is (= ["Monthly Gathering"] (map :title (search-hits typo-hits {:query "gatherring"})))))
+
+(deftest a-different-word-is-not-a-typo
+  (is (empty? (search-hits typo-hits {:query "meeting"}))))
+
+(deftest a-typo-in-a-description-does-not-satisfy-the-query
+  (is (empty? (search-hits [{:type :event :id 1 :title "Bitcoin Meetup"
+                             :description "Monthly gathering" :activity-at 1}]
+                           {:query "gatherring"}))))
+
+(deftest a-typo-can-satisfy-one-word-of-a-multi-word-query
+  (is (= ["Bitcoin Meetup"] (map :title (search-hits typo-hits {:query "bitcoinn meetup"})))))
+
+(deftest a-typo-that-only-lands-in-a-description-does-not-satisfy-the-query
+  (is (empty? (search-hits [{:type :post :id 1 :title "Weekly Notes"
+                             :description "Monthly gathering" :activity-at 1}]
+                           {:query "weekly gatherring"}))))
+
+(deftest a-typo-match-still-shows-a-snippet
+  (let [hit (first (search-hits typo-hits {:query "bitcoinn"}))]
+    (is (str/includes? (:snippet hit) "Bitcoin"))))
+
+(deftest an-exact-name-with-punctuation-is-found
+  (let [hits [{:type :member :id 1 :title "Jean-Luc" :description "Cyclist" :activity-at 1}
+              {:type :member :id 2 :title "Ada" :description "Engineer" :activity-at 2}]]
+    (is (= ["Jean-Luc"] (map :title (search-hits hits {:query "Jean-Luc"}))))))
+
+(deftest an-exact-title-match-ranks-above-a-fuzzy-one
+  (let [hits [{:type :group :id 1 :title "Rustaceans" :description "Code group" :activity-at 1}
+              {:type :event :id 2 :title "Rustaceons" :description "Once a year" :activity-at 9}]]
+    (is (= ["Rustaceans" "Rustaceons"] (map :title (search-hits hits {:query "rustaceans"}))))))

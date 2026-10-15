@@ -97,6 +97,37 @@
     (is (not (re-find #"title_match" sql)))
     (is (not (re-find #"(?i)ts_headline" sql)))))
 
+(deftest typo-matching-compares-titles-only
+  (let [sql (first (sql/format (db-repo/candidates-sql {:types #{:member :post} :query "bitcoinn"})))]
+    (is (seq (re-seq #"<%" sql)))
+    (is (= (count (re-seq #"<%" sql))
+           (count (re-seq #"<%\s+(?:members|groups|events)\.name|<%\s+posts\.title" sql))))))
+
+(deftest a-short-word-is-not-matched-as-a-typo
+  (let [sql (first (sql/format (db-repo/candidates-sql {:query "bit"})))]
+    (is (not (re-find #"<%" sql)))
+    (is (not (re-find #"typo_match" sql)))))
+
+(deftest a-long-word-asks-for-a-typo-match
+  (is (re-find #"typo_match" (first (sql/format (db-repo/candidates-sql {:query "bitcoinn"}))))))
+
+(deftest a-stopword-only-query-asks-for-no-lexemes
+  (is (re-find #"<> ''" (first (sql/format (db-repo/candidates-sql {:query "the"}))))))
+
+(deftest a-hyphenated-name-keeps-its-hyphen
+  (is (re-find #"'Jean-Luc'" (first (sql/format (db-repo/candidates-sql {:query "Jean-Luc"}))))))
+
+(deftest maps-typo-match-to-the-fuzzy-tier
+  (let [row {:id #uuid "01900000-0000-7000-8000-000000000004"
+             :type "member"
+             :title "Rustaceans"
+             :description "We meet"
+             :activity_at (java.sql.Timestamp/valueOf "2026-01-02 15:00:00")
+             :title_match false
+             :typo_match true}
+        hit (first (repo/candidates (db-repo/new-db-search-repository (fake-db [row])) {:query "rustaceons"}))]
+    (is (= :title-fuzzy (:match hit)))))
+
 (deftest maps-title-match-and-snippet-to-a-hit
   (let [row {:id #uuid "01900000-0000-7000-8000-000000000003"
              :type "member"
