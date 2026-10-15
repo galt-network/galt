@@ -18,31 +18,37 @@ Key principles:
 ## Key File Paths
 
 ### Entry Points
-- `src/galt/main.clj` - Application entry point. CLI commands: `init` (setup DB), `migrate` (run migrations), no args (start web server). REPL: `(galt.main/start-system!)`. Holds `running-system` atom and `start-system!`/`stop-system!`/`before-ns-unload`/`after-ns-reload` helpers for hot reload.
+- `src/galt/main.clj` - Application entry point. CLI: `init` (setup DB), `migrate` (run migrations), `assets export-public [out-dir]` (dump public assets; default dir `assets-export`), no args (start web server). REPL: `(galt.main/start-system!)`. Holds `running-system` atom and `start-system!`/`stop-system!`/`before-ns-unload`/`after-ns-reload` helpers for hot reload.
 - `build.clj` - Build script using `tools.build`. Creates uberjar: `clj -T:build uber`
-- `start-nrepl.sh` - Convenience script to start an nREPL server
+- `start-nrepl.sh` - Convenience script to start an nREPL server. Pins an older nREPL than `deps.edn`; prefer `clojure -M:nrepl` or `clojure -M:dev:repl -m nrepl.cmdline`.
 - `start-ssh-tunnel.sh` - Convenience script for SSH tunnel to dev DB
 - `scripts/btcpay.bb` - Local regtest BTCPay Server plus a payer CLN. See `docs/btcpay.md`. Not started by clj-contain.
+- `scripts/download-geoip.sh` - Downloads the DB-IP city-lite MMDB (CC-BY 4.0). Do not commit the MMDB. Dest: `GALT_GEOIP_MMDB` or `data/geoip/dbip-city-lite.mmdb`.
+- `scripts/lnurl-login.bb` / `scripts/lnurl-login.edn` - LNURL login scratch script.
+- `CONTEXT.md` - Domain language. Read it before naming things: Member ≠ User, Connect returns Hits, `activity_at` orders Hits, Near me is 100 km.
 
 ### System Configuration
-- `src/galt/core/system.clj` - Donut System dependency graph. Defines all components: DB, repositories, use cases, routes, web server. ~630 lines, the central wiring file. Uses `get-config` for env-driven config loading.
+- `src/galt/core/system.clj` - Donut System dependency graph. Defines all components: DB, repositories, use cases, routes, web server. ~780 lines, the central wiring file. `get-config` reads an EDN file, then `env-overrides`: process env wins, then `.env`, then the EDN. Never invents a host port. Named systems `:dev` / `:staging` / `:prod` each load `config/<env>-galt.edn`.
 - `config/default-config.edn` - Default config (localhost:8081, file storage)
 - `config/dev-galt.edn`, `config/staging-galt.edn`, `config/prod-galt.edn` - Environment-specific configs
 
 ### Core Infrastructure (`src/galt/core/infrastructure/`)
 - `database.clj` - HikariCP connection pool setup for PostgreSQL
 - `db_migrations.clj` / `db_migrations/` - Migratus wrapper for DB migrations
-- `disk_file_storage.clj` - File upload handling (disk-based)
+- `asset_stores.clj` - Facade: builds a disk or S3-compatible store from `:asset-store` config and exposes `:asset-url` / `:asset-key` helpers. Keys are relative (`public/<sha256>.png`), never absolute URLs.
+- `disk_asset_store.clj` - `AssetStore` on the local filesystem (`:type :disk`)
+- `s3_asset_store.clj` / `s3_presign.clj` - `AssetStore` for S3-compatible backends (R2, B2, MinIO). Keys fall back to `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY`.
+- `assets_export.clj` - `assets export-public` CLI implementation
 - `name_generator.clj` - Anonymous name generation
 - `logging.clj` - Logging configuration (Telemere setup)
 - `version.clj` - Application version constant
 - `bitcoin/` - Bitcoin/LNURL utilities (bouncy-castle signature verify, lnurl helpers)
 - `web/` - HTTP layer:
-  - `routes.clj` - Core routes (home, files, assets, Datastar SSE) and middleware stack
-  - `middleware.clj` - Auth middleware (role-based: admin/member/user), session management, request logger
+  - `routes.clj` - Core routes (home, `/files`, `/private-assets`, `/assets`, Datastar SSE) and middleware stack
+  - `middleware.clj` - Auth middleware (role-based: admin/member/user), session management, request logger. Route data key is `:min-role`.
   - `server.clj` - http-kit server start/stop
   - `helpers.clj` - Misc web helpers
-  - `db_session_store.clj` - PostgreSQL-backed Ring session store
+  - `db_session_store.clj` - Unused PostgreSQL `SessionStore`. The running system uses Ring's in-memory store over the `:galt-session` atom. Do not wire this without a `session_storage` migration.
   - `sse_connection_store.clj` - In-memory store for Datastar SSE connections
 
 ### Domain Modules (Clean Architecture)
@@ -55,10 +61,11 @@ Each module follows the pattern: `adapters/`, `domain/` (with `entities/` and `u
 - `src/galt/posts/` - Posts within groups (CRUD)
 - `src/galt/events/` - Event management (add, list)
 - `src/galt/comments/` - Comments on posts and events (has `adapters/presentation.clj` instead of a `presentation/` dir)
-- `src/galt/locations/` - Geographic locations (city, country, geocoding)
+- `src/galt/locations/` - Geographic locations (city, country, geocoding). Also `adapters/geoip.clj` + `adapters/client_ip.clj`: DB-IP MMDB lookup used as `:infer-location` on route deps (member location, else IP city; loopback uses the machine's public IP). Not a Donut component.
+- `src/galt/connect/` - Mixed search feed at `/connect`. Hits are Members, Groups, Events, and Posts, ranked in `domain/rank.clj`. `domain/use_cases/search.clj` is called from the handler with route deps (`:search-repo`, `:infer-location`); it is **not** a Donut `:use-cases` component and returns `[:ok hits]`, not the usual 3-tuple. Repo: `adapters/db_search_repository.clj` (wired as `:storage :search`). `adapters/memory_search_repository.clj` is the in-memory stand-in for tests.
 - `src/galt/design/` - UI/design routes (only `handlers.clj` + `routes.clj`, no full module structure)
-- `src/galt/world_map/` - World map page (full-bleed Globo 3D map, SSE connection, session-tied identity, sliding auto-hide navbar; mounted under `:globo-mount-path`). Files: `adapters/handlers.clj`, `adapters/placeables.clj` (member pins on map), `adapters/presentation.clj`, `domain/use_cases/publish_placeables.clj`, `domain/use_cases/send_globo_message.clj`, `external/routes.clj`. Globo integration added in commit `810a87a`.
-- `src/galt/shared/` - Shared cross-cutting presentation helpers (`presentation/translations.clj` for i18n strings)
+- `src/galt/world_map/` - World map page (full-bleed Globo 3D map, SSE connection, session-tied identity, sliding auto-hide navbar; mounted under `:globo-mount-path`). Files: `adapters/handlers.clj`, `adapters/placeables.clj` (member pins on map), `adapters/presentation.clj`, `domain/use_cases/publish_placeables.clj`, `domain/use_cases/send_globo_message.clj`, `external/routes.clj`. Routes: page, `/connection`, `/send-message`, `/assets/*path`.
+- `src/galt/shared/` - Shared cross-cutting presentation helpers (`presentation/translations.clj` for i18n strings; strings live in `resources/translations/en.edn`)
 
 ### Domain Layer Pattern (per module)
 - `domain/entities/*.clj` - Pure data records with `clojure.spec` validation
@@ -70,6 +77,12 @@ Each module follows the pattern: `adapters/`, `domain/` (with `entities/` and `u
 - `external/routes.clj` - Reitit route definitions
 
 ### Adapters & Shared
+- `src/galt/core/domain/asset_store.clj` - `AssetStore` protocol (put/get/delete/presign/list). No Ring types in the protocol except `get-content-response`.
+- `src/galt/core/domain/asset_repository.clj` + `src/galt/core/adapters/db_asset_repository.clj` - Asset row persistence (`:storage :asset`)
+- `src/galt/core/domain/entities/asset.clj` - Asset entity
+- `src/galt/core/domain/use_cases/upload_asset.clj` - Upload use case (dedup by content + visibility)
+- `src/galt/core/domain/use_cases/landing_page.clj` - Landing-page counts and recent items
+- `src/galt/core/adapters/handlers.clj` - Home, Datastar SSE, `/files`, `/private-assets`
 - `src/galt/core/adapters/db-access.clj` - DB access abstraction
 - `src/galt/core/adapters/postgres-db-access.clj` - PostgreSQL implementation
 - `src/galt/core/adapters/sse-helpers.clj` - Server-Sent Events utilities
@@ -81,7 +94,6 @@ Each module follows the pattern: `adapters/`, `domain/` (with `entities/` and `u
 - `src/galt/core/adapters/presentation-helpers.clj` - Cross-cutting presentation helpers
 - `src/galt/core/adapters/view-models.clj` - Shared view model helpers
 - `src/galt/core/seed.clj` - Dev/test DB seeding
-- `src/galt/core/presentation/` - Cross-cutting presentation components
 - `src/galt/core/views/layout.clj` - Base HTML layout
 - `src/galt/core/views/components.clj` & `components/` - Reusable Hiccup view components
 - `src/galt/core/views/datastar_helpers.clj` - Datastar signal helpers
@@ -102,9 +114,11 @@ Each module follows the pattern: `adapters/`, `domain/` (with `entities/` and `u
   - `20250926215144-create-posts` - posts table
   - `20250929005538-create-events` - events table
   - `20251001194743-create-comments` - comments table (used for both posts and events)
+  - `20260810120000-create-assets` - `assets` table; `asset_ids` jsonb on posts and events
+  - `20260810120010-rewrite-avatar-urls-to-keys` - member/group avatars from `/files/` URLs to storage keys
 
 ### Tests
-- `test/galt/` - Test files mirroring src structure (currently covers `core`, `groups`, `invitations`, `members`, `payments`, `world_map`)
+- `test/galt/` - Test files mirroring src structure (covers `connect`, `core`, `groups`, `invitations`, `locations`, `members`, `payments`, `posts`, `world_map`)
 - Test libraries: `matcher-combinators`, `ring-mock`, `http-kit.fake`, `spy`
 
 ### Dev/REPL
@@ -112,9 +126,13 @@ Each module follows the pattern: `adapters/`, `domain/` (with `entities/` and `u
 - `dev/lnurl_experiments.clj` - LNURL experimentation scratchpad
 
 ### Documentation
+- `CONTEXT.md` - Domain language (not a design doc)
 - `docs/architecture.md` - Clean Architecture explanation with folder structure
 - `docs/development.md` - Dev setup and deployment instructions
 - `docs/geocoding.md` - Geocoding setup
+- `docs/assets.md` - Asset pipeline (disk vs S3/R2, keys, upload limits, CDN)
+- `docs/btcpay.md` - Local regtest BTCPay + payer CLN (not started by clj-contain). Its opening line ("Galt does not talk to BTCPay yet") is stale: the app has a Greenfield gateway and a webhook.
+- `docs/integration-with-cloudflare.md` - R2 bucket + custom domain setup. Do not print `config/*.edn` or `.env` (credentials).
 - `docs/ideas.md` - Roadmap / ideas scratchpad (untracked)
 
 ---
@@ -178,6 +196,10 @@ Versions reflect the current `deps.edn`.
 | `lambdaisland/uri` | 1.19.155 | URI parsing/manipulation |
 | `clj-fuzzy/clj-fuzzy` | 0.4.1 | Fuzzy string matching |
 | `danlentz/clj-uuid` | 0.2.5 | UUID generation (v7 for lexical ordering) |
+| `com.maxmind.geoip2/geoip2` | 4.3.1 | DB-IP / MaxMind MMDB city lookup (Connect "near me") |
+| `com.cognitect.aws/api` | 0.8.838 | AWS API client (S3-compatible asset store) |
+| `com.cognitect.aws/endpoints` | 871.2.50.3 | AWS endpoint data |
+| `com.cognitect.aws/s3` | 871.2.49.4 | S3 API (R2, B2, MinIO) |
 
 ### Logging & Telemetry
 | Dependency | Version | Role |
@@ -200,8 +222,10 @@ Versions reflect the current `deps.edn`.
 ### Deps.edn Aliases
 - `:repl` - Adds `dev/` path, Clojure 1.12.5, `clj-reload`
 - `:dev` - Adds `test/` path, spy, ring-mock, http-kit.fake, matcher-combinators
+- `:nrepl` - `dev/` + `test/` paths and the `:dev` test libs; starts `nrepl.cmdline` (`clojure -M:nrepl`)
 - `:build` - `tools.build` 0.10.14 for uberjar via `clj -T:build uber`
 - `:outdated` - `antq` for dependency update checks (`clj -M:outdated`)
+- `:clj-contain` - Containerized dev app (`galt-dev`, port 8081) plus a Postgres 18 service, joined to the `galt-btcpay_default` network. Not a code alias. See `deps.edn`.
 
 ---
 
@@ -223,11 +247,11 @@ Entities (pure data + functions, no external dependencies)
 
 The system is organized into tiers:
 
-1. **`:env`** - Environment variables and config values
-2. **`:storage`** - Database connection, repositories (group, member, user, location, invitation, payment, post, event, comment), file storage, session store
+1. **`:env`** - Config values (`:galt-root-url`, `:asset-store`, `:globo-mount-path`, `:geoip-mmdb`, BTCPay settings)
+2. **`:storage`** - Database connection, repositories (group, member, user, location, invitation, payment, post, event, comment, search, asset), `:file-storage` (asset-store facade), in-memory session store, Globo SSE + placeables
 3. **`:gateways`** - External service gateways (BTCPay payment gateway)
-4. **`:use-cases`** - Business logic functions wired with repository/gateway dependencies
-5. **`:app`** - Route dependencies, individual routers per module, merged router, route handler, web server
+4. **`:use-cases`** - Business logic functions wired with repository/gateway dependencies. Connect search is not in this tier.
+5. **`:app`** - Route dependencies (includes `:infer-location`, `:asset-url`, `:search-repo`), individual routers per module (including `:connect/routes`), merged router, route handler, web server
 
 Components reference each other via `(ds/ref [:tier :component-name])`.
 
@@ -364,11 +388,15 @@ java -jar galt-0.1.X-standalone.jar migrate
 # Start web server
 java -jar galt-0.1.X-standalone.jar
 
+# Export public assets
+java -jar galt-0.1.X-standalone.jar assets export-public [out-dir]
+
 # Build uberjar
 clj -T:build uber
 
 # Start REPL
 clojure -M:dev:repl -m nrepl.cmdline
+clojure -M:nrepl
 clojure -M:dev:repl -m galt.main
 ```
 
@@ -397,6 +425,12 @@ clojure -M:dev:repl -m galt.main
 - `:delete-post-use-case` - Delete post
 - `:add-event-use-case` - Add event
 - `:list-events-use-case` - List events
+- `:publish-placeables-use-case` - Publish Globo map pins
+- `:send-globo-message-use-case` - Send a Globo chat message
+- `:landing-page-use-case` - Landing page counts and recent items
+- `:upload-asset-use-case` - Store an uploaded file (dedup by hash + visibility)
+
+Connect search is `galt.connect.domain.use-cases.search/search`, called from `galt.connect.adapters.handlers/show-connect`. It is not in the system map.
 
 ---
 
@@ -414,24 +448,29 @@ clojure -M:dev:repl -m galt.main
 `galt.main` exposes `before-ns-unload` (calls `stop-system!`) and `after-ns-reload` (calls `start-system!`) so `clj-reload` brings the system down/up automatically between reloads.
 
 ### Environment Variables
-- `GALT_ENV` - Environment name (`dev`, `staging`, `prod`)
-- `GALT_CONFIG` - Path to config EDN file (default: `config/default-config.edn`)
+- `GALT_ENV` - No-arg `(start-system!)` becomes `(start-system! (keyword GALT_ENV))`. `:dev` / `:staging` / `:prod` each load `config/<env>-galt.edn`. Hot reload calls the no-arg version, so it follows `GALT_ENV`, not a keyword passed earlier.
+- `GALT_CONFIG` - Only the no-arg `(get-config)` (assets export, ad-hoc reads). Default `config/default-config.edn`. The running server does not use this; it uses the named-system file.
 - `MIGRATUS_DATABASE`, `MIGRATUS_USER`, `MIGRATUS_PASSWORD` - DB credentials
+- `DB_HOST`, `DB_PORT` - Postgres host/port (default `localhost:5432`)
+- `APP_PORT` - Overrides `:web-server-port`. Process env only, not `.env`.
+- `APP_HOST_PORT`, `GALT_ROOT_URL` - Override `:galt-root-url` (`APP_HOST_PORT` becomes `http://127.0.0.1:<port>`)
+- `BTCPAY_URL`, `BTCPAY_API_KEY`, `BTCPAY_STORE_ID`, `BTCPAY_WEBHOOK_SECRET` - Override BTCPay config
+- `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` - S3/R2 credentials when config keys are nil
+- `GALT_GEOIP_MMDB` - MMDB path. Process env only; else config `:geoip-mmdb`, else `data/geoip/dbip-city-lite.mmdb`.
 - `GALT_CITIES_COUNTRIES_SQL_PATH` - Path to world.sql for geodata import
+- `.env` - Override file. Precedence is process env, then `.env`, then EDN. Do not print it or `config/*.edn`.
 
 ### Config Files
-- `config/dev-galt.edn` - Development config
-- `config/staging-galt.edn` - Staging config
-- `config/prod-galt.edn` - Production config
+- `config/default-config.edn` - Fallback for no-arg `(get-config)` only. `:asset-store :type :disk`.
+- `config/dev-galt.edn` - Loaded by the `:dev` named system
+- `config/staging-galt.edn` - Loaded by the `:staging` named system
+- `config/prod-galt.edn` - Loaded by the `:prod` named system
 - `:globo-mount-path` - Globo map mount path (default `"/world-map"`), present in all config EDNs
+- `:asset-store` - `:type :disk` (default config) or `:s3` (dev/staging/prod configs). See `docs/assets.md`. Do not copy credentials out of these files.
+- `:geoip-mmdb` - Path to the city MMDB
 
 ### Testing
-```bash
-# Run tests (configure test runner per your setup)
-clojure -M:dev:test
-```
-
-Tests use `matcher-combinators` for data matching, `ring-mock` for HTTP testing.
+There is no `:test` alias. Test sources and `matcher-combinators` / `ring-mock` / `http-kit.fake` are on the `:dev` classpath. Run tests from the REPL (`clojure -M:dev:repl` or `clojure -M:nrepl`).
 
 ---
 
@@ -463,7 +502,7 @@ Tests use `matcher-combinators` for data matching, `ring-mock` for HTTP testing.
 
 ### Database Changes
 1. Create migration in `resources/migrations/` (Migratus naming convention)
-2. Run `java -jar ... jar migrate` to apply
+2. Run `java -jar galt-0.1.X-standalone.jar migrate` (or `(db-migrations/migrate!)` from the REPL)
 
 ### UI/Frontend
 - Hiccup templates in `adapters/views.clj` or `core/views/`
@@ -471,6 +510,7 @@ Tests use `matcher-combinators` for data matching, `ring-mock` for HTTP testing.
 - SSE endpoint at `/datastar-sse` for persistent connections
 - Static assets served from `/assets/*` (resources/public/)
 - World map assets: `resources/public/js/world-map.js` + `resources/public/css/world-map.css` (sliding auto-hide navbar); Globo UI compiled JS/CSS/3D models served from `/world-map/assets/*` via globo's classpath resources
+- User media: `POST`/`PUT /files` uploads; public objects are served from `:public-base-url` + key; private objects via `GET /private-assets/*` (`:min-role :user`). Avatars and other media store keys, not absolute URLs.
 
 ---
 
@@ -488,3 +528,6 @@ Tests use `matcher-combinators` for data matching, `ring-mock` for HTTP testing.
 - **Comments**: shared by both posts and events (extracted in commit `bc14af2`); `src/galt/comments/` is the canonical module, posts/events reuse it
 - **Members search**: infinite scroll via Datastar SSE (commit `4951d03`), not pagination
 - **Membership validity**: considers payment date, not just invoice status (commit `f712c45`)
+- **Connect**: one feed of Hits. Language is in `CONTEXT.md`. Search is handler-called, not a Donut use case, and returns `[:ok hits]`.
+- **Assets**: relative storage keys in the DB; URLs composed at render time via `:asset-url`. Same bytes + same visibility reuse one row.
+- **Secrets**: `config/*.edn` and `.env` may hold live credentials. Do not print them.

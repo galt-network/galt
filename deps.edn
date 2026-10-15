@@ -95,7 +95,8 @@
                       :BTCPAY_URL "http://btcpayserver:49392"
                       :GALT_WEBHOOK_URL "http://galt-dev:8081/payments/btcpay-webhook"
                       }
-                :mounts ["/home/madis/code/madis/galt/data/countries-states-cities-database/world.sql:/home/madis/code/madis/galt/data/countries-states-cities-database/world.sql:z"]
+                :mounts ["/home/madis/code/madis/galt/data/countries-states-cities-database/world.sql:/home/madis/code/madis/galt/data/countries-states-cities-database/world.sql:z"
+                         "/home/madis/.local/share/clj-contain/cdp-key:/run/cdp-key:ro,z"]
                 :services [{:name "postgres"
                             :image "docker.io/library/postgres:18-alpine"
                             :port 5432

@@ -1,8 +1,32 @@
-{"$schema": "https://opencode.ai/config.json",
- "instructions": ["PROJECT_SUMMARY.md"],
- "permission": {
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["PROJECT_SUMMARY.md"],
+  "permission": {
     "external_directory": {
       "~/code/madis/globo/**": "allow"
+    }
+  },
+  "mcp": {
+    "servers": {
+      "chrome-devtools": {
+        "type": "local",
+        "command": [
+          "ssh",
+          "-T",
+          "-o", "BatchMode=yes",
+          "-o", "StrictHostKeyChecking=yes",
+          "-o", "CheckHostIP=no",
+          "-o", "UpdateHostKeys=no",
+          "-o", "LogLevel=ERROR",
+          "-o", "IdentitiesOnly=yes",
+          "-o", "UserKnownHostsFile=/run/cdp-key/known_hosts",
+          "-i", "/run/cdp-key/id_ed25519",
+          "madis@host.containers.internal"
+        ],
+        "timeout": {
+          "startup": 60000
+        }
+      }
     }
   }
 }
