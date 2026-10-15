@@ -1,10 +1,15 @@
 (ns galt.connect.adapters.db-search-repository
   (:require
+   [clojure.string :as str]
    [galt.connect.domain.search-repository :as repo]
    [galt.core.adapters.db-access :as db]
-   [galt.core.adapters.db-result-transformations :refer [->local-date-time without-namespace]]))
+   [galt.core.adapters.db-result-transformations :refer [->local-date-time without-namespace]]
+   [honey.sql :as sql]))
 
-(def candidate-limit 200)
+(def ^:private ts-match (keyword "@@"))
+
+;; honey.sql has no built-in operator for Postgres text search @@.
+(sql/register-op! ts-match)
 
 (def all-types #{:member :group :event :post})
 
@@ -14,22 +19,41 @@
 (defn- row->hit
   [row]
   (let [row (update-keys row without-namespace)]
-    {:type (keyword (:type row))
-     :id (:id row)
-     :title (:title row)
-     :description (:description row)
-     :activity-at (or (->ldt (:activity_at row)) (:activity_at row))
-     :lat (:latitude row)
-     :lng (:longitude row)
-     :start-time (->ldt (:start_time row))
-     :publish-at (->ldt (:publish_at row))}))
+    (cond-> {:type (keyword (:type row))
+             :id (:id row)
+             :title (:title row)
+             :description (:description row)
+             :activity-at (or (->ldt (:activity_at row)) (:activity_at row))
+             :lat (:latitude row)
+             :lng (:longitude row)
+             :start-time (->ldt (:start_time row))
+             :publish-at (->ldt (:publish_at row))}
+      (some? (:title_match row)) (assoc :match (if (:title_match row) :title :body))
+      (some? (:snippet row)) (assoc :snippet (str/replace (:snippet row) #"</?b>" "")))))
+
+(defn- doc-text
+  [& cols]
+  (into [:||] (interpose [:inline " "] (map #(vector :coalesce % [:inline ""]) cols))))
+
+(defn- ts-doc
+  [& cols]
+  [:to_tsvector [:inline "english"] (apply doc-text cols)])
+
+(defn- ts-query
+  [query]
+  [:plainto_tsquery [:inline "english"] [:inline query]])
 
 (defn- text-where
   [title-col desc-col query]
   (when (seq query)
-    [:or
-     [:ilike title-col (str "%" query "%")]
-     [:ilike desc-col (str "%" query "%")]]))
+    [ts-match (ts-doc title-col desc-col) (ts-query query)]))
+
+(defn- query-selects
+  [title-col desc-col query]
+  (when (seq query)
+    [[[ts-match (ts-doc title-col) (ts-query query)] :title_match]
+     [[:ts_headline [:inline "english"] (doc-text title-col desc-col) (ts-query query)]
+      :snippet]]))
 
 (defn- geo-where
   [location]
@@ -82,19 +106,20 @@
 
 (defn- member-q
   [{:keys [query location]}]
-  (-> {:select [[:members.id :id]
-                [[:inline "member"] :type]
-                [:members.name :title]
-                [:members.description :description]
-                [(greatest-of
-                  :members.created_at
-                  :member_events.latest
-                  :member_comments.latest)
-                 :activity_at]
-                [:locations.latitude :latitude]
-                [:locations.longitude :longitude]
-                [nil-ts :start_time]
-                [nil-ts :publish_at]]
+  (-> {:select (into [[:members.id :id]
+                      [[:inline "member"] :type]
+                      [:members.name :title]
+                      [:members.description :description]
+                      [(greatest-of
+                        :members.created_at
+                        :member_events.latest
+                        :member_comments.latest)
+                       :activity_at]
+                      [:locations.latitude :latitude]
+                      [:locations.longitude :longitude]
+                      [nil-ts :start_time]
+                      [nil-ts :publish_at]]
+                     (query-selects :members.name :members.description query))
        :from [:members]}
       (with-joins
         [:locations [:= :locations.id :members.location_id]]
@@ -113,21 +138,22 @@
 
 (defn- group-q
   [{:keys [query location]}]
-  (-> {:select [[:groups.id :id]
-                [[:inline "group"] :type]
-                [:groups.name :title]
-                [:groups.description :description]
-                [(greatest-of
-                  :groups.created_at
-                  :group_events.latest
-                  :group_posts.latest
-                  :group_event_comments.latest
-                  :group_post_comments.latest)
-                 :activity_at]
-                [:locations.latitude :latitude]
-                [:locations.longitude :longitude]
-                [nil-ts :start_time]
-                [nil-ts :publish_at]]
+  (-> {:select (into [[:groups.id :id]
+                      [[:inline "group"] :type]
+                      [:groups.name :title]
+                      [:groups.description :description]
+                      [(greatest-of
+                        :groups.created_at
+                        :group_events.latest
+                        :group_posts.latest
+                        :group_event_comments.latest
+                        :group_post_comments.latest)
+                       :activity_at]
+                      [:locations.latitude :latitude]
+                      [:locations.longitude :longitude]
+                      [nil-ts :start_time]
+                      [nil-ts :publish_at]]
+                     (query-selects :groups.name :groups.description query))
        :from [:groups]}
       (with-joins
         [:locations [:= :locations.id :groups.location_id]]
@@ -157,18 +183,19 @@
 
 (defn- event-q
   [{:keys [query location from to]}]
-  (-> {:select [[:events.id :id]
-                [[:inline "event"] :type]
-                [:events.name :title]
-                [:events.description :description]
-                [(greatest-of
-                  :events.created_at
-                  :event_comment_activity.latest)
-                 :activity_at]
-                [:locations.latitude :latitude]
-                [:locations.longitude :longitude]
-                [:events.start_time :start_time]
-                [nil-ts :publish_at]]
+  (-> {:select (into [[:events.id :id]
+                      [[:inline "event"] :type]
+                      [:events.name :title]
+                      [:events.description :description]
+                      [(greatest-of
+                        :events.created_at
+                        :event_comment_activity.latest)
+                       :activity_at]
+                      [:locations.latitude :latitude]
+                      [:locations.longitude :longitude]
+                      [:events.start_time :start_time]
+                      [nil-ts :publish_at]]
+                     (query-selects :events.name :events.description query))
        :from [:events]}
       (with-joins
         [:locations [:= :locations.id :events.location_id]]
@@ -185,19 +212,20 @@
 
 (defn- post-q
   [{:keys [query location from to]}]
-  (-> {:select [[:posts.id :id]
-                [[:inline "post"] :type]
-                [:posts.title :title]
-                [:posts.content :description]
-                [(greatest-of
-                  :posts.created_at
-                  :posts.publish_at
-                  :post_comment_activity.latest)
-                 :activity_at]
-                [:locations.latitude :latitude]
-                [:locations.longitude :longitude]
-                [nil-ts :start_time]
-                [:posts.publish_at :publish_at]]
+  (-> {:select (into [[:posts.id :id]
+                      [[:inline "post"] :type]
+                      [:posts.title :title]
+                      [:posts.content :description]
+                      [(greatest-of
+                        :posts.created_at
+                        :posts.publish_at
+                        :post_comment_activity.latest)
+                       :activity_at]
+                      [:locations.latitude :latitude]
+                      [:locations.longitude :longitude]
+                      [nil-ts :start_time]
+                      [:posts.publish_at :publish_at]]
+                     (query-selects :posts.title :posts.content query))
        :from [:posts]}
       (with-joins
         [[:groups :post_groups] [:and
@@ -215,6 +243,8 @@
         (geo-where location)
         (period-where :posts.publish_at from to))))
 
+;; shortcut: every candidate comes back and is ranked in memory, so a broad
+;; query scans the whole table; add a cap or a ranked index if these outgrow it.
 (defn candidates-sql
   [{:keys [types] :as command}]
   (let [wanted (if (seq types) types all-types)
@@ -224,8 +254,8 @@
                    (wanted :event) (conj (event-q command))
                    (wanted :post) (conj (post-q command)))]
     (if (= 1 (count branches))
-      (assoc (first branches) :limit candidate-limit)
-      {:union-all branches :limit candidate-limit})))
+      (first branches)
+      {:union-all branches})))
 
 (defrecord DbSearchRepository [db-access]
   repo/SearchRepository

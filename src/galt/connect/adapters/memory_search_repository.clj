@@ -4,12 +4,44 @@
     [galt.connect.domain.search-repository :as repo]
     [java-time.api :as jt]))
 
+;; shortcut: this stand-in only strips a trailing s, Postgres stems with the
+;; English configuration; keep fixture stems obviously equal, never read this
+;; as stemmer parity.
+(defn- stem
+  [word]
+  (str/replace word #"s$" ""))
+
+(defn- words
+  [text]
+  (map stem (re-seq #"[a-z0-9]+" (str/lower-case (str text)))))
+
 (defn- matches-query?
   [hit query]
   (or (str/blank? query)
-      (let [q (str/lower-case query)]
-        (some #(and % (str/includes? (str/lower-case %) q))
-              [(:title hit) (:description hit)]))))
+      (let [q (seq (words query))]
+        (and q (every? (into #{} (concat (words (:title hit)) (words (:description hit)))) q)))))
+
+(defn- in-text?
+  [text q]
+  (every? (into #{} (words text)) q))
+
+(defn- window
+  [text q]
+  (let [qs (set q)
+        tokens (vec (re-seq #"\S+" (str text)))
+        i (first (keep-indexed (fn [i token] (when (qs (first (words token))) i)) tokens))]
+    (when (and i (seq tokens))
+      (let [start (max 0 (- i 4))
+            end (min (count tokens) (+ i 5))]
+        (str (when (pos? start) "… ")
+             (str/join " " (subvec tokens start end))
+             (when (< end (count tokens)) " …"))))))
+
+(defn- annotate
+  [hit q]
+  (assoc hit
+         :match (if (in-text? (:title hit) q) :title :body)
+         :snippet (or (window (:description hit) q) (window (:title hit) q))))
 
 (def all-types #{:member :group :event :post})
 
@@ -51,12 +83,13 @@
   [hits]
   (reify repo/SearchRepository
     (candidates [_ {:keys [query types from to location]}]
-      (let [wanted (if (seq types) types all-types)]
-        (filter (fn [hit]
-                  (and (not (:hidden? hit))
-                       (not (and (= :member (:type hit)) (:deleted? hit)))
-                       (contains? wanted (:type hit))
-                       (matches-query? hit query)
-                       (matches-period? hit from to)
-                       (matches-location? hit location)))
-                hits)))))
+      (let [wanted (if (seq types) types all-types)
+            q (seq (words query))]
+        (->> hits
+             (remove :hidden?)
+             (remove #(and (= :member (:type %)) (:deleted? %)))
+             (filter #(contains? wanted (:type %)))
+             (filter #(matches-query? % query))
+             (filter #(matches-period? % from to))
+             (filter #(matches-location? % location))
+             (map #(if q (annotate % q) %)))))))

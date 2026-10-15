@@ -1,0 +1,15 @@
+DROP INDEX IF EXISTS members_search_idx;
+--;;
+DROP INDEX IF EXISTS groups_search_idx;
+--;;
+DROP INDEX IF EXISTS events_search_idx;
+--;;
+DROP INDEX IF EXISTS posts_search_idx;
+--;;
+DROP INDEX IF EXISTS members_name_trgm_idx;
+--;;
+DROP INDEX IF EXISTS groups_name_trgm_idx;
+--;;
+DROP INDEX IF EXISTS events_name_trgm_idx;
+--;;
+DROP INDEX IF EXISTS posts_title_trgm_idx;

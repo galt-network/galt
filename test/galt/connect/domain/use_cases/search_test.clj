@@ -1,5 +1,6 @@
 (ns galt.connect.domain.use-cases.search-test
   (:require
+    [clojure.string :as str]
     [clojure.test :refer [deftest is]]
     [galt.connect.adapters.memory-search-repository :as memory]
     [galt.connect.domain.use-cases.search :as search]
@@ -26,9 +27,62 @@
 (deftest empty-command-returns-mixed-hits
   (is (= #{:member :group :event :post} (set (map :type (search-hits mixed-hits {}))))))
 
-(deftest query-matches-title-or-description
-  (is (= ["Builders"] (map :title (search-hits mixed-hits {:query "build"}))))
-  (is (= ["Ada"] (map :title (search-hits mixed-hits {:query "engineer"})))))
+(def text-hits
+  [{:type :member :id 3 :title "Ada" :description "Builds robots" :activity-at 3}
+   {:type :event :id 1 :title "Bitcoin Meetup" :description "Monthly gathering" :activity-at 2}
+   {:type :post :id 2 :title "Weekly notes" :description "We talked about bitcoin" :activity-at 1}])
+
+(deftest query-matches-whole-words-in-any-order
+  (is (= ["Bitcoin Meetup"] (map :title (search-hits text-hits {:query "meetup bitcoin"}))))
+  (is (= ["Bitcoin Meetup"] (map :title (search-hits text-hits {:query "monthly meetup"})))))
+
+(deftest query-matching-ignores-case
+  (is (= ["Bitcoin Meetup"] (map :title (search-hits text-hits {:query "BITCOIN MEETUP"})))))
+
+(deftest a-word-does-not-match-inside-another-word
+  (is (empty? (search-hits text-hits {:query "bit"}))))
+
+(deftest every-word-is-required
+  (is (empty? (search-hits text-hits {:query "bitcoin robots"}))))
+
+(deftest an-english-stem-matches-the-typed-word
+  (is (= ["Bitcoin Meetup"] (map :title (search-hits text-hits {:query "meetups"})))))
+
+(deftest a-title-match-ranks-above-a-newer-body-mention
+  (let [hits [{:type :member :id 1 :title "Ada" :description "Talks about bitcoin" :activity-at 9}
+              {:type :event :id 2 :title "Bitcoin Meetup" :description "Talk" :activity-at 1}]]
+    (is (= ["Bitcoin Meetup" "Ada"] (map :title (search-hits hits {:query "bitcoin"}))))))
+
+(deftest activity-at-breaks-ties-when-a-query-is-present
+  (let [hits [{:type :event :id 1 :title "Bitcoin A" :activity-at 1}
+              {:type :event :id 2 :title "Bitcoin B" :activity-at 5}]]
+    (is (= ["Bitcoin B" "Bitcoin A"] (map :title (search-hits hits {:query "bitcoin"}))))))
+
+(deftest pages-continue-the-match-order
+  (let [hits [{:type :event :id 1 :title "Bitcoin" :activity-at 1}
+              {:type :post :id 2 :title "Warm" :description "Bitcoin news" :activity-at 5}
+              {:type :post :id 3 :title "Cold" :description "Bitcoin talk" :activity-at 4}]
+        page (fn [offset] (map :title (search-hits hits {:query "bitcoin" :limit 2 :offset offset})))]
+    (is (= ["Bitcoin" "Warm"] (page 0)))
+    (is (= ["Cold"] (page 2)))))
+
+(deftest a-blank-or-punctuation-only-query-is-the-activity-feed
+  (is (= [3 2 1] (map :activity-at (search-hits text-hits {:query "   "}))))
+  (is (= [3 2 1] (map :activity-at (search-hits text-hits {:query "?!."})))))
+
+(deftest a-matching-hit-shows-a-snippet-with-the-matched-words
+  (let [hit (first (search-hits text-hits {:query "gathering"}))]
+    (is (= "Bitcoin Meetup" (:title hit)))
+    (is (str/includes? (:snippet hit) "gathering"))))
+
+(deftest a-snippet-survives-punctuation-around-the-matched-word
+  (let [hits [{:type :post :id 1 :title "Notes" :description "We talked about bitcoin." :activity-at 1}]
+        hit (first (search-hits hits {:query "bitcoin"}))]
+    (is (= :body (:match hit)))
+    (is (str/includes? (:snippet hit) "bitcoin"))))
+
+(deftest a-snippet-is-not-added-without-a-query
+  (is (every? #(nil? (:snippet %)) (search-hits text-hits {}))))
 
 (deftest types-drop-other-kinds
   (is (= #{:event :post} (set (map :type (search-hits mixed-hits {:types #{:event :post}}))))))

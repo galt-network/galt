@@ -27,7 +27,7 @@ One Connect-feed row for a Member, Group, Event, or Post.
 A mixed feed of Hits searchable from one place.
 
 **activity_at**:
-The timestamp used to order Hits: latest of creation and related comments or events.
+The latest of a Hit's creation and related comments or events. With no query, it orders Hits. With a query, it only breaks ties.
 
 **Near me**:
 A 100 km radius around the searcher. Uses the Member's location when present, otherwise the city inferred from the request IP. Loopback requests use the machine's public IP.
@@ -48,3 +48,4 @@ A 100 km radius around the searcher. Uses the Member's location when present, ot
 ## Flagged ambiguities
 
 - Spec said "user" for a searchable person — resolved: that is a **Member**.
+- `activity_at` ordered every Hit — resolved: it orders the feed only when Connect has no query.

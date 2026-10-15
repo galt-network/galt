@@ -77,3 +77,36 @@
   (let [sql (first (sql/format (db-repo/candidates-sql {:types #{:member}})))]
     (is (re-find #"members\.deleted_at IS NULL" sql))
     (is (re-find #"users\.deleted_at IS NULL" sql))))
+
+(deftest text-predicate-is-full-text-search
+  (let [sql (first (sql/format (db-repo/candidates-sql {:query "bitcoin"})))]
+    (is (re-find #"(?i)to_tsvector" sql))
+    (is (re-find #"(?i)plainto_tsquery" sql))
+    (is (re-find #"@@" sql))
+    (is (not (re-find #"(?i)ilike" sql)))))
+
+(deftest no-candidate-cap-before-ranking
+  (is (not (re-find #"(?i)limit" (first (sql/format (db-repo/candidates-sql {}))))))
+  (is (not (re-find #"(?i)limit" (first (sql/format (db-repo/candidates-sql {:types #{:member}})))))))
+
+(deftest a-query-asks-for-title-match-and-snippet
+  (let [sql (first (sql/format (db-repo/candidates-sql {:query "bitcoin"})))]
+    (is (re-find #"title_match" sql))
+    (is (re-find #"(?i)ts_headline" sql)))
+  (let [sql (first (sql/format (db-repo/candidates-sql {})))]
+    (is (not (re-find #"title_match" sql)))
+    (is (not (re-find #"(?i)ts_headline" sql)))))
+
+(deftest maps-title-match-and-snippet-to-a-hit
+  (let [row {:id #uuid "01900000-0000-7000-8000-000000000003"
+             :type "member"
+             :title "Bitcoin Meetup"
+             :description "Monthly"
+             :activity_at (java.sql.Timestamp/valueOf "2026-01-02 15:00:00")}
+        run (fn [row]
+              (first (repo/candidates (db-repo/new-db-search-repository (fake-db [row]))
+                                      {:query "bitcoin"})))]
+    (is (= :title (:match (run (assoc row :title_match true :snippet "Bitcoin Meetup")))))
+    (is (= :body (:match (run (assoc row :title_match false :snippet "… bitcoin …")))))
+    (is (= "… bitcoin …"
+           (:snippet (run (assoc row :title_match false :snippet "… bitcoin …")))))))
