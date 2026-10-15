@@ -65,3 +65,9 @@
   (let [hits [{:type :member :id 1 :title "Visible" :activity-at 2}
               {:type :member :id 2 :title "Ghost" :activity-at 1 :hidden? true}]]
     (is (= ["Visible"] (map :title (search-hits hits {}))))))
+
+(deftest deleted-members-are-excluded
+  (let [hits [{:type :member :id 1 :title "Visible" :activity-at 2}
+              {:type :member :id 2 :title "Removed" :activity-at 1 :deleted? true}
+              {:type :group :id 3 :title "Keeper" :activity-at 0 :deleted? true}]]
+    (is (= ["Visible" "Keeper"] (map :title (search-hits hits {}))))))

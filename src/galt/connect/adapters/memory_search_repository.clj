@@ -54,6 +54,7 @@
       (let [wanted (if (seq types) types all-types)]
         (filter (fn [hit]
                   (and (not (:hidden? hit))
+                       (not (and (= :member (:type hit)) (:deleted? hit)))
                        (contains? wanted (:type hit))
                        (matches-query? hit query)
                        (matches-period? hit from to)

@@ -52,7 +52,8 @@
     (is (re-find #"member" sql))
     (is (re-find #"group" sql))
     (is (re-find #"event" sql))
-    (is (re-find #"post" sql))))
+    (is (re-find #"post" sql))
+    (is (not (re-find #"'comment'" sql)))))
 
 (deftest empty-types-sql-unions-all-types
   (let [sql (first (sql/format (db-repo/candidates-sql {:types #{}})))]
@@ -61,3 +62,18 @@
     (is (re-find #"FROM events" sql))
     (is (re-find #"FROM posts" sql))
     (is (not (re-find #"(?i)^LIMIT" sql)))))
+
+(defn- branches
+  [q]
+  (or (:union-all q) [q]))
+
+(deftest activity-at-is-not-a-per-row-lookup
+  (is (empty? (for [branch (branches (db-repo/candidates-sql {}))
+                    [expr _alias] (:select branch)
+                    :when (map? expr)]
+                expr))))
+
+(deftest deleted-members-are-excluded-in-sql
+  (let [sql (first (sql/format (db-repo/candidates-sql {:types #{:member}})))]
+    (is (re-find #"members\.deleted_at IS NULL" sql))
+    (is (re-find #"users\.deleted_at IS NULL" sql))))
