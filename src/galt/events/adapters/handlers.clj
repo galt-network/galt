@@ -20,15 +20,16 @@
 (defn create
   [{:keys [render gen-uuid add-event-use-case event-repo layout]} req]
   (let [params (get req :params)
-        event {:id (gen-uuid)
-               :name (:name params)
-               :description (:description params)
-               :author-id (get-in req [:session :member-id])
-               :start-time (th/parse-form-datetime (:start-time params))
-               :end-time (th/parse-form-datetime (:end-time params))
-               :publish-at (th/parse-form-datetime (:publish-at params))
-               :location-id (when (seq (:location-id params)) (:location-id params))
-               :type (:type params)}
+        publish-at (th/parse-form-datetime (:publish-at params))
+        event (cond-> {:id (gen-uuid)
+                       :name (:name params)
+                       :description (:description params)
+                       :author-id (get-in req [:session :member-id])
+                       :start-time (th/parse-form-datetime (:start-time params))
+                       :end-time (th/parse-form-datetime (:end-time params))
+                       :location-id (when (seq (:location-id params)) (:location-id params))
+                       :type (:type params)}
+                publish-at (assoc :publish-at publish-at))
         [status result] (add-event-use-case {:event event})
         events (er/list-events event-repo {})]
     {:status http-status/created :body (-> {:events events} presentation.list-events/present layout render)}))

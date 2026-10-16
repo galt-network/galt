@@ -2,7 +2,7 @@
   (:require
    [clojure.test :refer [deftest is testing]]
    [java-time.api :as jt]
-   [galt.core.adapters.time-helpers :refer [period-range]]))
+   [galt.core.adapters.time-helpers :refer [parse-form-datetime period-range]]))
 
 (deftest time-helpers.period-range-tests
   (testing ":this-week"
@@ -24,3 +24,12 @@
       (is (= [correct-start correct-end] (period-range monday :this-year)))
       (is (= [correct-start correct-end] (period-range sunday :this-year)))
       (is (not (= [correct-start correct-end] (period-range next-year-monday :this-week)))))))
+
+(deftest time-helpers.parse-form-datetime-tests
+  (testing "an unset form field has no datetime"
+    (is (nil? (parse-form-datetime "")))
+    (is (nil? (parse-form-datetime nil)))
+    (is (nil? (parse-form-datetime "   "))))
+  (testing "a datetime-local value is parsed"
+    (is (= (jt/local-date-time 2026 11 1 18 0)
+           (parse-form-datetime "2026-11-01T18:00")))))

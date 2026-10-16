@@ -86,7 +86,8 @@
 
 (defn parse-form-datetime
   [s]
-  (jt/local-date-time s))
+  (when-not (str/blank? s)
+    (jt/local-date-time s)))
 
 (defn period-range
   "Returns a map with :start-time and :end-time as LocalDateTime for the given period keyword."
