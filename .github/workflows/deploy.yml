@@ -1,0 +1,80 @@
+name: Build and deploy
+
+on:
+  push:
+    branches: [master, production]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: target
+        run: |
+          if [ "$GITHUB_REF_NAME" = production ]; then
+            echo "tag=production" >> "$GITHUB_OUTPUT"
+            echo "app_uuid=${{ vars.COOLIFY_PRODUCTION_APP_UUID }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=staging" >> "$GITHUB_OUTPUT"
+            echo "app_uuid=${{ vars.COOLIFY_STAGING_APP_UUID }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ steps.target.outputs.tag }}
+            ghcr.io/${{ github.repository }}:sha-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Coolify does not re-pull a mutable tag, so pin the app to this commit's
+      # image before deploying.
+      - name: Point Coolify at the new image
+        if: vars.COOLIFY_URL != ''
+        env:
+          COOLIFY_URL: ${{ vars.COOLIFY_URL }}
+          COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+          APP_UUID: ${{ steps.target.outputs.app_uuid }}
+        run: |
+          if [ -z "$APP_UUID" ]; then
+            echo "::error::Set the Coolify app UUID repository variable."
+            exit 1
+          fi
+          curl --fail --silent --show-error \
+            --request PATCH \
+            "$COOLIFY_URL/api/v1/applications/$APP_UUID" \
+            --header "Authorization: Bearer $COOLIFY_API_TOKEN" \
+            --header "Content-Type: application/json" \
+            --data "{\"docker_registry_image_tag\":\"sha-$GITHUB_SHA\"}"
+
+      - name: Deploy on Coolify
+        if: vars.COOLIFY_URL != ''
+        env:
+          COOLIFY_URL: ${{ vars.COOLIFY_URL }}
+          COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+          APP_UUID: ${{ steps.target.outputs.app_uuid }}
+        run: |
+          curl --fail --silent --show-error \
+            --request POST \
+            "$COOLIFY_URL/api/v1/deploy?uuid=$APP_UUID&force=false" \
+            --header "Authorization: Bearer $COOLIFY_API_TOKEN"

@@ -116,7 +116,12 @@
                    :btcpay-store-id (or-env "BTCPAY_STORE_ID" :btcpay-store-id)
                    :btcpay-webhook-secret (or-env "BTCPAY_WEBHOOK_SECRET" :btcpay-webhook-secret))
       (System/getenv "APP_PORT") (assoc :web-server-port (parse-long (System/getenv "APP_PORT")))
-      root (assoc :galt-root-url root))))
+      (lookup "GALT_ASSET_STORE_BUCKET") (assoc-in [:asset-store :bucket] (lookup "GALT_ASSET_STORE_BUCKET"))
+      (lookup "GALT_ASSET_STORE_ENDPOINT") (assoc-in [:asset-store :endpoint] (lookup "GALT_ASSET_STORE_ENDPOINT"))
+      (lookup "GALT_ASSET_STORE_PUBLIC_BASE_URL") (assoc-in [:asset-store :public-base-url] (lookup "GALT_ASSET_STORE_PUBLIC_BASE_URL"))
+      root (assoc :galt-root-url root)
+      ;; Private asset URLs are built from the asset store's root URL.
+      root (assoc-in [:asset-store :root-url] root))))
 
 (defn get-config
   ([]

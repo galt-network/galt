@@ -26,6 +26,12 @@
         "timeout": {
           "startup": 60000
         }
+      },
+      "coolify": {
+        "type": "remote",
+        "url": "https://coolify.apps.mad.is/mcp",
+        "oauth": false,
+        "headers": {"Authorization": "Bearer {env:COOLIFY_MCP_TOKEN}"}
       }
     }
   }

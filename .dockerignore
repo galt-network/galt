@@ -1,0 +1,11 @@
+.git
+.env
+.env.*
+target
+data
+resources/uploads
+.clj-kondo
+.cpcache
+.scratch
+config/dev-galt.edn
+docs

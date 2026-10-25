@@ -17,7 +17,12 @@
  (let [with-layout (:with-layout deps)
        with-deps-layout (partial with-layout deps)]
    (rr/router
-     [["/" {:id :home
+     [["/health" {:name :health
+                  :get (fn [_]
+                         {:status 200
+                          :headers {"content-type" "text/plain"}
+                          :body "ok"})}]
+      ["/" {:id :home
             :get (with-deps-layout core-handlers/view-landing)}]
       ["/datastar-sse" {:name :datastar-sse
                         :post (partial core-handlers/datastar-sse deps)}]

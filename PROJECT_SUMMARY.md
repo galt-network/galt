@@ -22,6 +22,8 @@ Key principles:
 - `build.clj` - Build script using `tools.build`. Creates uberjar: `clj -T:build uber`
 - `start-nrepl.sh` - Convenience script to start an nREPL server. Pins an older nREPL than `deps.edn`; prefer `clojure -M:nrepl` or `clojure -M:dev:repl -m nrepl.cmdline`.
 - `start-ssh-tunnel.sh` - Convenience script for SSH tunnel to dev DB
+- `Dockerfile` / `docker-entrypoint.sh` - Container image: builds globo's JS from the pinned public repo, packs the uberjar, bakes `world.sql` + GeoIP mmdb, runs migrations, then starts the server. `ENV GLOBO_LOCAL_ROOT=/globo` makes `build.clj` use the checkout with compiled JS.
+- `.github/workflows/deploy.yml` - On `master`/`production`: pushes `ghcr.io/galt-network/galt:sha-<sha>` to GHCR, pins that tag on the matching Coolify app, then triggers deployment.
 - `scripts/btcpay.bb` - Local regtest BTCPay Server plus a payer CLN. See `docs/btcpay.md`. Not started by clj-contain.
 - `scripts/download-geoip.sh` - Downloads the DB-IP city-lite MMDB (CC-BY 4.0). Do not commit the MMDB. Dest: `GALT_GEOIP_MMDB` or `data/geoip/dbip-city-lite.mmdb`.
 - `scripts/lnurl-login.bb` / `scripts/lnurl-login.edn` - LNURL login scratch script.
@@ -453,7 +455,8 @@ Connect search is `galt.connect.domain.use-cases.search/search`, called from `ga
 - `MIGRATUS_DATABASE`, `MIGRATUS_USER`, `MIGRATUS_PASSWORD` - DB credentials
 - `DB_HOST`, `DB_PORT` - Postgres host/port (default `localhost:5432`)
 - `APP_PORT` - Overrides `:web-server-port`. Process env only, not `.env`.
-- `APP_HOST_PORT`, `GALT_ROOT_URL` - Override `:galt-root-url` (`APP_HOST_PORT` becomes `http://127.0.0.1:<port>`)
+- `APP_HOST_PORT`, `GALT_ROOT_URL` - Override `:galt-root-url` (`APP_HOST_PORT` becomes `http://127.0.0.1:<port>`). `GALT_ROOT_URL` also overrides `[:asset-store :root-url]` (used for private asset links)
+- `GALT_ASSET_STORE_BUCKET`, `GALT_ASSET_STORE_ENDPOINT`, `GALT_ASSET_STORE_PUBLIC_BASE_URL` - Override the matching `:asset-store` fields (containers keep bucket names out of the image)
 - `BTCPAY_URL`, `BTCPAY_API_KEY`, `BTCPAY_STORE_ID`, `BTCPAY_WEBHOOK_SECRET` - Override BTCPay config
 - `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` - S3/R2 credentials when config keys are nil
 - `GALT_GEOIP_MMDB` - MMDB path. Process env only; else config `:geoip-mmdb`, else `data/geoip/dbip-city-lite.mmdb`.

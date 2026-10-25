@@ -104,8 +104,15 @@
   [deps group]
   (assoc group :group-link ((:link-for-route deps) :groups/by-id {:id (:id group)})))
 
+(defn- group-rows
+  [deps result]
+  (->> (:groups result)
+       (map (partial add-group-links deps) ,,,)
+       (map (fn [g] (assoc g :location (get-in result [:locations (:id g)]))) ,,,)
+       (map #(update % :avatar (:asset-url deps)) ,,,)))
+
 (defn list-groups
-  [{:keys [render list-groups-use-case layout asset-url] :as deps} req]
+  [{:keys [render list-groups-use-case layout] :as deps} req]
   (if (d*/datastar-request? req)
     (with-sse req
       (fn [send!]
@@ -117,21 +124,15 @@
               query-str (get signals :query "")
               command {:limit limit :offset offset :query query-str}
               [status result] (list-groups-use-case command)
-              model (->> (:groups result)
-                         (map (partial add-group-links deps) ,,,)
-                         (map (fn [g] (assoc g :location (get-in result [:locations (:id g)]))) ,,,)
-                         (map #(update % :avatar asset-url)))]
+              model (group-rows deps result)]
           (send! :html (map presentation.list-groups/group-row model) {:selector "#group-rows"
                                                                        :patch-mode patch-mode})
           (send! :signals {:offset next-offset :limit limit}))))
     (let [limit 5
           offset 0
           [status result] (list-groups-use-case {:query "" :limit limit :offset offset})
-          groups (->> (:groups result)
-                         (map (partial add-group-links deps) ,,,)
-                         (map (fn [g] (assoc g :location (get-in result [:locations (:id g)]))) ,,,))
           model {:new-group-href ((:link-for-route deps) :groups/new)
-                 :groups groups
+                 :groups (group-rows deps result)
                  :location (:locations result)
                  :initial-signals "{offset: 5, limit: 5}"
                  :offset offset
