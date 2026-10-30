@@ -1,0 +1,13 @@
+{:deps true
+ :builds {:ui {:target :browser
+               :output-dir "resources/public/js"
+               :asset-path "/js"
+               :modules {:main {:init-fn galt-promo.ui/init}}
+               :devtools {:http-root "resources/public"
+                          :http-port 8081}}
+          :server {:target :node-script
+                   :output-to "target/server.js"
+                   :main galt-promo.server/main}
+          :test {:target :node-test
+                 :output-to "target/test.js"
+                 :ns-regex "-test$"}}}

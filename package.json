@@ -1,0 +1,29 @@
+{
+  "name": "galt-promo",
+  "private": true,
+  "scripts": {
+    "dev": "shadow-cljs watch ui server",
+    "test": "shadow-cljs compile test && node target/test.js",
+    "build": "shadow-cljs release ui server",
+    "start": "node target/server.js"
+  },
+  "devDependencies": {
+    "shadow-cljs": "3.5.8"
+  },
+  "dependencies": {
+    "bulma": "1.0.4",
+    "concat-stream": "^1.6.2",
+    "content-type": "^1.0.4",
+    "cookies": "^0.7.1",
+    "etag": "^1.8.1",
+    "lru": "^3.1.0",
+    "multiparty": "^4.1.3",
+    "qs": "^6.5.1",
+    "random-bytes": "^1.0.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "simple-encryptor": "^1.2.0",
+    "url": "^0.11.0",
+    "ws": "^5.1.1"
+  }
+}
