@@ -1,5 +1,6 @@
 (ns galt-promo.server
   (:require [clojure.string :as str]
+            [galt-promo.location :as location]
             [galt-promo.names :as names]
             [galt-promo.presence :as presence]
             [macchiato.middleware.resource :as resource]
@@ -30,18 +31,25 @@
             :when response]
       (.write response message))))
 
-(defn- connect [registry {:keys [headers node/request node/response query-string remote-addr uri]} respond _]
-  (let [url (js/URL. (str "http://localhost" uri "?" query-string))
-        client-id (.get (.-searchParams url) "client-id")]
+(defn- request-params [{:keys [uri query-string]}]
+  (.-searchParams (js/URL. (str "http://localhost" uri "?" query-string))))
+
+(defn- connect [registry {:keys [headers node/request node/response remote-addr] :as req} respond _]
+  (let [client-id (.get (request-params req) "client-id")]
     (if (str/blank? client-id)
       (respond {:status 400 :body "client-id is required"})
-      (let [taken (into #{} (map :name) (vals @registry))]
+      (let [existing (get @registry client-id)
+            ip (str/replace remote-addr #"^::ffff:" "")
+            taken (into #{} (map :name) (vals @registry))]
         (swap! registry assoc client-id
                {:id client-id
-                :name (or (get-in @registry [client-id :name])
+                :name (or (:name existing)
                           (names/generate-name taken rand))
                 :browser (browser-name (get headers "user-agent" ""))
-                :ip (str/replace remote-addr #"^::ffff:" "")
+                :ip ip
+                :location (or (when (= :browser (get-in existing [:location :source]))
+                                (:location existing))
+                              (location/ip-location ip))
                 :connected? true
                 :disconnected-at nil
                 :response response})
@@ -62,10 +70,32 @@
                             users)))
                  (broadcast! registry)))))))
 
+(defn- update-location [registry request respond _]
+  (let [params (request-params request)
+        client-id (.get params "client-id")
+        coordinates (location/parse-coordinates (.get params "lat")
+                                                (.get params "lng"))]
+    (cond
+      (str/blank? client-id)
+      (respond {:status 400 :body "client-id is required"})
+
+      (nil? coordinates)
+      (respond {:status 400 :body "valid lat and lng are required"})
+
+      (not (contains? @registry client-id))
+      (respond {:status 404 :body "Unknown client"})
+
+      :else
+      (do
+        (swap! registry update client-id assoc :location (assoc coordinates :source :browser))
+        (broadcast! registry)
+        (respond {:status 204 :body nil})))))
+
 (defn make-handler [registry]
   (resource/wrap-resource
    (ring/ring-handler
     (ring/router [["/connect" {:get (partial connect registry)}]
+                  ["/location" {:post (partial update-location registry)}]
                   ["/" {:get (fn [_ respond _]
                                (respond (response/file "resources/public/index.html")))}]])
     (fn [_ respond _]
