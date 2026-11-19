@@ -23,10 +23,8 @@ jobs:
         run: |
           if [ "$GITHUB_REF_NAME" = production ]; then
             echo "tag=production" >> "$GITHUB_OUTPUT"
-            echo "app_uuid=${{ vars.COOLIFY_PRODUCTION_APP_UUID }}" >> "$GITHUB_OUTPUT"
           else
             echo "tag=staging" >> "$GITHUB_OUTPUT"
-            echo "app_uuid=${{ vars.COOLIFY_STAGING_APP_UUID }}" >> "$GITHUB_OUTPUT"
           fi
 
       - uses: docker/setup-buildx-action@v3
@@ -47,34 +45,30 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Coolify does not re-pull a mutable tag, so pin the app to this commit's
-      # image before deploying.
-      - name: Point Coolify at the new image
-        if: vars.COOLIFY_URL != ''
+  # Self-hosted runner on apps-vm: the Coolify dashboard/API is allowlisted on
+  # the VPS, so the deploy call stays on loopback. See infra `gh_runner` role.
+  deploy:
+    needs: image
+    runs-on: [self-hosted, apps]
+    if: vars.COOLIFY_URL != ''
+    steps:
+      - name: Deploy on Coolify
         env:
           COOLIFY_URL: ${{ vars.COOLIFY_URL }}
           COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
-          APP_UUID: ${{ steps.target.outputs.app_uuid }}
+          STAGING_UUID: ${{ vars.COOLIFY_STAGING_APP_UUID }}
+          PRODUCTION_UUID: ${{ vars.COOLIFY_PRODUCTION_APP_UUID }}
         run: |
-          if [ -z "$APP_UUID" ]; then
-            echo "::error::Set the Coolify app UUID repository variable."
+          if [ "$GITHUB_REF_NAME" = production ]; then
+            app_uuid="$PRODUCTION_UUID"
+          else
+            app_uuid="$STAGING_UUID"
+          fi
+          if [ -z "$app_uuid" ]; then
+            echo "::error::Set COOLIFY_STAGING_APP_UUID / COOLIFY_PRODUCTION_APP_UUID repository variables."
             exit 1
           fi
           curl --fail --silent --show-error \
-            --request PATCH \
-            "$COOLIFY_URL/api/v1/applications/$APP_UUID" \
-            --header "Authorization: Bearer $COOLIFY_API_TOKEN" \
-            --header "Content-Type: application/json" \
-            --data "{\"docker_registry_image_tag\":\"sha-$GITHUB_SHA\"}"
-
-      - name: Deploy on Coolify
-        if: vars.COOLIFY_URL != ''
-        env:
-          COOLIFY_URL: ${{ vars.COOLIFY_URL }}
-          COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
-          APP_UUID: ${{ steps.target.outputs.app_uuid }}
-        run: |
-          curl --fail --silent --show-error \
             --request POST \
-            "$COOLIFY_URL/api/v1/deploy?uuid=$APP_UUID&force=false" \
+            "$COOLIFY_URL/api/v1/deploy?uuid=$app_uuid&force=false" \
             --header "Authorization: Bearer $COOLIFY_API_TOKEN"

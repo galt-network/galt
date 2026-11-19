@@ -1,11 +1,11 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "instructions": ["PROJECT_SUMMARY.md"],
-  "permission": {
-    "external_directory": {
-      "~/code/madis/globo/**": "allow"
-    }
-  },
+  "permissions": [
+    { "action": "external_directory", "resource": "~/code/madis/globo/*", "effect": "allow" },
+    { "action": "read", "resource": "~/code/madis/globo/*", "effect": "allow" },
+    { "action": "edit", "resource": "~/code/madis/globo/*", "effect": "allow" }
+  ],
   "mcp": {
     "servers": {
       "chrome-devtools": {
@@ -32,6 +32,17 @@
         "url": "https://coolify.apps.mad.is/mcp",
         "oauth": false,
         "headers": {"Authorization": "Bearer {env:COOLIFY_MCP_TOKEN}"}
+      },
+      "itsaplan": {
+        "type": "remote",
+        "url": "https://itsaplan-api.apps.mad.is/mcp"
+      },
+      "stitch": {
+        "type": "remote",
+        "url": "https://stitch.googleapis.com/mcp",
+        "headers": {
+          "X-Goog-Api-Key": "{env:GOOGLE_STITCH_API_KEY}"
+        }
       }
     }
   }
