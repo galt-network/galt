@@ -10,19 +10,11 @@
     "servers": {
       "chrome-devtools": {
         "type": "local",
-        "command": [
-          "ssh",
-          "-T",
-          "-o", "BatchMode=yes",
-          "-o", "StrictHostKeyChecking=yes",
-          "-o", "CheckHostIP=no",
-          "-o", "UpdateHostKeys=no",
-          "-o", "LogLevel=ERROR",
-          "-o", "IdentitiesOnly=yes",
-          "-o", "UserKnownHostsFile=/run/cdp-key/known_hosts",
-          "-i", "/run/cdp-key/id_ed25519",
-          "madis@host.containers.internal"
-        ],
+        "command": ["bash", "scripts/chrome-devtools-mcp.sh"],
+        "cwd": ".",
+        "environment": {
+          "CHROME_DEVTOOLS_MCP_NO_USAGE_STATISTICS": "1"
+        },
         "timeout": {
           "startup": 60000
         }

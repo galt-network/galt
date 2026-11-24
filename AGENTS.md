@@ -14,14 +14,19 @@ Also follow `LLM_CODE_STYLE.md` at the repo root when present; it matches the gl
 
 ## Addresses
 
-When the project is developed in a container, the container exposes ports on localhost on the host machine on port 13003.
-This is relevant for the chrome-devtools MCP server as it is controlled by the OpenCode instance inside the container but accesses chrome on the host machine. Therefore:
-1. When accessing Galt web page through chrome-devtools MCP use http://127.0.0.1:13003/ as base URL
+How Galt is reached depends on where OpenCode runs:
+
+- **Inside the `clj-contain` container**: the host publishes the app on port 13003, and the browser runs on the host, so the chrome-devtools MCP must use http://127.0.0.1:13003/. Command-line tools inside the container talk to the app directly at http://localhost:8081/.
+- **Natively (plain checkout, agent sandbox)**: everything runs on one machine, so both the chrome-devtools MCP and command-line tools use http://localhost:8081/.
+
+`scripts/chrome-devtools-mcp.sh` picks the transport: the SSH bridge when `/run/cdp-key` and `host.containers.internal` exist (the container case), otherwise a local `chrome-devtools-mcp` against the installed Chrome (`CHROME_BIN`, `CHROME_HEADED=1` to run headed).
+
+1. When accessing Galt web page through chrome-devtools MCP use the base URL for the environment above
 2. When accessing Galt web page through curl or other command line tools use http://localhost:8081/ as base URL
 
 ## Login and payment workflows for programmatic testing
 
-1. If logged in user session is needed, log in fom http://localhost:13003/members/login using `bb scripts/lnurl-login.bb <script-username> <LNURL-string>`
+1. If logged in user session is needed, log in fom http://localhost:13003/members/login (container) or http://localhost:8081/members/login (native) using `bb scripts/lnurl-login.bb <script-username> <LNURL-string>`
   - the LNURL string is in the text input on the /members/login page if the user is not logged in
   - the available usernames are `alice`, `bob` and `charlie` (listed in `scripts/lnurl-login.edn`)
 
