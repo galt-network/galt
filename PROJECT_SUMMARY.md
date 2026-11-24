@@ -161,7 +161,7 @@ Versions reflect the current `deps.edn`.
 | `dev.data-star.clojure/http-kit` | 1.0.0-RC11 | Datastar http-kit adapter |
 | `hiccup/hiccup` | 2.0.0 | HTML templating (Clojure vectors -> HTML) |
 | `markdown-clj/markdown-clj` | 1.12.8 | Markdown parsing |
-| `is.mad/globo` | local root `../globo` | 3D world map UI (Globo) - served under `:globo-mount-path`; local path dependency, not from Maven |
+| `is.mad/globo` | git dependency (alias `:globo-local` swaps in the checkout `../globo`) | 3D world map UI (Globo) - served under `:globo-mount-path`; not from Maven |
 
 ### System & Architecture
 | Dependency | Version | Role |
@@ -224,6 +224,7 @@ Versions reflect the current `deps.edn`.
 ### Deps.edn Aliases
 - `:repl` - Adds `dev/` path, Clojure 1.12.5, `clj-reload`
 - `:dev` - Adds `test/` path, spy, ring-mock, http-kit.fake, matcher-combinators
+- `:globo-local` - Overrides `is.mad/globo` with the checkout at `../globo`; add it to `:dev` or `:repl` when developing globo alongside
 - `:nrepl` - `dev/` + `test/` paths and the `:dev` test libs; starts `nrepl.cmdline` (`clojure -M:nrepl`)
 - `:build` - `tools.build` 0.10.14 for uberjar via `clj -T:build uber`
 - `:outdated` - `antq` for dependency update checks (`clj -M:outdated`)

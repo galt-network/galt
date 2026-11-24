@@ -12,10 +12,6 @@ Also follow `LLM_CODE_STYLE.md` at the repo root when present; it matches the gl
 - Dev loop: `(galt.main/start-system! :dev)` to start, `(go!)` to hot-reload
   (reloads changed namespaces, restarts HTTP server, after calling it the running system reflects the code saved in the project directory, including dependencies (local or remote))
 
-## Project Summary
-
-When asked to create or update `PROJECT_SUMMARY.md`, load the `update-project-summary` skill and follow it.
-
 ## Addresses
 
 When the project is developed in a container, the container exposes ports on localhost on the host machine on port 13003.

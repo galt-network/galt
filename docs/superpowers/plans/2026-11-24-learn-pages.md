@@ -32,7 +32,7 @@
 - **Images** are referenced as `/assets/images/learn/<module :image>.jpg`.
 - **Exact names:** namespace `galt.core.views.new-layout` in `src/galt/core/views/new_layout.clj`; module `src/galt/learn/`; curriculum file `resources/learn/curriculum.edn`; route names `:learn` and `:learn/lesson`.
 - **Old layout untouched:** do not edit `src/galt/core/views/layout.clj` or any Bulma page.
-- **Clojure style:** follow `LLM_CODE_STYLE.md` and the `clojure-style` skill. Load the skill before writing Clojure.
+- **Clojure style:** follow `LLM_CODE_STYLE.md`.
 - **Running tests:** use the clojure-mcp `clojure_eval` tool. A namespace is tested with
   ```clojure
   (do (require '<namespace> :reload) (clojure.test/run-tests '<namespace>))

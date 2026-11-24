@@ -65,11 +65,11 @@
          :extra-deps  {org.clojure/clojure         {:mvn/version "1.12.6"}
                        io.github.tonsky/clj-reload {:mvn/version "1.0.0"}}}
   :dev {:extra-paths ["test"]
-        :override-deps {is.mad/globo {:local/root "../globo"}}
         :extra-deps {tortue/spy {:mvn/version "2.15.0"} ; https://github.com/alexanderjamesking/spy
                      ring/ring-mock {:mvn/version "0.6.2"}
                      http-kit.fake/http-kit.fake {:mvn/version "0.2.2"}
                      nubank/matcher-combinators {:mvn/version "3.11.0"}}} ; https://github.com/nubank/matcher-combinators
+  :globo-local {:override-deps {is.mad/globo {:local/root "../globo"}}}
   :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.14"}}
           :ns-default build}
   :outdated {;; Note that it is `:deps`, not `:extra-deps`
