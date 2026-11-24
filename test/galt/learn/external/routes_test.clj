@@ -51,6 +51,11 @@
                    "Natural Rights &amp; Non-Aggression"]]
       (is (str/includes? body title)))))
 
+(deftest learn-page-shows-hero-and-active-session
+  (let [body (:body (page "/learn"))]
+    (doseq [text ["Resume Lesson" "Sovereign Scholar" "Bitcoin Basics (3)" "Completed (3)" "Section 4 of 5"]]
+      (is (str/includes? body text)))))
+
 (deftest member-sees-name-and-profile-link
   (let [{:keys [status body]} (page "/learn" {:name "Alice"})]
     (is (= 200 status))

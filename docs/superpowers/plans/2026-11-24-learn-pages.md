@@ -644,14 +644,14 @@ Port the markup from `docs/design/learn/learn-mobile.html`, from the comment `SO
 - `status-filter`: the Lesson Status filter (All, New, In Progress, Completed). Plain elements, label and count as one text node: `"All"`, `"New (2)"`, `"In Progress (1)"`, `"Completed (3)"`, each number counted from the lesson statuses `:available`, `:in-progress`, `:completed`.
 - `active-session`: `RESUME / CURRENTLY ACTIVE LESSON FEATURED CARD` for the first lesson whose `:status` is `:in-progress`. Values come from the data: `"Module 02 • Praxeology"` (`:number` zero-padded, `:track`), module `:title`, `"Section 4 of 5"` (`:section`, `:sections`), `"80%"` and `"Progress 80%"` (`:progress`), lesson `:title` and `:summary`, `"12 min read"` (`:minutes`), `:kind`, `"5 Exam Prompts Pending"` (`:exam-prompts`), `"+350 OBJ"` (`:obj`). "Resume Lesson" is a link to `:href`.
 
-- [ ] Step 1: Add this test to `test/galt/learn/external/routes_test.clj` and run the namespace. Expect failure: the page shows neither the hero nor the active session.
+- [x] Step 1: Add this test to `test/galt/learn/external/routes_test.clj` and run the namespace. Expect failure: the page shows neither the hero nor the active session.
   ```clojure
   (deftest learn-page-shows-hero-and-active-session
     (let [body (:body (page "/learn"))]
       (doseq [text ["Resume Lesson" "Sovereign Scholar" "Bitcoin Basics (3)" "Completed (3)" "Section 4 of 5"]]
         (is (str/includes? body text)))))
   ```
-- [ ] Step 2: Add the four private functions to `src/galt/learn/adapters/presentation/learn.clj`, require `[galt.core.views.new-layout :as layout]` for `layout/icon`, and change `present` to:
+- [x] Step 2: Add the four private functions to `src/galt/learn/adapters/presentation/learn.clj`, require `[galt.core.views.new-layout :as layout]` for `layout/icon`, and change `present` to:
   ```clojure
   (def ^:private member-stats
     {:rank "Sovereign Scholar" :obj "4,850 OBJ" :progress 68 :cleared "14 / 22"
@@ -667,8 +667,8 @@ Port the markup from `docs/design/learn/learn-mobile.html`, from the comment `SO
                (active-session curriculum)
                (curriculum-list curriculum)]})
   ```
-- [ ] Step 3: Run `npm run css`, then the test namespace. Expect: `Ran 4 tests containing 20 assertions. 0 failures, 0 errors.`
-- [ ] Step 4: Commit the two files and the ticked boxes of this task.
+- [x] Step 3: Run `npm run css`, then the test namespace. Expect: `Ran 4 tests containing 20 assertions. 0 failures, 0 errors.`
+- [x] Step 4: Commit the two files and the ticked boxes of this task.
 
 **Commit:** `feat: port Learn hero, filters and active session for mobile`
 
