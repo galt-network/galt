@@ -12,6 +12,18 @@ BTCPay regtest (Lightning invoices, both containerized and host Galt): [btcpay.m
   - `(galt.main/start-system!)`
 4. Open the page at http://localhost:8081
 
+## AI agent workflow
+
+Use `@writing-plans` skill by Superpowers if you already have a plan or `@brainstorming` when just starting work on the specifications for a new feature. In the end both write to `docs/superpowers/{specs,plans}/...` in a format that the `.opencode/skills/work-queue` can work on.
+
+Then commit and push the plan and create an issue:
+```shell
+gh issue create --repo galt-network/galt --label agent-ready \
+  --title "Implement plan: <name>" \
+  --body "Execute docs/superpowers/plans/<file>. Spec: docs/superpowers/specs/<file>. Done when: all task boxes ticked, final check green, PR opened."
+```
+This will be worked on by an agent and if all succeeds a new pull request with the implementation will be added.
+
 ## Release & deployment
 
 1. (local) Build a uberjar `clj -T:build uber`
