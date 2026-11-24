@@ -117,7 +117,7 @@ Human-only checks are listed under "For human review" at the end.
 - `new-layout/icon [classes name]` returns a Material Symbols span.
 - `web-helpers/with-new-layout [deps handler]` injects `:layout`, which merges its argument into the base model and renders `new-layout/main-layout`.
 
-- [ ] Step 1: Create `test/galt/core/views/new_layout_test.clj`:
+- [x] Step 1: Create `test/galt/core/views/new_layout_test.clj`:
   ```clojure
   (ns galt.core.views.new-layout-test
     (:require [clojure.string :as str]
@@ -163,8 +163,8 @@ Human-only checks are listed under "For human review" at the end.
       (is (str/includes? html "data-class:hidden=\"!$notification-visible\""))
       (is (str/includes? html "data-text=\"$notification-text\""))))
   ```
-- [ ] Step 2: Run the test namespace. Expect failure: `require` throws because `galt/core/views/new_layout` does not exist.
-- [ ] Step 3: Create `src/galt/core/views/new_layout.clj`. The header, tab bar and footer are ports of the `<header>`, the `nav` with `md:hidden fixed bottom-0` and the page `<footer>` in `docs/design/learn/lesson.html`, changed as described in the comments below:
+- [x] Step 2: Run the test namespace. Expect failure: `require` throws because `galt/core/views/new_layout` does not exist.
+- [x] Step 3: Create `src/galt/core/views/new_layout.clj`. The header, tab bar and footer are ports of the `<header>`, the `nav` with `md:hidden fixed bottom-0` and the page `<footer>` in `docs/design/learn/lesson.html`, changed as described in the comments below:
   ```clojure
   (ns galt.core.views.new-layout
     (:require [clojure.string :as str]
@@ -329,7 +329,7 @@ Human-only checks are listed under "For human review" at the end.
       (tab-bar model)
       (footer)]])
   ```
-- [ ] Step 4: In `src/galt/core/infrastructure/web/helpers.clj` add `[galt.core.views.new-layout :as new-layout]` to `:require` and add this function directly after `with-layout`:
+- [x] Step 4: In `src/galt/core/infrastructure/web/helpers.clj` add `[galt.core.views.new-layout :as new-layout]` to `:require` and add this function directly after `with-layout`:
   ```clojure
   (defn with-new-layout
     [deps handler]
@@ -341,9 +341,9 @@ Human-only checks are listed under "For human review" at the end.
                                           (assoc layout-model :user (-> layout-model :navbar :user)))})
                  req))))
   ```
-- [ ] Step 5: In `src/galt/core/system.clj`, inside the `:route-deps` map, add `:with-new-layout web-helpers/with-new-layout` on the line after `:with-layout web-helpers/with-layout`.
-- [ ] Step 6: Run `npm run css`, then run the test namespace. Expect: `Ran 4 tests containing 18 assertions. 0 failures, 0 errors.`
-- [ ] Step 7: Commit the four files and the ticked boxes of this task.
+- [x] Step 5: In `src/galt/core/system.clj`, inside the `:route-deps` map, add `:with-new-layout web-helpers/with-new-layout` on the line after `:with-layout web-helpers/with-layout`.
+- [x] Step 6: Run `npm run css`, then run the test namespace. Expect: `Ran 4 tests containing 18 assertions. 0 failures, 0 errors.`
+- [x] Step 7: Commit the four files and the ticked boxes of this task.
 
 **Commit:** `feat: add Tailwind layout shell for new-design pages`
 

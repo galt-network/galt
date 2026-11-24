@@ -580,6 +580,7 @@
               {:app-container layout/app-container
                :render web-helpers/render-html
                :with-layout web-helpers/with-layout
+               :with-new-layout web-helpers/with-new-layout
                :group-repo (config :group-repo)
                :user-repo (config :user-repo)
                :member-repo (config :member-repo)

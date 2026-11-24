@@ -2,6 +2,7 @@
   (:require
     [galt.core.adapters.view-models :as core-view-models]
     [galt.core.views.layout :as layout]
+    [galt.core.views.new-layout :as new-layout]
     [hiccup2.core :as h]
     [starfederation.datastar.clojure.api :as d*]
     [charred.api :as charred]
@@ -36,6 +37,16 @@
                        :content layout/content
                        :update-layout-model (fn [req] (core-view-models/layout-model deps req))
                        :layout-model layout-model}) req))))
+
+(defn with-new-layout
+  [deps handler]
+  (fn [req]
+    (let [layout-model (core-view-models/layout-model deps req)]
+      (handler (merge deps
+                      {:layout (partial layout-for-content
+                                        new-layout/main-layout
+                                        (assoc layout-model :user (-> layout-model :navbar :user)))})
+               req))))
 
 (def ^:private bufSize 1024)
 (def read-json (charred/parse-json-fn {:async? false :bufsize bufSize}))
