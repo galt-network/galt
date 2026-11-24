@@ -16,3 +16,8 @@
   (let [items (:items (vm/navbar-model (stub-deps) {}))]
     (is (= {:title "Connect" :href "/connect"}
            (select-keys (first items) [:title :href])))))
+
+(deftest navbar-links-learn-after-connect
+  (let [items (:items (vm/navbar-model (stub-deps) {:reitit.core/match {:data {:id :learn}}}))]
+    (is (= {:title "Learn" :href "/learn" :selected? true}
+           (select-keys (second items) [:title :href :selected?])))))

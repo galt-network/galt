@@ -493,7 +493,7 @@ Human-only checks are listed under "For human review" at the end.
 
 The page is a plain semantic list in this task. The design is ported onto it in Tasks 5, 6 and 8.
 
-- [ ] Step 1: Create `test/galt/learn/external/routes_test.clj`:
+- [x] Step 1: Create `test/galt/learn/external/routes_test.clj`:
   ```clojure
   (ns galt.learn.external.routes-test
     (:require [clojure.string :as str]
@@ -554,8 +554,8 @@ The page is a plain semantic list in this task. The design is ported onto it in 
       (is (str/includes? body "Alice"))
       (is (str/includes? body "href=\"/members/profile/me\""))))
   ```
-- [ ] Step 2: Run the test namespace. Expect failure: `require` throws because `galt/learn/external/routes` does not exist.
-- [ ] Step 3: Create `src/galt/learn/external/routes.clj`:
+- [x] Step 2: Run the test namespace. Expect failure: `require` throws because `galt/learn/external/routes` does not exist.
+- [x] Step 3: Create `src/galt/learn/external/routes.clj`:
   ```clojure
   (ns galt.learn.external.routes
     (:require [galt.learn.adapters.handlers :as learn]
@@ -568,7 +568,7 @@ The page is a plain semantic list in this task. The design is ported onto it in 
       (rr/router
         [["/learn" {:id :learn :name :learn :get (with-deps-layout learn/show-learn)}]])))
   ```
-- [ ] Step 4: Create `src/galt/learn/adapters/handlers.clj`:
+- [x] Step 4: Create `src/galt/learn/adapters/handlers.clj`:
   ```clojure
   (ns galt.learn.adapters.handlers
     (:require [galt.learn.adapters.presentation.learn :as learn]
@@ -579,7 +579,7 @@ The page is a plain semantic list in this task. The design is ported onto it in 
     {:status http-status/ok
      :body (-> (curriculum) learn/present layout render)})
   ```
-- [ ] Step 5: Create `src/galt/learn/adapters/presentation/learn.clj`:
+- [x] Step 5: Create `src/galt/learn/adapters/presentation/learn.clj`:
   ```clojure
   (ns galt.learn.adapters.presentation.learn
     (:require [galt.learn.adapters.curriculum :as data]))
@@ -599,7 +599,7 @@ The page is a plain semantic list in this task. The design is ported onto it in 
     [curriculum]
     {:content (curriculum-list curriculum)})
   ```
-- [ ] Step 6: In `src/galt/core/system.clj`:
+- [x] Step 6: In `src/galt/core/system.clj`:
   - Add `[galt.learn.adapters.curriculum :refer [load-curriculum]]` to `:require` after the `[galt.connect.adapters.db-search-repository …]` line, and `[galt.learn.external.routes]` after `[galt.connect.external.routes]`.
   - In the `:route-deps` map add `:curriculum load-curriculum` on the line after `:with-new-layout web-helpers/with-new-layout`.
   - Add this component directly after the `:connect/routes` component (same shape, other namespace):
@@ -612,21 +612,21 @@ The page is a plain semantic list in this task. The design is ported onto it in 
                {:route-deps (ds/ref [:app :route-deps])}}
     ```
   - In the `:router` component: add `learn-router (get-in config [:learn/routes])` after the `connect-router` binding, add `learn-router` as the last argument of `core.routes/merge-routers`, and add `:learn/routes (ds/ref [:app :learn/routes])` after the `:connect/routes` reference in its `:config`.
-- [ ] Step 7: Run `npm run css` and the routes test namespace. Expect: `Ran 3 tests containing 15 assertions. 0 failures, 0 errors.`
-- [ ] Step 8: Add this test to `test/galt/core/adapters/view_models_test.clj` and run that namespace. Expect failure: the second navbar item is still "Members".
+- [x] Step 7: Run `npm run css` and the routes test namespace. Expect: `Ran 3 tests containing 15 assertions. 0 failures, 0 errors.`
+- [x] Step 8: Add this test to `test/galt/core/adapters/view_models_test.clj` and run that namespace. Expect failure: the second navbar item is still "Members".
   ```clojure
   (deftest navbar-links-learn-after-connect
     (let [items (:items (vm/navbar-model (stub-deps) {:reitit.core/match {:data {:id :learn}}}))]
       (is (= {:title "Learn" :href "/learn" :selected? true}
              (select-keys (second items) [:title :href :selected?])))))
   ```
-- [ ] Step 9: In `src/galt/core/adapters/view_models.clj`, add this item to `navbar-model` directly after the Connect item:
+- [x] Step 9: In `src/galt/core/adapters/view_models.clj`, add this item to `navbar-model` directly after the Connect item:
   ```clojure
   {:title "Learn" :href "/learn" :selected? (= :learn route-id)}
   ```
   Run the namespace again. Expect: `Ran 2 tests containing 2 assertions. 0 failures, 0 errors.`
-- [ ] Step 10: Smoke check, only when the dev system is already running in the nREPL (otherwise skip it and say so in the PR body): evaluate `(user/go!)`, then `curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8081/learn` prints `200` and `curl -s http://localhost:8081/learn | grep -c 'href="/learn"'` prints `1` or more.
-- [ ] Step 11: Commit the seven files and the ticked boxes of this task.
+- [x] Step 10: Smoke check, only when the dev system is already running in the nREPL (otherwise skip it and say so in the PR body): evaluate `(user/go!)`, then `curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8081/learn` prints `200` and `curl -s http://localhost:8081/learn | grep -c 'href="/learn"'` prints `1` or more.
+- [x] Step 11: Commit the seven files and the ticked boxes of this task.
 
 **Commit:** `feat: add /learn route backed by the static curriculum`
 

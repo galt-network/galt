@@ -71,6 +71,7 @@
    [galt.comments.domain.comment-repository :as cr]
    [galt.comments.adapters.db-comment-repository :refer [new-db-comment-repository]]
    [galt.connect.adapters.db-search-repository :refer [new-db-search-repository]]
+   [galt.learn.adapters.curriculum :refer [load-curriculum]]
    [galt.members.external.routes]
    [galt.payments.adapters.btcpay-payment-gateway :refer [new-btcpay-payment-gateway]]
    [galt.payments.domain.payment-gateway :as pg]
@@ -81,6 +82,7 @@
    [galt.payments.external.routes]
    [galt.comments.external.routes]
    [galt.connect.external.routes]
+   [galt.learn.external.routes]
    [galt.events.external.routes]
    [is.galt.globo.server :as globo-server]
    [reitit.ring]
@@ -581,6 +583,7 @@
                :render web-helpers/render-html
                :with-layout web-helpers/with-layout
                :with-new-layout web-helpers/with-new-layout
+               :curriculum load-curriculum
                :group-repo (config :group-repo)
                :user-repo (config :user-repo)
                :member-repo (config :member-repo)
@@ -697,6 +700,12 @@
              (galt.connect.external.routes/router (:route-deps config)))
            :config
            {:route-deps (ds/ref [:app :route-deps])}}
+     :learn/routes
+     #::ds{:start
+           (fn [{:keys [::ds/config]}]
+             (galt.learn.external.routes/router (:route-deps config)))
+           :config
+           {:route-deps (ds/ref [:app :route-deps])}}
      :router
      #::ds{:start
            (fn [{:keys [::ds/config]}]
@@ -711,6 +720,7 @@
                    design-router (get-in config [:design/routes])
                    world-map-router (get-in config [:world-map/routes])
                    connect-router (get-in config [:connect/routes])
+                   learn-router (get-in config [:learn/routes])
                    route-deps (get-in config [:route-deps])
                    core-router (core.routes/router route-deps)]
                (let [router (core.routes/merge-routers
@@ -725,7 +735,8 @@
                              comments-router
                              design-router
                              world-map-router
-                             connect-router)]
+                             connect-router
+                             learn-router)]
                  (reset! router-atom router)
                  router)))
            :config
@@ -740,6 +751,7 @@
             :design/routes (ds/ref [:app :design/routes])
             :world-map/routes (ds/ref [:app :world-map/routes])
             :connect/routes (ds/ref [:app :connect/routes])
+            :learn/routes (ds/ref [:app :learn/routes])
             :route-deps (ds/ref [:app :route-deps])}}
 
      :route-handler

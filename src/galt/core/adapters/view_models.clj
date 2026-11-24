@@ -21,6 +21,7 @@
         session-item (if logged-in? logout-item login-item)]
      {:user login-user
       :items [{:title "Connect" :href "/connect" :selected? (= :connect route-id)}
+              {:title "Learn" :href "/learn" :selected? (= :learn route-id)}
               {:title "Members" :href "/members" :selected? (= :members route-id)}
               {:title "Groups" :href "/groups" :selected? (= :groups route-id)}
               {:title "Posts" :href "/posts" :selected? (= :posts route-id)}

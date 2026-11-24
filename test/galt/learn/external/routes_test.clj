@@ -1,0 +1,58 @@
+(ns galt.learn.external.routes-test
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is]]
+            [galt.core.infrastructure.web.helpers :as web-helpers]
+            [galt.learn.adapters.curriculum :as curriculum]
+            [galt.learn.external.routes :as learn-routes]
+            [galt.members.domain.member-repository :as mr]
+            [galt.members.domain.user-repository :as ur]
+            [reitit.ring :as rr]
+            [ring.mock.request :as mock]))
+
+(def ^:private unlocked-lesson-hrefs
+  ["/learn/sound-architecture/sound-money"
+   "/learn/sound-architecture/proof-of-work"
+   "/learn/sound-architecture/supply-inelasticity"
+   "/learn/praxeology/value-theory"
+   "/learn/praxeology/economic-calculation"
+   "/learn/legal-theory/self-ownership"])
+
+(def ^:private locked-lesson-hrefs
+  ["/learn/praxeology/capital-structure"
+   "/learn/legal-theory/nap"
+   "/learn/legal-theory/polycentric-law"])
+
+(defn- page
+  ([path]
+   (page path nil))
+  ([path user]
+   (let [deps {:user-repo (reify ur/UserRepository (find-user-by-id [_ _] user))
+               :member-repo (reify mr/MemberRepository (find-member-by-user-id [_ _] nil))
+               :asset-url identity
+               :render web-helpers/render-html
+               :with-new-layout web-helpers/with-new-layout
+               :curriculum curriculum/load-curriculum}
+         request (cond-> (mock/request :get path)
+                   user (assoc :session {:user-id 1}))]
+     ((rr/ring-handler (learn-routes/router deps)) request))))
+
+(deftest learn-page-links-every-unlocked-lesson
+  (let [{:keys [status body]} (page "/learn")]
+    (is (= 200 status))
+    (is (str/starts-with? body "<html class=\"dark\" lang=\"en\">"))
+    (is (str/includes? body "href=\"/members/login\""))
+    (doseq [href unlocked-lesson-hrefs]
+      (is (str/includes? body (str "href=\"" href "\""))))))
+
+(deftest learn-page-lists-module-titles
+  (let [body (:body (page "/learn"))]
+    (doseq [title ["Bitcoin Basics &amp; Absolute Scarcity"
+                   "Intermediate Austrian Economics"
+                   "Natural Rights &amp; Non-Aggression"]]
+      (is (str/includes? body title)))))
+
+(deftest member-sees-name-and-profile-link
+  (let [{:keys [status body]} (page "/learn" {:name "Alice"})]
+    (is (= 200 status))
+    (is (str/includes? body "Alice"))
+    (is (str/includes? body "href=\"/members/profile/me\""))))
