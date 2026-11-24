@@ -1,10 +1,20 @@
 # syntax=docker/dockerfile:1
 
-FROM clojure:temurin:21-tools-deps-bookworm AS build
+# Tailwind is compiled here so the generated CSS stays out of git.
+FROM node:22-alpine AS css
+WORKDIR /css
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY resources/css ./resources/css
+COPY src ./src
+RUN npm run css
+
+FROM clojure:temurin-21-tools-deps-bookworm AS build
 WORKDIR /build
 COPY deps.edn build.clj ./
 COPY src ./src
 COPY resources ./resources
+COPY --from=css /css/resources/public/css/tailwind.css resources/public/css/tailwind.css
 RUN clojure -T:build uber
 
 # Geodata is expensive to fetch, so it gets its own cached layer.

@@ -1,0 +1,141 @@
+@import "tailwindcss" source(none);
+
+@source "../../src";
+
+@theme static {
+  --color-on-primary: #3f2e00;
+  --color-surface-container-low: #1c1b1d;
+  --color-secondary: #fbbc2b;
+  --color-on-secondary-fixed: #261900;
+  --color-on-secondary-fixed-variant: #5d4200;
+  --color-border-subtle: #2a2a32;
+  --color-on-primary-container: #6b5000;
+  --color-tertiary-container: #d0d000;
+  --color-error: #ffb4ab;
+  --color-tertiary: #eded00;
+  --color-surface-variant: #353437;
+  --color-surface-bright: #39393b;
+  --color-canvas-base: #0a0a0c;
+  --color-background: #131315;
+  --color-on-surface-variant: #d2c5ae;
+  --color-primary-fixed-dim: #f2bf40;
+  --color-surface-container-highest: #353438;
+  --color-text-muted: #9e9ea8;
+  --color-inverse-primary: #785a00;
+  --color-text-primary: #f5f5f7;
+  --color-secondary-container: #dca100;
+  --color-status-error: #ff453a;
+  --color-inverse-on-surface: #313032;
+  --color-surface-high: #2A2A2D;
+  --color-on-error-container: #ffdad6;
+  --color-surface-tint: #f2bf40;
+  --color-outline: #9b8f7b;
+  --color-surface-container: #1f1f22;
+  --color-surface: #131316;
+  --color-outline-variant: #4e4635;
+  --color-on-tertiary-fixed: #1d1d00;
+  --color-on-primary-fixed: #251a00;
+  --color-on-tertiary-fixed-variant: #494900;
+  --color-secondary-fixed-dim: #fbbc2b;
+  --color-on-secondary-container: #543b00;
+  --color-on-tertiary-container: #575700;
+  --color-primary-fixed: #ffdf9b;
+  --color-tertiary-fixed: #eaea00;
+  --color-surface-container-lowest: #0e0e11;
+  --color-secondary-fixed: #ffdea4;
+  --color-on-tertiary: #323200;
+  --color-inverse-surface: #e5e1e4;
+  --color-on-secondary: #412d00;
+  --color-on-error: #690005;
+  --color-error-container: #93000a;
+  --color-surface-dim: #131315;
+  --color-tertiary-fixed-dim: #cdcd00;
+  --color-border-gold: #4e4635;
+  --color-on-surface: #e5e1e4;
+  --color-surface-container-high: #2a2a2c;
+  --color-primary-container: #f5c242;
+  --color-primary: #ffe2a6;
+  --color-on-primary-fixed-variant: #5b4300;
+  --color-on-background: #e5e1e4;
+  --radius: 0.125rem;
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.5rem;
+  --spacing-margin-mobile: 1rem;
+  --spacing-space-xl: 2.5rem;
+  --spacing-space-lg: 1.5rem;
+  --spacing-space-xs: 0.25rem;
+  --spacing-margin: 2rem;
+  --spacing-gutter-mobile: 0.75rem;
+  --spacing-gutter: 1.5rem;
+  --spacing-space-sm: 0.5rem;
+  --spacing-space-md: 1rem;
+  --font-headline-sm: Plus Jakarta Sans;
+  --font-display-lg: Playfair Display;
+  --font-body-sm: Plus Jakarta Sans;
+  --font-label-sm: JetBrains Mono;
+  --font-label-md: JetBrains Mono;
+  --font-body-lg: Plus Jakarta Sans;
+  --font-body-md: Plus Jakarta Sans;
+  --font-headline-md: Playfair Display;
+  --font-display-lg-mobile: Playfair Display;
+  --font-headline-lg: Playfair Display;
+  --text-headline-sm: 24px;
+  --text-headline-sm--line-height: 32px;
+  --text-headline-sm--font-weight: 600;
+  --text-display-lg: 56px;
+  --text-display-lg--line-height: 64px;
+  --text-display-lg--letter-spacing: -0.02em;
+  --text-display-lg--font-weight: 600;
+  --text-body-sm: 14px;
+  --text-body-sm--line-height: 20px;
+  --text-body-sm--font-weight: 400;
+  --text-label-sm: 13px;
+  --text-label-sm--line-height: 18px;
+  --text-label-sm--letter-spacing: 0.06em;
+  --text-label-sm--font-weight: 600;
+  --text-label-md: 14.5px;
+  --text-label-md--line-height: 20px;
+  --text-label-md--letter-spacing: 0.05em;
+  --text-label-md--font-weight: 500;
+  --text-body-lg: 16.5px;
+  --text-body-lg--line-height: 25px;
+  --text-body-lg--font-weight: 400;
+  --text-body-md: 16px;
+  --text-body-md--line-height: 24px;
+  --text-body-md--font-weight: 400;
+  --text-headline-md: 21.5px;
+  --text-headline-md--line-height: 28px;
+  --text-headline-md--font-weight: 600;
+  --text-display-lg-mobile: 36px;
+  --text-display-lg-mobile--line-height: 44px;
+  --text-display-lg-mobile--letter-spacing: -0.01em;
+  --text-display-lg-mobile--font-weight: 600;
+  --text-headline-lg: 32px;
+  --text-headline-lg--line-height: 40px;
+  --text-headline-lg--font-weight: 600;
+}
+
+@layer base {
+  body {
+    overscroll-behavior: none;
+    background-color: var(--color-canvas-base);
+    color: var(--color-on-surface);
+  }
+
+  .material-symbols-outlined {
+    font-variation-settings:
+      "FILL" 0,
+      "wght" 400,
+      "GRAD" 0,
+      "opsz" 24;
+  }
+}
+
+/* Safe-area padding used by the Stitch screens. */
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
