@@ -357,7 +357,7 @@ Human-only checks are listed under "For human review" at the end.
 - `curriculum/lesson-href [module-slug lesson-slug]` returns `"/learn/<module-slug>/<lesson-slug>"`.
 - `curriculum/find-lesson [curriculum module-slug lesson-slug]` returns the lesson with `:module` (its module), `:href` and `:next-lesson` (`{:title :href}` of the next lesson in curriculum order, `nil` after the last one), or `nil` when the pair does not exist.
 
-- [ ] Step 1: Create `test/galt/learn/adapters/curriculum_test.clj`:
+- [x] Step 1: Create `test/galt/learn/adapters/curriculum_test.clj`:
   ```clojure
   (ns galt.learn.adapters.curriculum-test
     (:require [clojure.test :refer [deftest is]]
@@ -394,8 +394,8 @@ Human-only checks are listed under "For human review" at the end.
       (doseq [[module-slug lesson-slug] [["nope" "nope"] ["praxeology" "sound-money"] [nil nil]]]
         (is (nil? (curriculum/find-lesson curriculum module-slug lesson-slug))))))
   ```
-- [ ] Step 2: Run the test namespace. Expect failure: `require` throws because `galt/learn/adapters/curriculum` does not exist.
-- [ ] Step 3: Create `resources/learn/curriculum.edn`:
+- [x] Step 2: Run the test namespace. Expect failure: `require` throws because `galt/learn/adapters/curriculum` does not exist.
+- [x] Step 3: Create `resources/learn/curriculum.edn`:
   ```edn
   {:modules
    [{:slug "sound-architecture" :number 1 :track "Sound Architecture" :domain "Bitcoin Basics"
@@ -445,7 +445,7 @@ Human-only checks are listed under "For human review" at the end.
        :summary "Historical precedent and game-theoretic mechanisms for competitive legal orders, insurance guarantors, and merchant law."
        :minutes 16 :questions 5 :obj 350}]}]}
   ```
-- [ ] Step 4: Create `src/galt/learn/adapters/curriculum.clj`:
+- [x] Step 4: Create `src/galt/learn/adapters/curriculum.clj`:
   ```clojure
   (ns galt.learn.adapters.curriculum
     (:require [clojure.edn :as edn]
@@ -475,8 +475,8 @@ Human-only checks are listed under "For human review" at the end.
       (when-let [lesson (first following)]
         (assoc lesson :next-lesson (some-> (second following) (select-keys [:title :href]))))))
   ```
-- [ ] Step 5: Run the test namespace. Expect: `Ran 5 tests containing 16 assertions. 0 failures, 0 errors.`
-- [ ] Step 6: Commit the three files and the ticked boxes of this task.
+- [x] Step 5: Run the test namespace. Expect: `Ran 5 tests containing 16 assertions. 0 failures, 0 errors.`
+- [x] Step 6: Commit the three files and the ticked boxes of this task.
 
 **Commit:** `feat: add static curriculum data for Learn`
 
