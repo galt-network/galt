@@ -16,7 +16,7 @@
   (let [provider (wp/per-user-placeables)]
     (testing "anonymous user gets restricted list"
       (let [objects (protocols/placeable-objects provider "anon-xyz")]
-        (is (= #{"carrot" "tree" "ancap-flag"}
+        (is (= wp/anon-model-ids
                (set (map :model-id objects))))))
     (testing "member gets full list"
       (is (= (set (map :model-id placeables/default-config))

@@ -11,11 +11,14 @@
   [user-id]
   (str/starts-with? (str user-id) "anon-"))
 
+(def anon-model-ids
+  "Model ids offered to anonymous users; each must exist in globo's default-config."
+  #{"ancap-flag"})
+
 (def restricted-config
   "Model ids offered to anonymous users."
   (->> placeables/default-config
-       (filter (fn [{:keys [model-id]}]
-                 (#{"carrot" "tree" "ancap-flag"} model-id)))
+       (filter (comp anon-model-ids :model-id))
        vec))
 
 (defrecord PerUserPlaceables [base-config restricted]

@@ -1,8 +1,8 @@
 # PROGRESS.md
 
 ## Current Verified State
-- Latest commit: `3547c8d` Checkpoint before implementing new design
-- Tests: full `test/` suite 145 tests, 367 assertions, 2 failures (both pre-existing world-map placeables, anon restricted list). Connect search namespaces 62 tests, 99 assertions, 0 failures. First events tests: 6 tests, 14 assertions, 0 failures.
+- Latest commit: `892d1d5` Specify learn page design
+- Tests: full `test/` suite 145 tests, 367 assertions, 0 failures. Connect search namespaces 62 tests, 99 assertions, 0 failures. First events tests: 6 tests, 14 assertions, 0 failures.
 - Highest priority unfinished work: none. Connect search (tickets 01-05) and the `/events/new` "Publish at" bug are done.
 - Current blocker: none
 
@@ -11,6 +11,7 @@
 - [ ] Learn pages in the new design: spec and implementation plan are written and unreviewed (`docs/superpowers/specs/2026-11-24-learn-pages-design.md`, `docs/superpowers/plans/2026-11-24-learn-pages.md`). No application code changed yet.
 
 ## Completed (recent)
+- [x] Anonymous world-map placeables: the restricted list dropped `carrot` and `tree`, which globo no longer offers; anonymous visitors get `ancap-flag`, now named once as `anon-model-ids` and asserted by both tests. Full suite 145 tests, 367 assertions, 0 failures
 - [x] `/groups` list renders group avatars: first render now resolves the storage key via `:asset-url` (uncommitted)
 - [x] `/events/new` saves with "Publish at" left blank: blank-safe `parse-form-datetime` and the column default applying (`b64de46`)
 - [x] Ticket 05: Near me steps aside for one retry when a query has no local Hits, and the notice survives paging (`3bc6fc4`)
@@ -24,6 +25,7 @@
 1. Learn pages: review the spec and plan, confirm the planner defaults, commit and push them to `master` together with `docs/design/learn/`, `resources/public/images/learn/` and `LLM_CODE_STYLE.md`, then queue the work-queue issue that points at the plan.
 
 ## Session Log
+- 2026-11-24: Fixed the two failing world-map placeables tests (both "anon restricted list"). Root cause: `restricted-config` filtered globo's `default-config` by a hard-coded `#{"carrot" "tree" "ancap-flag"}`, but globo `697b076` (2026-08-13) removed carrot and tree, so the filter silently yielded only `ancap-flag` while both tests still expected three ids. The set is now `anon-model-ids` (`#{"ancap-flag"}`, today's effective behaviour), and both tests compare against it, so a model globo drops fails them loudly. Note: the documented `clojure -M:dev:repl` fails on this machine (no `../globo`); the suite ran with an inline `-Sdeps` alias that uses the pinned globo git dep. Verified: full `test/` suite 145 tests, 367 assertions, 0 failures.
 - 2026-11-24: Wrote the spec and implementation plan for the Learn pages in the new design (Stitch project `10058067017971123608`): `docs/superpowers/specs/2026-11-24-learn-pages-design.md` and `docs/superpowers/plans/2026-11-24-learn-pages.md` (9 tasks, one commit each). The reference screens are in `docs/design/learn/`. No application code changed. The code of tasks 2 to 4 and the route and handler of task 7 were dry-run in a scratch copy of the repo: 6 namespaces, 41 tests, 101 assertions, 0 failures. Tasks 5, 6 and 8 are prose only and were not dry-run. Nothing is committed yet.
 - 2026-10-25: Prepared Coolify deployment for staging (`master` -> `staging.galt.is`) and production (`production` -> `galt.is`). Image builds globo's uncommitted JS from the pinned globo SHA, packs the uberjar with `GLOBO_LOCAL_ROOT=/globo`, bakes `world.sql` (pinned commit) and the DB-IP mmdb, and runs migrations from the entrypoint before starting the server. GitHub Actions pushes `ghcr.io/galt-network/galt:sha-<sha>` and pins that tag on the Coolify app before deploying (Coolify does not re-pull mutable tags). Verified: `GLOBO_LOCAL_ROOT=... clojure -T:build uber` produces a jar containing globo namespaces and `public/3d`; `galt.core.system` and routes namespaces load. Not verified: Docker image build (no Docker here) and Coolify/GHCR setup.
 - 2026-10-21: Fixed broken group avatars on `/groups`. Root cause: `list-groups` built its rows in two places, and only the Datastar/SSE branch (infinite scroll) applied `:asset-url`; the first render emitted the raw storage key (`public/<sha>.webp`), which the browser resolved relative to `/groups` and 404'd. Both branches now share a private `group-rows` helper that applies `:asset-url`; the leftover debug `println` in the SSE branch is gone. Verified live with curl on `:8081/groups`: src is now `https://media.dev.galt.is/public/<sha>.webp` (200). No tests in the groups module. Uncommitted; the deps.edn / AGENTS.md diffs in the tree are not from this change.

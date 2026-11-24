@@ -43,7 +43,7 @@
       (is (= [:ok true] result))
       (is (= 1 (count @sent)))
       (let [event (recorded-event sent)]
-        (is (= #{"carrot" "tree" "ancap-flag"}
+        (is (= wp/anon-model-ids
                (set (map :model-id (:objects (:content event)))))))))
   (testing "no user-id broadcasts base list to everybody"
     (let [g (make-globo)
