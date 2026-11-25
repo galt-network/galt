@@ -822,7 +822,7 @@ Port the children of `<main>` in `docs/design/learn/learn-desktop.html` under th
 - Lesson cards: same status rules as Task 6. Unlocked cards link to `:href`; locked cards have a lock icon and no link.
 - `desktop-cta`: a link to a page that does not exist becomes plain text.
 
-- [ ] Step 1: Add this test to `test/galt/learn/external/routes_test.clj` and run the namespace. Expect failure: there is no desktop markup yet.
+- [x] Step 1: Add this test to `test/galt/learn/external/routes_test.clj` and run the namespace. Expect failure: there is no desktop markup yet.
   ```clojure
   (deftest learn-page-has-mobile-and-desktop-markup
     (let [body (:body (page "/learn"))]
@@ -830,7 +830,7 @@ Port the children of `<main>` in `docs/design/learn/learn-desktop.html` under th
       (is (str/includes? body "<div class=\"hidden md:block\">"))
       (is (str/includes? body "Curriculum Ledger"))))
   ```
-- [ ] Step 2: Change `present` so that the mobile blocks sit in one wrapper and the desktop blocks in the other:
+- [x] Step 2: Change `present` so that the mobile blocks sit in one wrapper and the desktop blocks in the other:
   ```clojure
   (defn present
     [curriculum]
@@ -848,8 +848,8 @@ Port the children of `<main>` in `docs/design/learn/learn-desktop.html` under th
                 (desktop-modules curriculum)
                 (desktop-cta)]]})
   ```
-- [ ] Step 3: Run `npm run css`, then the test namespace. Expect: `Ran 10 tests containing 46 assertions. 0 failures, 0 errors.`
-- [ ] Step 4: Commit the two files and the ticked boxes of this task.
+- [x] Step 3: Run `npm run css`, then the test namespace. Expect: `Ran 10 tests containing 46 assertions. 0 failures, 0 errors.`
+- [x] Step 4: Commit the two files and the ticked boxes of this task.
 
 **Commit:** `feat: port Learn desktop layout`
 

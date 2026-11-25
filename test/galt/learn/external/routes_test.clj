@@ -74,6 +74,12 @@
     (is (str/includes? body "Alice"))
     (is (str/includes? body "href=\"/members/profile/me\""))))
 
+(deftest learn-page-has-mobile-and-desktop-markup
+  (let [body (:body (page "/learn"))]
+    (is (str/includes? body "<div class=\"md:hidden\">"))
+    (is (str/includes? body "<div class=\"hidden md:block\">"))
+    (is (str/includes? body "Curriculum Ledger"))))
+
 (deftest lesson-page-renders-the-article
   (let [{:keys [status body]} (page "/learn/praxeology/value-theory")]
     (is (= 200 status))

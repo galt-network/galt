@@ -294,11 +294,122 @@
   (into [:section {:class ["flex" "flex-col" "space-y-6" "pt-2"]}]
         (map module-section (:modules curriculum))))
 
+(defn- desktop-hero
+  []
+  (let [{:keys [rank obj progress cleared streak evaluations]} member-stats
+        [points unit] (str/split obj #" ")
+        stat (fn [icon-name label value]
+               [:div {:class ["flex" "flex-col" "p-4" "rounded-xl" "bg-surface-container" "border" "border-border-gold/30" "shadow-lg"]}
+                [:div {:class ["flex" "items-center" "gap-2" "text-primary"]}
+                 (layout/icon ["text-[20px]"] icon-name)
+                 [:span {:class ["font-label-sm" "text-label-sm" "uppercase" "tracking-wider" "text-text-muted" "font-medium"]} label]]
+                [:span {:class ["font-headline-md" "text-headline-md" "text-text-primary" "font-semibold" "mt-2"]} value]])]
+    [:section {:class ["relative" "overflow-hidden" "rounded-xl" "bg-surface-container-low" "shadow-[0_4px_24px_rgba(0,0,0,0.6)]" "border" "border-border-gold/30" "p-6" "md:p-8"]}
+     [:div {:class ["absolute" "-top-16" "-right-16" "w-80" "h-80" "rounded-full" "bg-primary-container/10" "blur-3xl" "pointer-events-none"]}]
+     [:div {:class ["absolute" "bottom-0" "left-1/3" "w-64" "h-32" "bg-secondary/5" "blur-3xl" "pointer-events-none"]}]
+     [:div {:class ["relative" "z-10" "grid" "grid-cols-1" "lg:grid-cols-12" "gap-8" "items-center"]}
+      [:div {:class ["lg:col-span-7" "flex" "flex-col" "space-y-5"]}
+       [:div {:class ["flex" "flex-wrap" "items-center" "gap-3"]}
+        [:div {:class ["flex" "items-center" "gap-1.5"]}
+         [:span {:class ["w-2" "h-2" "rounded-full" "bg-primary-container" "shadow-[0_0_8px_#F5C242]"]}]
+         [:span {:class ["font-label-sm" "text-label-sm" "uppercase" "tracking-widest" "text-primary-container" "font-semibold"]}
+          "Curriculum Ledger"]]
+        [:span {:class ["text-border-gold"]} "•"]
+        [:div {:class ["inline-flex" "items-center" "gap-1.5" "px-3" "py-1" "rounded-full" "bg-surface-container" "border" "border-border-gold/30" "shadow-[0_0_12px_rgba(245,194,66,0.15)]"]}
+         (layout/icon ["text-[14px]" "text-primary"] "military_tech")
+         [:span {:class ["font-label-sm" "text-label-sm" "uppercase" "text-primary" "font-semibold" "tracking-wider"]}
+          (str "Lvl 4 " rank)]]]
+       [:div {:class ["space-y-1"]}
+        [:div {:class ["flex" "items-baseline" "gap-3"]}
+         [:span {:class ["font-display-lg" "text-[44px]" "md:text-[56px]" "text-text-primary" "tracking-tight" "font-semibold"]} points]
+         [:span {:class ["font-label-md" "text-label-md" "text-primary" "tracking-wider" "uppercase" "font-semibold"]} (str unit " EARNED")]]
+        [:p {:class ["font-body-md" "text-body-md" "text-text-muted"]}
+         "Next Distinction: "
+         [:span {:class ["text-text-primary" "font-semibold"]} "Austrian Praxeologist"]
+         " (6,000 OBJ required to transcend tier)"]]
+       [:div {:class ["flex" "flex-col" "space-y-2" "max-w-xl"]}
+        [:div {:class ["w-full" "h-2.5" "rounded-full" "bg-surface-container-highest" "overflow-hidden" "p-0.5" "border" "border-border-gold/20"]}
+         [:div {:class ["h-full" "rounded-full" "bg-primary-container" "shadow-[0_0_12px_rgba(245,194,66,0.6)]" "transition-all" "duration-700" "ease-out"]
+                :style (str "width: " progress "%;")}]]
+        [:div {:class ["flex" "items-center" "justify-between" "font-label-sm" "text-label-sm" "text-text-muted"]}
+         [:span (str "Curriculum Progress: " progress "% (" cleared " Modules Cleared)")]
+         [:span {:class ["text-primary" "font-medium"]} "1,150 OBJ to Next Rank"]]]]
+      [:div {:class ["lg:col-span-5" "grid" "grid-cols-2" "gap-4"]}
+       (stat "local_fire_department" "Study Streak" (str streak " Days"))
+       (stat "verified" "Exam Accuracy" evaluations)
+       [:div {:class ["col-span-2" "flex" "items-center" "justify-between" "p-4" "rounded-xl" "bg-surface-container-high/60" "border" "border-border-gold/20"]}
+        [:div {:class ["flex" "items-center" "gap-3"]}
+         [:div {:class ["w-9" "h-9" "rounded-lg" "bg-primary-container/10" "flex" "items-center" "justify-center" "text-primary"]}
+          (layout/icon ["text-[20px]"] "workspace_premium")]
+         [:div
+          [:span {:class ["font-label-sm" "text-label-sm" "uppercase" "tracking-wider" "text-text-muted" "block"]} "Current Title"]
+          [:span {:class ["font-headline-sm" "text-headline-sm" "text-text-primary"]} (str rank " IV")]]]]]]]))
+
+(defn- desktop-filters
+  [curriculum]
+  [:section {:class ["flex" "flex-col" "md:flex-row" "md:items-center" "justify-between" "gap-4" "p-4" "rounded-xl" "bg-surface-container-low" "border" "border-border-gold/20"]}
+   [:div {:class ["flex" "items-center" "gap-2" "overflow-x-auto" "no-scrollbar" "py-0.5"]}
+    [:span {:class ["font-label-sm" "text-label-sm" "uppercase" "tracking-wider" "text-text-muted" "mr-2" "font-medium" "shrink-0"]}
+     "Domains:"]
+    (into [:<>]
+          (cons (pill (str "All Domains (" (count (mapcat :lessons (:modules curriculum))) ")") true)
+                (for [{:keys [domain lessons]} (:modules curriculum)]
+                  (pill (str domain " (" (count lessons) ")") false))))]
+   [:div {:class ["flex" "items-center" "gap-2" "shrink-0"]}
+    [:span {:class ["font-label-sm" "text-label-sm" "uppercase" "tracking-wider" "text-text-muted" "mr-1" "font-medium"]}
+     "Status:"]
+    (into [:<>]
+          [(pill "All" true)
+           (pill (str "In Progress (" (status-count curriculum :in-progress) ")") false)
+           (pill (str "Completed (" (status-count curriculum :completed) ")") false)])]])
+
+(defn- desktop-module-section
+  [module]
+  (let [done (done-count module)
+        total (count (:lessons module))
+        [accent bg icon-name] (cond
+                                (every? #(= :completed (:status %)) (:lessons module))
+                                ["text-primary" "bg-primary-container/10" "check_circle"]
+
+                                (pos? done)
+                                ["text-secondary" "bg-secondary-container/20" "hourglass_top"]
+
+                                :else
+                                ["text-text-muted" "bg-surface-container" "lock"])]
+    [:div {:class ["flex" "flex-col" "space-y-4"]}
+     [:div {:class ["flex" "flex-col" "sm:flex-row" "sm:items-center" "justify-between" "gap-3" "sm:gap-4" "p-4" "rounded-xl" "bg-surface-container-low" "border" "border-border-gold/20"]}
+      [:div {:class ["flex" "items-center" "gap-3" "min-w-0" "flex-1"]}
+       [:div {:class ["w-8" "h-8" "rounded-full" "flex" "items-center" "justify-center" "shrink-0" bg]}
+        (layout/icon [accent "text-[20px]"] icon-name)]
+       [:div {:class ["min-w-0" "flex-1"]}
+        [:span {:class ["font-label-sm" "text-label-sm" "uppercase" "tracking-wider" "text-text-muted" "block"]}
+         (str "Module " (format "%02d" (:number module)) " • " (:track module))]
+        [:h3 {:class ["font-headline-sm" "text-headline-sm" "text-text-primary" "leading-tight"]} (:title module)]]]
+      [:div {:class ["flex" "items-center" "flex-wrap" "gap-3" "sm:gap-6" "shrink-0" "sm:self-center"]}
+       [:span {:class ["font-label-md" "text-label-md" "font-semibold" (if (pos? done) "text-primary" "text-text-muted")]}
+        (str done " / " total)]
+       [:span {:class ["font-label-md" "text-label-md" "font-semibold" (if (pos? done) "text-secondary" "text-text-muted")]}
+        (module-label module)]
+       [:span {:class ["font-label-md" "text-label-md" "text-text-muted"]}
+        (str "+" (:obj-earned module) " OBJ")]]]
+     (into [:div {:class ["grid" "grid-cols-1" "md:grid-cols-2" "lg:grid-cols-3" "gap-6"]}]
+           (map #(lesson-row module %) (:lessons module)))]))
+
+(defn- desktop-modules
+  [curriculum]
+  (into [:section {:class ["flex" "flex-col" "space-y-8" "pt-4"]}]
+        (map desktop-module-section (:modules curriculum))))
+
 (defn present
   [curriculum]
   {:content [:div
-             (hero)
-             (domain-pills curriculum)
-             (status-filter curriculum)
-             (active-session curriculum)
-             (curriculum-list curriculum)]})
+             [:div {:class ["md:hidden"]}
+              (hero)
+              (domain-pills curriculum)
+              (status-filter curriculum)
+              (active-session curriculum)
+              (curriculum-list curriculum)]
+             [:div {:class ["hidden" "md:block"]}
+              (desktop-hero)
+              (desktop-filters curriculum)
+              (desktop-modules curriculum)]]})
