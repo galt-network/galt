@@ -24,7 +24,9 @@
              :migration-dir        "migrations/"
              :init-script          "init.sql" ;script should be located in the :migration-dir path
              :init-in-transaction? false
-             :properties {}
+             ;init.sql placeholders; migratus fills them from the environment only
+             :properties           {:map {:migratus {:database database-name
+                                                     :user      database-user}}}
              :db {:datasource (get-datasource (datasource-config))}})
 
 (def init-config (assoc-in config [:db :datasource] (get-datasource (datasource-config "postgres"))))

@@ -30,7 +30,7 @@ fi
 
 start_postgres() {
   if ! "$runtime" inspect -f '{{.State.Running}}' galt-postgres 2>/dev/null | grep -q true; then
-    "$runtime" rm -f galt-postgres >/dev/null
+    "$runtime" rm -f galt-postgres >/dev/null 2>&1 || true
     "$runtime" run -d --name galt-postgres -p 5432:5432 \
       -e POSTGRES_USER=galt -e POSTGRES_PASSWORD=galtpass -e POSTGRES_DB=galt_dev \
       -v galt-postgres-data:/var/lib/postgresql postgres:18-alpine >/dev/null
@@ -55,15 +55,15 @@ up() {
 }
 
 reset() {
-  "$runtime" rm -f galt-postgres
-  "$runtime" volume rm galt-postgres-data
+  "$runtime" rm -f galt-postgres 2>/dev/null || true
+  "$runtime" volume rm galt-postgres-data 2>/dev/null || true
   up
 }
 
 case "${1:-}" in
   up) up ;;
   run) exec clojure -M -m galt.main ;;
-  down) "$runtime" rm -f galt-postgres ;;
+  down) "$runtime" rm -f galt-postgres 2>/dev/null || true ;;
   reset) reset ;;
   geodata)
     [ -f "$world_sql" ] || curl -fsSL "$world_sql_url" -o "$world_sql"
