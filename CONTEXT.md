@@ -32,6 +32,18 @@ The latest of a Hit's creation and related comments or events. With no query, it
 **Near me**:
 A 100 km radius around the searcher. Uses the Member's location when present, otherwise the city inferred from the request IP. Loopback requests use the machine's public IP.
 
+**Curriculum**:
+All Modules of the Learn pages, in order.
+
+**Module**:
+A numbered group of Lessons in the Curriculum.
+
+**Lesson**:
+One readable unit of a Module, at `/learn/<module>/<lesson>`.
+
+**OBJ**:
+The point unit the Learn design awards for Lessons. A placeholder for now.
+
 ## Relationships
 
 - A **User** may have one **Member**
@@ -39,6 +51,7 @@ A 100 km radius around the searcher. Uses the Member's location when present, ot
 - An **Event** and a **Post** may have comments
 - A **Post** inherits location from its **Group**
 - **Connect** returns **Hits** drawn from Members, Groups, Events, and Posts
+- A **Curriculum** holds many **Modules**, and a **Module** holds many **Lessons**
 
 ## Example dialogue
 

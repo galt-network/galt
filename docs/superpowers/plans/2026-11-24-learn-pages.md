@@ -858,7 +858,7 @@ Port the children of `<main>` in `docs/design/learn/learn-desktop.html` under th
 **Files:**
 - Modify: `PROJECT_SUMMARY.md`, `docs/development.md`, `AGENTS.md`, `CONTEXT.md`, `PROGRESS.md`
 
-- [ ] Step 1: In `docs/development.md`, add this section directly before the `## Release & deployment` heading:
+- [x] Step 1: In `docs/development.md`, add this section directly before the `## Release & deployment` heading:
   ```markdown
   ## Tailwind (new design)
 
@@ -867,7 +867,7 @@ Port the children of `<main>` in `docs/design/learn/learn-desktop.html` under th
   - Build once: `npm install && npm run css`
   - Rebuild on change: `npm run css:watch`
   ```
-- [ ] Step 2: In `AGENTS.md`, add this section:
+- [x] Step 2: In `AGENTS.md`, add this section:
   ```markdown
   ## Tailwind (new design)
 
@@ -881,14 +881,14 @@ Port the children of `<main>` in `docs/design/learn/learn-desktop.html` under th
   - Use semantic, accessible markup. Avoid `@apply`.
   - Run `npm run css` after adding classes. The generated CSS is not committed.
   ```
-- [ ] Step 3: In `PROJECT_SUMMARY.md`, add:
+- [x] Step 3: In `PROJECT_SUMMARY.md`, add:
   - under Domain Modules: `src/galt/learn/` — Learn pages. `adapters/curriculum.clj` reads the static `resources/learn/curriculum.edn` and finds lessons; `adapters/presentation/learn.clj` is the curriculum page, `adapters/presentation/lesson.clj` and `articles/` the lesson page; `external/routes.clj` has `/learn` and `/learn/:module-slug/:lesson-slug` (public). Both pages use `galt.core.views.new-layout`, not the Bulma layout.
   - under Key File Paths: `src/galt/core/views/new_layout.clj` (Tailwind layout for new-design pages, wired as `:with-new-layout`) and `resources/css/tailwind.css` (Tailwind v4 tokens, compiled to the uncommitted `resources/public/css/tailwind.css` with `npm run css`).
   - under Documentation: `docs/design/learn/` — exported Stitch screens, design tokens and `DESIGN.md` for the new design.
   - under Dependencies: a "Build" row with `@tailwindcss/cli` and `tailwindcss` 4.3.5 (npm dev dependencies, `package.json`).
-- [ ] Step 4: In `CONTEXT.md`, add the terms Curriculum (all modules), Module (a numbered group of lessons), Lesson (one readable unit at `/learn/<module>/<lesson>`) and OBJ (the point unit used by the design; placeholder for now).
-- [ ] Step 5: In `PROGRESS.md`, record the Learn pages, the new layout and the Tailwind build under the current state, and add a short session log entry that names the test namespaces and their result.
-- [ ] Step 6: Full check. Each command must give the stated result:
+- [x] Step 4: In `CONTEXT.md`, add the terms Curriculum (all modules), Module (a numbered group of lessons), Lesson (one readable unit at `/learn/<module>/<lesson>`) and OBJ (the point unit used by the design; placeholder for now).
+- [x] Step 5: In `PROGRESS.md`, record the Learn pages, the new layout and the Tailwind build under the current state, and add a short session log entry that names the test namespaces and their result.
+- [x] Step 6: Full check. Each command must give the stated result:
   - `git diff --stat origin/master -- src/galt/core/views/layout.clj` prints nothing.
   - `npm run css` succeeds and `git status --short` does not list `resources/public/css/tailwind.css` or `node_modules`.
   - `grep -c -- '--color-canvas-base:#0a0a0c' resources/public/css/tailwind.css` prints a number of 1 or more.
@@ -909,7 +909,7 @@ Port the children of `<main>` in `docs/design/learn/learn-desktop.html` under th
           'galt.events.adapters.handlers-test))
     ```
     Expect `Ran 48 tests containing 132 assertions. 0 failures, 0 errors`.
-- [ ] Step 7: Commit the five documentation files and the ticked boxes of this task.
+- [x] Step 7: Commit the five documentation files and the ticked boxes of this task.
 
 **Commit:** `docs: document the Learn pages and the Tailwind build`
 
