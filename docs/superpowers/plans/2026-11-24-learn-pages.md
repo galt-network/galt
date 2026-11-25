@@ -690,7 +690,7 @@ Port the markup from `CURRICULUM MODULES LIST` to the end of `<main>` in `learn-
 - Thumbnail: `/assets/images/learn/<module :image>.jpg` with the lesson `:summary` as `alt`.
 - `closing-cta`: the last section of the reference. A link to a page that does not exist becomes plain text (Global Constraints).
 
-- [ ] Step 1: Add these tests to `test/galt/learn/external/routes_test.clj` and run the namespace. Expect failure: `locked-lessons-are-not-links` fails on the title assertion, because the locked lesson is not rendered yet.
+- [x] Step 1: Add these tests to `test/galt/learn/external/routes_test.clj` and run the namespace. Expect failure: `locked-lessons-are-not-links` fails on the title assertion, because the locked lesson is not rendered yet.
   ```clojure
   (deftest locked-lessons-are-not-links
     (let [body (:body (page "/learn"))]
@@ -703,9 +703,9 @@ Port the markup from `CURRICULUM MODULES LIST` to the end of `<main>` in `learn-
       (doseq [text ["3 / 3" "1 / 3" "1 / 3" "PASSED (100%)" "IN PROGRESS"]]
         (is (str/includes? body text)))))
   ```
-- [ ] Step 2: Replace `curriculum-list` with the ported curriculum path and add `closing-cta` after it in `present`.
-- [ ] Step 3: Run `npm run css`, then the test namespace. Expect: `Ran 6 tests containing 29 assertions. 0 failures, 0 errors.`
-- [ ] Step 4: Commit the two files and the ticked boxes of this task.
+- [x] Step 2: Replace `curriculum-list` with the ported curriculum path and add `closing-cta` after it in `present`.
+- [x] Step 3: Run `npm run css`, then the test namespace. Expect: `Ran 6 tests containing 29 assertions. 0 failures, 0 errors.`
+- [x] Step 4: Commit the two files and the ticked boxes of this task.
 
 **Commit:** `feat: port Learn curriculum path for mobile`
 

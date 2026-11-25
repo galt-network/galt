@@ -103,10 +103,12 @@
         (:modules curriculum)))
 
 (defn- meta-chip
-  [icon-name text]
-  [:div {:class ["flex" "items-center" "gap-1" "px-2" "py-1" "rounded" "bg-surface-container" "font-label-sm" "text-label-sm" "text-on-surface-variant"]}
-   (layout/icon ["text-[14px]"] icon-name)
-   [:span text]])
+  ([icon-name text]
+   (meta-chip icon-name text "text-on-surface-variant"))
+  ([icon-name text color]
+   [:div {:class ["flex" "items-center" "gap-1" "px-2" "py-1" "rounded" "bg-surface-container" "font-label-sm" "text-label-sm" color]}
+    (layout/icon ["text-[14px]"] icon-name)
+    [:span text]]))
 
 (defn- active-session
   [curriculum]
@@ -148,16 +150,149 @@
          [:span "Resume Lesson"]
          (layout/icon ["text-[18px]"] "arrow_forward")]]]]]))
 
+(defn- done-count
+  [module]
+  (count (filter #(#{:completed :in-progress} (:status %)) (:lessons module))))
+
+(defn- module-label
+  [module]
+  (cond
+    (every? #(= :completed (:status %)) (:lessons module)) "PASSED (100%)"
+    (pos? (done-count module)) "IN PROGRESS"
+    :else "COMPLETED"))
+
+(defn- status-badge
+  [lesson]
+  (case (:status lesson)
+    :completed
+    [:div {:class ["inline-flex" "items-center" "gap-1" "px-2.5" "py-0.5" "rounded-full" "bg-surface-container-lowest/90" "backdrop-blur-md" "text-primary" "font-semibold" "border" "border-border-gold/30"]}
+     (layout/icon ["text-[12px]" "text-primary"] "check_circle")
+     [:span {:class ["font-label-sm" "text-label-sm" "tracking-wider" "uppercase"]}
+      (str "Completed • " (:questions lesson) "/" (:questions lesson))]]
+    :in-progress
+    [:span {:class ["px-2.5" "py-0.5" "rounded-full" "bg-primary-container" "text-on-primary" "font-label-sm" "text-label-sm" "uppercase" "font-bold" "shadow-[0_0_8px_rgba(245,194,66,0.4)]"]}
+     (str "In Progress • " (:progress lesson) "%")]
+    :available
+    [:div {:class ["inline-flex" "items-center" "gap-1" "px-2.5" "py-0.5" "rounded-full" "bg-surface-container-lowest/90" "backdrop-blur-md" "text-primary" "font-semibold" "border" "border-border-gold/30"]}
+     (layout/icon ["text-[12px]"] "lock_open")
+     [:span {:class ["font-label-sm" "text-label-sm" "tracking-wider" "uppercase"]} "Unlocked"]]
+    :locked
+    [:div {:class ["inline-flex" "items-center" "gap-1" "px-2.5" "py-0.5" "rounded-full" "bg-surface-container-lowest/90" "backdrop-blur-md" "text-text-muted" "border" "border-border-subtle"]}
+     (layout/icon ["text-[12px]"] "lock")
+     [:span {:class ["font-label-sm" "text-label-sm" "tracking-wider" "uppercase"]}
+      (str "Requires " (:requires lesson))]]))
+
+(defn- lesson-meta
+  [lesson]
+  (let [{:keys [status minutes clip-minutes score questions kind exam-prompts]} lesson]
+    (case status
+      :completed
+      [(meta-chip "schedule" (str minutes " min"))
+       (meta-chip "play_circle" (str clip-minutes " min clip"))
+       (meta-chip "verified" (str score "% Score") "text-primary")]
+      :in-progress
+      [(meta-chip "schedule" (str minutes " min read"))
+       (meta-chip "play_circle" kind)
+       (meta-chip "quiz" (str exam-prompts " Exam Prompts") "text-secondary")]
+      :available
+      [(meta-chip "schedule" (str minutes " min read"))
+       (meta-chip "quiz" (str questions " Questions") "text-primary")]
+      :locked
+      [(meta-chip "schedule" (str minutes " min read") "text-text-muted")
+       (meta-chip "quiz" (str questions " Questions") "text-text-muted")])))
+
+(defn- lesson-action
+  [lesson href]
+  (let [secondary ["w-full" "mt-1" "py-3" "px-4" "rounded-lg" "bg-surface-container-high" "border" "border-border-gold/40" "text-text-primary" "font-label-md" "text-label-md" "font-semibold" "tracking-wider" "uppercase" "flex" "items-center" "justify-center" "gap-2" "transition-all" "active:scale-[0.98]"]
+        primary ["w-full" "mt-1" "py-3" "px-4" "rounded-lg" "bg-primary-container" "text-on-primary" "font-label-md" "text-label-md" "font-semibold" "tracking-wider" "uppercase" "flex" "items-center" "justify-center" "gap-2" "shadow-[0_0_16px_rgba(245,194,66,0.25)]" "transition-all" "active:scale-[0.98]"]]
+    (case (:status lesson)
+      :completed
+      [:a {:href href :class secondary}
+       (layout/icon ["text-[16px]"] "article")
+       [:span "Review Article"]]
+      :in-progress
+      [:a {:href href :class (into primary ["hover:bg-primary"])}
+       [:span "Resume Lesson"]
+       (layout/icon ["text-[18px]"] "arrow_forward")]
+      :available
+      [:a {:href href :class secondary}
+       [:span "Start Lesson"]
+       (layout/icon ["text-[18px]"] "play_arrow")]
+      :locked
+      [:div {:class ["w-full" "mt-1" "py-3" "px-4" "rounded-lg" "bg-surface-container" "border" "border-border-subtle" "text-text-muted" "font-label-md" "text-label-md" "font-semibold" "tracking-wider" "uppercase" "flex" "items-center" "justify-center" "gap-2" "cursor-not-allowed"]}
+       (layout/icon ["text-[16px]"] "lock")
+       [:span "Locked by Prerequisite"]])))
+
+(defn- lesson-row
+  [module lesson]
+  (let [locked? (= :locked (:status lesson))]
+    [:div {:class (into ["relative" "overflow-hidden" "rounded-xl" "bg-surface-container-low" "shadow-[0_4px_20px_rgba(0,0,0,0.5)]" "flex" "flex-col" "h-full" "justify-between"]
+                       (if locked?
+                         ["border" "border-border-subtle" "opacity-85"]
+                         ["border" "border-border-gold/30"]))}
+     [:div {:class ["relative" "w-full" "h-36" "overflow-hidden" "bg-surface-container-lowest"]}
+      [:img {:alt (:summary lesson)
+             :class (into ["w-full" "h-full" "object-cover"]
+                          (if locked? ["opacity-60" "grayscale"] ["opacity-85"]))
+             :src (str "/assets/images/learn/" (:image module) ".jpg")}]
+      [:div {:class ["absolute" "inset-0" "bg-gradient-to-t" "from-surface-container-low" "via-surface-container-low/40" "to-transparent"]}]
+      (when locked?
+        [:div {:class ["absolute" "inset-0" "bg-canvas-base/50" "flex" "items-center" "justify-center"]}
+         [:div {:class ["w-10" "h-10" "rounded-full" "bg-surface-container-lowest/90" "backdrop-blur-md" "flex" "items-center" "justify-center" "border" "border-border-subtle"]}
+          (layout/icon ["text-text-muted" "text-[20px]"] "lock")]])
+      [:div {:class ["absolute" "top-3" "left-3" "right-3" "flex" "items-center" "justify-between"]}
+       [:span {:class ["px-2" "py-0.5" "rounded-full" "bg-surface-container-lowest/90" "backdrop-blur-md" "font-label-sm" "text-label-sm" "text-primary" "uppercase" "font-semibold" "border" "border-border-gold/30"]}
+        (str "Core • +" (:obj lesson) " OBJ")]
+       (status-badge lesson)]]
+     [:div {:class ["p-4" "flex" "flex-col" "space-y-3.5" "flex-1" "justify-between"]}
+      [:div {:class ["space-y-1"]}
+       [:span {:class ["font-label-sm" "text-label-sm" "text-text-muted" "uppercase" "tracking-wider" "block"]}
+        (str "Lesson " (format "%02d" (:number lesson)) " • " (:topic lesson))]
+       [:h4 {:class ["font-headline-md" "text-headline-md" "leading-tight"
+                     (if locked? "text-on-surface font-semibold" "text-text-primary")]}
+        (:title lesson)]
+       [:p {:class ["font-body-md" "text-body-md" "line-clamp-2"
+                    (if locked? "text-text-muted" "text-on-surface-variant")]}
+        (:summary lesson)]]
+      [:div {:class ["flex" "flex-wrap" "items-center" "gap-2" "pt-0.5"]}
+       (into [:<>] (lesson-meta lesson))]
+      (lesson-action lesson (data/lesson-href (:slug module) (:slug lesson)))]]))
+
+(defn- module-section
+  [module]
+  (let [done (done-count module)
+        total (count (:lessons module))
+        [accent bg icon-name] (cond
+                                (every? #(= :completed (:status %)) (:lessons module))
+                                ["text-primary" "bg-primary-container/10" "check_circle"]
+
+                                (pos? done)
+                                ["text-secondary" "bg-secondary-container/20" "hourglass_top"]
+
+                                :else
+                                ["text-text-muted" "bg-surface-container" "lock"])]
+    [:div {:class ["flex" "flex-col" "space-y-3"]}
+     [:div {:class ["flex" "items-center" "justify-between" "p-3" "rounded-lg" "bg-surface-container-low"]}
+      [:div {:class ["flex" "items-center" "gap-2.5" "min-w-0"]}
+       [:div {:class ["w-7" "h-7" "rounded-full" "flex" "items-center" "justify-center" "shrink-0" bg]}
+        (layout/icon [accent "text-[18px]"] icon-name)]
+       [:div {:class ["min-w-0"]}
+        [:span {:class ["font-label-sm" "text-label-sm" "uppercase" "tracking-wider" "text-text-muted" "block"]}
+         (str "Module " (format "%02d" (:number module)) " • " (:track module))]
+        [:h3 {:class ["font-headline-sm" "text-headline-sm" "text-text-primary" "truncate"]} (:title module)]]]
+      [:div {:class ["flex" "flex-col" "items-end" "shrink-0" "pl-2"]}
+       [:span {:class ["font-label-sm" "text-label-sm" "text-primary" "font-semibold"]}
+        (str done " / " total)]
+       [:span {:class ["font-label-sm" "text-label-sm" "text-text-muted"]} (module-label module)]
+       [:span {:class ["font-label-sm" "text-label-sm" "text-text-muted"]}
+        (str "+" (:obj-earned module) " OBJ")]]]
+     (into [:div {:class ["grid" "grid-cols-1" "md:grid-cols-2" "lg:grid-cols-3" "gap-4" "md:gap-6"]}]
+           (map #(lesson-row module %) (:lessons module)))]))
+
 (defn curriculum-list
   [curriculum]
-  (into [:div]
-        (for [{:keys [slug title lessons]} (:modules curriculum)]
-          [:section
-           [:h2 title]
-           (into [:ul]
-                 (for [lesson lessons
-                       :when (not= :locked (:status lesson))]
-                   [:li [:a {:href (data/lesson-href slug (:slug lesson))} (:title lesson)]]))])))
+  (into [:section {:class ["flex" "flex-col" "space-y-6" "pt-2"]}]
+        (map module-section (:modules curriculum))))
 
 (defn present
   [curriculum]

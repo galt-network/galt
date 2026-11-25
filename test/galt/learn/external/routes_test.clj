@@ -56,6 +56,17 @@
     (doseq [text ["Resume Lesson" "Sovereign Scholar" "Bitcoin Basics (3)" "Completed (3)" "Section 4 of 5"]]
       (is (str/includes? body text)))))
 
+(deftest locked-lessons-are-not-links
+  (let [body (:body (page "/learn"))]
+    (doseq [href locked-lesson-hrefs]
+      (is (not (str/includes? body (str "href=\"" href "\"")))))
+    (is (str/includes? body "Time Preference &amp; Capital Structure"))))
+
+(deftest module-progress-is-derived-from-lessons
+  (let [body (:body (page "/learn"))]
+    (doseq [text ["3 / 3" "1 / 3" "1 / 3" "PASSED (100%)" "IN PROGRESS"]]
+      (is (str/includes? body text)))))
+
 (deftest member-sees-name-and-profile-link
   (let [{:keys [status body]} (page "/learn" {:name "Alice"})]
     (is (= 200 status))
