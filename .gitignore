@@ -11,3 +11,4 @@ data/geoip/
 data/countries-states-cities-database/
 .btcpay/
 node_modules
+.cpcache

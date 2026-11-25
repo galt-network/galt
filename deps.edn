@@ -49,7 +49,7 @@
   io.github.babashka/sci.nrepl {:mvn/version "0.0.2"}
 
   ; Map
-  is.mad/globo {:git/url "https://github.com/galt-network/galt.git"
+  is.mad/globo {:git/url "https://github.com/galt-network/globo.git"
                 :git/sha "2bce2db41ec3147e791acc235cace48a0f10687d"}
 
   ; GeoIP (DB-IP MMDB is MaxMind-compatible)
