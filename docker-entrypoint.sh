@@ -5,6 +5,11 @@
 set -eu
 
 : "${GALT_ENV:?set GALT_ENV to staging or prod}"
+: "${GALT_CITIES_COUNTRIES_SQL_PATH:?set it to the full world.sql}"
+[ -r "$GALT_CITIES_COUNTRIES_SQL_PATH" ] || {
+  echo "GALT_CITIES_COUNTRIES_SQL_PATH is not a readable file" >&2
+  exit 1
+}
 
 db_host="${DB_HOST:-localhost}"
 db_port="${DB_PORT:-5432}"

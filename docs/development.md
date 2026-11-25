@@ -2,15 +2,25 @@
 
 BTCPay regtest (Lightning invoices, both containerized and host Galt): [btcpay.md](btcpay.md).
 
-1. Start repl server
-  - `clojure -M:dev:repl -m nrepl.cmdline`
-  - `clojure -M:dev:repl -m galt.main`
-2. Connect to the nREPL server
-  - from Vim: `:ConjureConnect`
-  - or connect via REPL command line client: `clojure -T:nrebel :port 7888`
-3. Start the system by evaluating in REPL
-  - `(galt.main/start-system!)`
-4. Open the page at http://localhost:8081
+Both ways of running Galt need a JDK and the Clojure CLI.
+
+### On the operating system (new checkouts, agents)
+
+Needs git and docker or podman as well. Nothing else has to be set up on the machine.
+
+1. `./scripts/dev.sh up` starts a Postgres container, creates the database and runs the migrations.
+   - The first run imports the bundled geodata sample (`resources/geodata/`). `./scripts/dev.sh geodata` downloads the full dataset and starts over; `./scripts/dev.sh geoip` downloads the GeoIP database (optional).
+2. `./scripts/dev.sh run` starts the app at http://localhost:8081.
+   - With `GALT_ENV` unset it runs the `:local` system: `config/default-config.edn`, files stored under `resources/uploads`.
+3. `clojure -M:test` runs every test. GitHub Actions runs it, and `./scripts/dev.sh up` followed by a health check, on every pull request (`.github/workflows/test.yml`).
+
+For a REPL run `./scripts/dev.sh up`, then `clojure -M:nrepl`, evaluate `(galt.main/start-system!)` and open http://localhost:8081. `(user/go!)` reloads changed code.
+
+`./scripts/dev.sh down` stops Postgres and keeps the data. `./scripts/dev.sh reset` drops the data and starts again. `./scripts/dev.sh` lists the commands.
+
+### In the clj-contain container (manual development)
+
+`clj-contain up` starts the `galt-dev` container from the `:clj-contain` alias in `deps.edn`, with its own Postgres, the full `data/countries-states-cities-database/world.sql` and the `:dev` configuration (`config/dev-galt.edn`, files stored in the shared dev R2 bucket). The host publishes the app on port 13003.
 
 ## AI agent workflow
 
@@ -26,21 +36,6 @@ This will be worked on by an agent and if all succeeds a new pull request with t
 
 ## Release & deployment
 
-1. (local) Build a uberjar `clj -T:build uber`
-2. (local) Copy it to the destination server: `scp target/galt-0.1.1-standalone.jar galt.is:~/www/galt.is`
-  - also copy config files: `scp -r config galt.is:~/galt.is`
-3. Remote env setup
-  - create a database user: `CREATE ROLE galt WITH PASSWORD 'galtpass' SUPERUSER CREATEDB INHERIT LOGIN;`
-    - _superuser is needed for some DB migrations that add extensions (e.g. cube, earthdistance)_
-  - env variables needed: `MIGRATUS_DATABASE`, `MIGRATUS_USER`, `MIGRATUS_PASSWORD`
-  - export env variables: `set -a && source .env && set +a`
-4. (remote) Import geographical data (world.sql)
-  - source: https://github.com/dr5hn/countries-states-cities-database/tree/master/psql
-  - raw:  https://github.com/dr5hn/countries-states-cities-database/raw/refs/heads/master/psql/world.sql
-  - it will be picked up by migration script `import-cities-countries` at
-    `GALT_CITIES_COUNTRIES_SQL_PATH`
-5. (remote) Run the database migrations
-  - just the first time: `java -jar galt-0.1.1-standalone.jar init`
-  - every time (when database changes) `java -jar galt-0.1.1-standalone.jar migrate`
-6. (remote) Run the web server: `java -jar target/galt-0.1.1-standalone.jar`
+A push to `master` or `production` runs `.github/workflows/deploy.yml`: it builds the Docker image (`Dockerfile`: uberjar, the pinned `world.sql` and a GeoIP database), pushes it to GHCR and tells Coolify to deploy it. `docker-entrypoint.sh` waits for Postgres, runs the migrations and starts the server. Set `GALT_ENV` (`staging` or `prod`) and `GALT_CITIES_COUNTRIES_SQL_PATH` (the full `world.sql`); it refuses to start without them. `MIGRATUS_*` and `DB_HOST` point it at the database.
 
+To run a release by hand: `clj -T:build uber`, then `java -jar target/galt-*-standalone.jar migrate` and `java -jar target/galt-*-standalone.jar` with the same variables set.

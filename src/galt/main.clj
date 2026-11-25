@@ -24,7 +24,7 @@
 (def running-system (atom nil))
 
 (defn start-system!
-  ([] (start-system! (keyword (System/getenv "GALT_ENV"))))
+  ([] (start-system! (or (-> (System/getenv "GALT_ENV") not-empty keyword) :local)))
   ([name]
    (println "Starting GALT system" name)
    (reset! running-system (system/start! name))))

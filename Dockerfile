@@ -1,36 +1,10 @@
 # syntax=docker/dockerfile:1
 
-# Globo's compiled JS is not committed, so build it here and let tools.build
-# pack this checkout (GLOBO_LOCAL_ROOT). Keep GLOBO_REF in sync with the globo
-# pin in deps.edn.
-FROM eclipse-temurin:21-jdk-noble AS globo
-ARG GLOBO_REPO=https://github.com/galt-network/globo.git
-ARG GLOBO_REF=2bce2db41ec3147e791acc235cace48a0f10687d
-RUN apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates curl git \
- && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
- && apt-get install -y --no-install-recommends nodejs \
- && rm -rf /var/lib/apt/lists/*
-RUN git init /globo \
- && cd /globo \
- && git remote add origin "$GLOBO_REPO" \
- && git fetch --depth 1 origin "$GLOBO_REF" \
- && git checkout --detach FETCH_HEAD
-WORKDIR /globo
-RUN npm ci --include=dev \
- && npx shadow-cljs release globo
-
-FROM clojure:temurin-21-tools-deps-bookworm AS build
-# Force the globo dep to the checkout that has the compiled JS.
-ENV GLOBO_LOCAL_ROOT=/globo
+FROM clojure:temurin:21-tools-deps-bookworm AS build
 WORKDIR /build
 COPY deps.edn build.clj ./
 COPY src ./src
 COPY resources ./resources
-# Only the dep root, source and resources are needed; skip node_modules.
-COPY --from=globo /globo/deps.edn /globo/
-COPY --from=globo /globo/src /globo/src
-COPY --from=globo /globo/resources /globo/resources
 RUN clojure -T:build uber
 
 # Geodata is expensive to fetch, so it gets its own cached layer.
@@ -40,10 +14,8 @@ ARG GEOIP_YM=2026-10
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates curl \
  && rm -rf /var/lib/apt/lists/*
-# The dump was made by psql >= 16.10; older clients do not know \restrict.
 RUN mkdir -p /data/geoip \
  && curl -fsSL "$WORLD_SQL_URL" -o /data/world.sql \
- && sed -i -e '/^\\restrict/d' -e '/^\\unrestrict/d' /data/world.sql \
  && curl -fsSL "https://download.db-ip.com/free/dbip-city-lite-${GEOIP_YM}.mmdb.gz" -o /tmp/geoip.mmdb.gz \
  && gunzip -c /tmp/geoip.mmdb.gz > /data/geoip/dbip-city-lite.mmdb \
  && rm /tmp/geoip.mmdb.gz

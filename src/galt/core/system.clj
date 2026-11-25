@@ -15,6 +15,7 @@
    [galt.core.infrastructure.bitcoin.lnurl :refer [generate-lnurl]]
    [galt.core.infrastructure.asset-stores :as asset-stores]
    [galt.core.infrastructure.database :as database]
+   [galt.core.infrastructure.db-migrations :as db-migrations]
    [galt.core.infrastructure.name-generator :as name-generator]
    [galt.core.infrastructure.web.helpers :as web-helpers] ; TODO see if can be removed
    [galt.core.infrastructure.web.routes :as core.routes]
@@ -147,9 +148,9 @@
            :stop
            (fn [{::ds/keys [^HikariDataSource instance]}] (.close instance))
            :config
-           {:user (System/getenv "MIGRATUS_USER")
-            :password (System/getenv "MIGRATUS_PASSWORD")
-            :database (System/getenv "MIGRATUS_DATABASE")}}
+           {:user db-migrations/database-user
+            :password db-migrations/database-pass
+            :database db-migrations/database-name}}
 
      :db-access
      #::ds{:start
@@ -761,6 +762,11 @@
             :handler (ds/ref [:app :route-handler])}}}}})
 
 (defmethod ds/named-system :base [_] system)
+
+(defmethod ds/named-system :local
+  [_]
+  (println ">>> starting :local system")
+  (ds/system :base {[:env] (get-config)}))
 
 (defmethod ds/named-system :dev
   [_]

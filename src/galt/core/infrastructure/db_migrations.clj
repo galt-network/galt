@@ -3,9 +3,9 @@
     [next.jdbc :as jdbc]
     [migratus.core :as migratus]))
 
-(def database-name (System/getenv "MIGRATUS_DATABASE"))
-(def database-user (System/getenv "MIGRATUS_USER"))
-(def database-pass (System/getenv "MIGRATUS_PASSWORD"))
+(def database-name (or (System/getenv "MIGRATUS_DATABASE") "galt_dev"))
+(def database-user (or (System/getenv "MIGRATUS_USER") "galt"))
+(def database-pass (or (System/getenv "MIGRATUS_PASSWORD") "galtpass"))
 
 (defn datasource-config
   ([] (datasource-config database-name))

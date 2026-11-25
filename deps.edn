@@ -50,7 +50,7 @@
 
   ; Map
   is.mad/globo {:git/url "https://github.com/galt-network/globo.git"
-                :git/sha "2bce2db41ec3147e791acc235cace48a0f10687d"}
+                :git/sha "46778c8b393e9c40154b9cc4888684f69526ad3b"}
 
   ; GeoIP (DB-IP MMDB is MaxMind-compatible)
   com.maxmind.geoip2/geoip2 {:mvn/version "5.2.0"}
@@ -69,6 +69,12 @@
                      ring/ring-mock {:mvn/version "0.6.2"}
                      http-kit.fake/http-kit.fake {:mvn/version "0.2.2"}
                      nubank/matcher-combinators {:mvn/version "3.11.0"}}} ; https://github.com/nubank/matcher-combinators
+  :test {:extra-paths ["test"]
+         :extra-deps {tortue/spy {:mvn/version "2.15.0"}
+                      ring/ring-mock {:mvn/version "0.6.2"}
+                      http-kit.fake/http-kit.fake {:mvn/version "0.2.2"}
+                      nubank/matcher-combinators {:mvn/version "3.11.0"}}
+         :main-opts ["-m" "galt.test-runner"]}
   :globo-local {:override-deps {is.mad/globo {:local/root "../globo"}}}
   :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.14"}}
           :ns-default build}
@@ -96,6 +102,7 @@
                       :MIGRATUS_PASSWORD "galtpass"
                       :BTCPAY_URL "http://btcpayserver:49392"
                       :GALT_WEBHOOK_URL "http://galt-dev:8081/payments/btcpay-webhook"
+                      :GALT_CITIES_COUNTRIES_SQL_PATH "/home/madis/code/madis/galt/data/countries-states-cities-database/world.sql"
                       }
                 :mounts ["/home/madis/code/madis/galt/data/countries-states-cities-database/world.sql:/home/madis/code/madis/galt/data/countries-states-cities-database/world.sql:z"
                          "/home/madis/.local/share/clj-contain/cdp-key:/run/cdp-key:ro,z"]
