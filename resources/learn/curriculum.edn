@@ -18,7 +18,7 @@
    :title "Intermediate Austrian Economics" :obj 1150 :obj-earned 450 :image "menger-manuscripts"
    :lessons
    [{:slug "value-theory" :number 1 :topic "Value Theory"
-     :title "The Subjective Theory of Value" :status :in-progress
+     :title "The Subjective Theory of Value & Marginal Utility" :status :in-progress
      :summary "Deconstructing the classical labor theory of value through Carl Menger's prism of subjective satisfaction and marginal increments."
      :minutes 12 :progress 80 :section 4 :sections 5 :exam-prompts 5 :obj 350
      :kind "Lecture Clip (Audio/Visual)"}

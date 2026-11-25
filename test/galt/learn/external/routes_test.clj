@@ -3,6 +3,7 @@
             [clojure.test :refer [deftest is]]
             [galt.core.infrastructure.web.helpers :as web-helpers]
             [galt.learn.adapters.curriculum :as curriculum]
+            [galt.learn.adapters.handlers :as handlers]
             [galt.learn.external.routes :as learn-routes]
             [galt.members.domain.member-repository :as mr]
             [galt.members.domain.user-repository :as ur]
@@ -72,3 +73,28 @@
     (is (= 200 status))
     (is (str/includes? body "Alice"))
     (is (str/includes? body "href=\"/members/profile/me\""))))
+
+(deftest lesson-page-renders-the-article
+  (let [{:keys [status body]} (page "/learn/praxeology/value-theory")]
+    (is (= 200 status))
+    (is (str/includes? body "The Subjective Theory of Value &amp; Marginal Utility"))
+    (is (str/includes? body "href=\"/learn/praxeology/economic-calculation\""))
+    (is (str/includes? body "href=\"/learn\""))))
+
+(deftest lesson-without-article-says-so
+  (let [{:keys [status body]} (page "/learn/sound-architecture/sound-money")]
+    (is (= 200 status))
+    (is (str/includes? body "Lesson text coming soon."))))
+
+(deftest unknown-lesson-is-not-found
+  (doseq [path ["/learn/nope/nope" "/learn/praxeology/sound-money"]]
+    (let [{:keys [status body]} (page path)]
+      (is (= 404 status))
+      (is (str/includes? body "Lesson not found"))
+      (is (str/includes? body "href=\"/learn\""))))
+  (let [{:keys [status body]} (handlers/show-lesson {:render str
+                                                    :layout identity
+                                                    :curriculum curriculum/load-curriculum}
+                                                   {})]
+    (is (= 404 status))
+    (is (str/includes? body "Lesson not found"))))

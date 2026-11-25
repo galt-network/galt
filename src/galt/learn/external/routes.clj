@@ -7,4 +7,6 @@
   (let [with-layout (:with-new-layout deps)
         with-deps-layout (partial with-layout deps)]
     (rr/router
-      [["/learn" {:id :learn :name :learn :get (with-deps-layout learn/show-learn)}]])))
+      [["/learn" {:id :learn :name :learn :get (with-deps-layout learn/show-learn)}]
+       ["/learn/:module-slug/:lesson-slug"
+        {:id :learn :name :learn/lesson :get (with-deps-layout learn/show-lesson)}]])))

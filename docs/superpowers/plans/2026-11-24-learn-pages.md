@@ -722,7 +722,7 @@ Port the markup from `CURRICULUM MODULES LIST` to the end of `<main>` in `learn-
 - `learn/show-lesson [{:keys [render layout curriculum]} req]` returns 200 with the lesson page, or 404 with `not-found` when `find-lesson` returns `nil`.
 - Route `"/learn/:module-slug/:lesson-slug"` with `:id :learn` and `:name :learn/lesson`.
 
-- [ ] Step 1: Add `[galt.learn.adapters.handlers :as handlers]` to the `:require` of `test/galt/learn/external/routes_test.clj`, add the tests below and run the namespace. Expect failure: `require` throws because `handlers/show-lesson` does not exist.
+- [x] Step 1: Add `[galt.learn.adapters.handlers :as handlers]` to the `:require` of `test/galt/learn/external/routes_test.clj`, add the tests below and run the namespace. Expect failure: `require` throws because `handlers/show-lesson` does not exist.
   ```clojure
   (deftest lesson-page-renders-the-article
     (let [{:keys [status body]} (page "/learn/praxeology/value-theory")]
@@ -749,8 +749,8 @@ Port the markup from `CURRICULUM MODULES LIST` to the end of `<main>` in `learn-
       (is (= 404 status))
       (is (str/includes? body "Lesson not found"))))
   ```
-- [ ] Step 2: Create `src/galt/learn/adapters/presentation/articles/subjective_theory.clj`. Port the block `Center Column: Longform Treatise Editorial` of `docs/design/learn/lesson.html` (the comments `Section 1` to `Section 4`, including the Illuminated Axiom Callout, the comparison table, the bar chart and the pull quote) into `(def body […])`. Its values stay as they are in the reference. The namespace is `galt.learn.adapters.presentation.articles.subjective-theory`.
-- [ ] Step 3: Create `src/galt/learn/adapters/presentation/lesson.clj`:
+- [x] Step 2: Create `src/galt/learn/adapters/presentation/articles/subjective_theory.clj`. Port the block `Center Column: Longform Treatise Editorial` of `docs/design/learn/lesson.html` (the comments `Section 1` to `Section 4`, including the Illuminated Axiom Callout, the comparison table, the bar chart and the pull quote) into `(def body […])`. Its values stay as they are in the reference. The namespace is `galt.learn.adapters.presentation.articles.subjective-theory`.
+- [x] Step 3: Create `src/galt/learn/adapters/presentation/lesson.clj`:
   ```clojure
   (ns galt.learn.adapters.presentation.lesson
     (:require [galt.learn.adapters.presentation.articles.subjective-theory :as subjective-theory]))
@@ -787,7 +787,7 @@ Port the markup from `CURRICULUM MODULES LIST` to the end of `<main>` in `learn-
   - `artwork`: `Editorial Media Artwork`. Image `/assets/images/learn/<module :image>.jpg` with the lesson `:summary` as `alt`.
   - `reading-column`: `12-Column Responsive Reading Layout`. Its content is `(articles (:slug lesson))`, or `[:p "Lesson text coming soon."]` when that is `nil`.
   - `completion-ribbon`: `Bottom Lesson Completion & Next Action Ribbon`. When `:next-lesson` is present, its title links to `(:href (:next-lesson lesson))`. The back link goes to `/learn`. Leave out `Client-side Audio Micro-interaction`.
-- [ ] Step 4: In `src/galt/learn/adapters/handlers.clj` add `[galt.learn.adapters.curriculum :as data]` and `[galt.learn.adapters.presentation.lesson :as lesson]` to `:require`, and add:
+- [x] Step 4: In `src/galt/learn/adapters/handlers.clj` add `[galt.learn.adapters.curriculum :as data]` and `[galt.learn.adapters.presentation.lesson :as lesson]` to `:require`, and add:
   ```clojure
   (defn show-lesson
     [{:keys [render layout curriculum]} req]
@@ -798,13 +798,13 @@ Port the markup from `CURRICULUM MODULES LIST` to the end of `<main>` in `learn-
         {:status http-status/not-found
          :body (-> (lesson/not-found) layout render)})))
   ```
-- [ ] Step 5: In `src/galt/learn/external/routes.clj` add the route to `rr/router`:
+- [x] Step 5: In `src/galt/learn/external/routes.clj` add the route to `rr/router`:
   ```clojure
   ["/learn/:module-slug/:lesson-slug"
    {:id :learn :name :learn/lesson :get (with-deps-layout learn/show-lesson)}]
   ```
-- [ ] Step 6: Run `npm run css`, then the test namespace. Expect: `Ran 9 tests containing 43 assertions. 0 failures, 0 errors.`
-- [ ] Step 7: Commit the five files and the ticked boxes of this task.
+- [x] Step 6: Run `npm run css`, then the test namespace. Expect: `Ran 9 tests containing 43 assertions. 0 failures, 0 errors.`
+- [x] Step 7: Commit the five files and the ticked boxes of this task.
 
 **Commit:** `feat: add lesson page in the new design`
 
