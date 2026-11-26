@@ -8,12 +8,8 @@
 (def uber-file (format "target/%s-%s-standalone.jar" (name lib) version))
 
 ;; delay to defer side effects (artifact downloads)
-;; Image builds set GLOBO_LOCAL_ROOT to a checkout that contains compiled JS.
 (def basis
-  (delay (b/create-basis
-           (cond-> {:project "deps.edn"}
-             (System/getenv "GLOBO_LOCAL_ROOT")
-             (assoc :extra {:deps {'is.mad/globo {:local/root (System/getenv "GLOBO_LOCAL_ROOT")}}})))))
+  (delay (b/create-basis {:project "deps.edn"})))
 
 (defn clean [_]
   (b/delete {:path "target"}))

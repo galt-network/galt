@@ -22,15 +22,17 @@ Key principles:
 - `build.clj` - Build script using `tools.build`. Creates uberjar: `clj -T:build uber`
 - `start-nrepl.sh` - Convenience script to start an nREPL server. Pins an older nREPL than `deps.edn`; prefer `clojure -M:nrepl` or `clojure -M:dev:repl -m nrepl.cmdline`.
 - `start-ssh-tunnel.sh` - Convenience script for SSH tunnel to dev DB
-- `Dockerfile` / `docker-entrypoint.sh` - Container image: builds globo's JS from the pinned public repo, packs the uberjar, bakes `world.sql` + GeoIP mmdb, runs migrations, then starts the server. `ENV GLOBO_LOCAL_ROOT=/globo` makes `build.clj` use the checkout with compiled JS.
+- `Dockerfile` / `docker-entrypoint.sh` - Container image: packs the uberjar (globo's compiled JS ships with the pinned globo commit), bakes `world.sql` + GeoIP mmdb, runs migrations, then starts the server. The entrypoint refuses to start without `GALT_CITIES_COUNTRIES_SQL_PATH` (the full `world.sql`), so a new database never gets the bundled sample.
+- `.github/workflows/test.yml` - On pull requests and pushes to `master`: `clojure -M:test`, then `./scripts/dev.sh up` and a `/health` check from a clean checkout.
 - `.github/workflows/deploy.yml` - On `master`/`production`: pushes `ghcr.io/galt-network/galt:sha-<sha>` to GHCR, pins that tag on the matching Coolify app, then triggers deployment.
 - `scripts/btcpay.bb` - Local regtest BTCPay Server plus a payer CLN. See `docs/btcpay.md`. Not started by clj-contain.
 - `scripts/download-geoip.sh` - Downloads the DB-IP city-lite MMDB (CC-BY 4.0). Do not commit the MMDB. Dest: `GALT_GEOIP_MMDB` or `data/geoip/dbip-city-lite.mmdb`.
 - `scripts/lnurl-login.bb` / `scripts/lnurl-login.edn` - LNURL login scratch script.
+- `scripts/dev.sh` - Local development on the operating system: Postgres container (docker or podman), migrations, run. `up | run | down | reset | geodata | geoip`. See `docs/development.md`.
 - `CONTEXT.md` - Domain language. Read it before naming things: Member ≠ User, Connect returns Hits, `activity_at` orders Hits, Near me is 100 km.
 
 ### System Configuration
-- `src/galt/core/system.clj` - Donut System dependency graph. Defines all components: DB, repositories, use cases, routes, web server. ~780 lines, the central wiring file. `get-config` reads an EDN file, then `env-overrides`: process env wins, then `.env`, then the EDN. Never invents a host port. Named systems `:dev` / `:staging` / `:prod` each load `config/<env>-galt.edn`.
+- `src/galt/core/system.clj` - Donut System dependency graph. Defines all components: DB, repositories, use cases, routes, web server. ~780 lines, the central wiring file. `get-config` reads an EDN file, then `env-overrides`: process env wins, then `.env`, then the EDN. Never invents a host port. Named systems `:dev` / `:staging` / `:prod` each load `config/<env>-galt.edn`; `:local` loads `config/default-config.edn`.
 - `config/default-config.edn` - Default config (localhost:8081, file storage)
 - `config/dev-galt.edn`, `config/staging-galt.edn`, `config/prod-galt.edn` - Environment-specific configs
 
@@ -109,7 +111,7 @@ Each module follows the pattern: `adapters/`, `domain/` (with `entities/` and `u
   - `20250814104102-create-users` - users table
   - `20250821152657-create-groups` - groups table
   - `20250830152849-create-memberships` - memberships table
-  - `20250904143744-import-cities-countries.edn` - EDN data import for geodata (uses `GALT_CITIES_COUNTRIES_SQL_PATH`)
+  - `20250904143744-import-cities-countries.edn` - Geodata import over JDBC: the full pg_dump named by `GALT_CITIES_COUNTRIES_SQL_PATH`, else the bundled sample
   - `20250905193629-create-locations` - locations table
   - `20250906190631-create-invitations` - invitations table
   - `20250915223524-create-invoices-invitation-usages` - invoices + invitation usages
@@ -118,13 +120,15 @@ Each module follows the pattern: `adapters/`, `domain/` (with `entities/` and `u
   - `20251001194743-create-comments` - comments table (used for both posts and events)
   - `20260810120000-create-assets` - `assets` table; `asset_ids` jsonb on posts and events
   - `20260810120010-rewrite-avatar-urls-to-keys` - member/group avatars from `/files/` URLs to storage keys
+- `resources/geodata/cities-countries-sample.sql` - Bundled geodata sample cut from the pinned `world.sql` (same schema and ids): all countries, and cities of EE, LV, LT, FI, SE, NO, DK, IS, SV. Its header records the source.
 
 ### Tests
 - `test/galt/` - Test files mirroring src structure (covers `connect`, `core`, `groups`, `invitations`, `locations`, `members`, `payments`, `posts`, `world_map`)
+- `test/galt/test_runner.clj` - Runs every `*_test.clj` under `test/` (`clojure -M:test`, exit code 1 on failure)
 - Test libraries: `matcher-combinators`, `ring-mock`, `http-kit.fake`, `spy`
 
 ### Dev/REPL
-- `dev/user.clj` - REPL user namespace with `clj-reload` for hot reloading. `(go!)` to reload, `(galt.main/start-system! :dev)` to start. Sets `*warn-on-reflection* = true`. Includes `sci.nrepl.browser-server` setup for browser REPL.
+- `dev/user.clj` - REPL user namespace with `clj-reload` for hot reloading. `(go!)` to reload, `(galt.main/start-system!)` to start (`:local` when `GALT_ENV` is unset). Sets `*warn-on-reflection* = true`. Includes `sci.nrepl.browser-server` setup for browser REPL.
 - `dev/lnurl_experiments.clj` - LNURL experimentation scratchpad
 
 ### Documentation
@@ -224,11 +228,12 @@ Versions reflect the current `deps.edn`.
 ### Deps.edn Aliases
 - `:repl` - Adds `dev/` path, Clojure 1.12.5, `clj-reload`
 - `:dev` - Adds `test/` path, spy, ring-mock, http-kit.fake, matcher-combinators
+- `:test` - Same paths and libs as `:dev`, runs every test through `test/galt/test_runner.clj` (`clojure -M:test [namespace ...]`)
 - `:globo-local` - Overrides `is.mad/globo` with the checkout at `../globo`; add it to `:dev` or `:repl` when developing globo alongside
 - `:nrepl` - `dev/` + `test/` paths and the `:dev` test libs; starts `nrepl.cmdline` (`clojure -M:nrepl`)
 - `:build` - `tools.build` 0.10.14 for uberjar via `clj -T:build uber`
 - `:outdated` - `antq` for dependency update checks (`clj -M:outdated`)
-- `:clj-contain` - Containerized dev app (`galt-dev`, port 8081) plus a Postgres 18 service, joined to the `galt-btcpay_default` network. Not a code alias. See `deps.edn`.
+- `:clj-contain` - Containerized dev app (`galt-dev`, port 8081) plus a Postgres 18 service, joined to the `galt-btcpay_default` network. It imports the full `data/countries-states-cities-database/world.sql`. Not a code alias. See `deps.edn`.
 
 ---
 
@@ -364,7 +369,7 @@ Example:
 ### REPL Functions
 ```clojure
 ;; Start system
-(galt.main/start-system!)           ; Uses GALT_ENV env var
+(galt.main/start-system!)           ; :local when GALT_ENV is unset, else (keyword GALT_ENV)
 (galt.main/start-system! :dev)      ; Explicit environment
 
 ;; Access running system components
@@ -397,10 +402,15 @@ java -jar galt-0.1.X-standalone.jar assets export-public [out-dir]
 # Build uberjar
 clj -T:build uber
 
+# Run every test
+clojure -M:test
+
+# Start the app: Postgres container and migrations, then the server
+./scripts/dev.sh up
+./scripts/dev.sh run
+
 # Start REPL
-clojure -M:dev:repl -m nrepl.cmdline
 clojure -M:nrepl
-clojure -M:dev:repl -m galt.main
 ```
 
 ### Key Use Cases (available via system)
@@ -440,9 +450,9 @@ Connect search is `galt.connect.domain.use-cases.search/search`, called from `ga
 ## Development Workflow
 
 ### Starting Development
-1. Start REPL: `clojure -M:dev:repl -m nrepl.cmdline` (or `./start-nrepl.sh`)
-2. Connect from editor (Conjure: `:ConjureConnect`)
-3. Start system: `(galt.main/start-system! :dev)`
+1. `./scripts/dev.sh up` (Postgres container, database, migrations)
+2. `./scripts/dev.sh run`, or start a REPL with `clojure -M:nrepl` and connect from an editor (Conjure: `:ConjureConnect`)
+3. In the REPL: `(galt.main/start-system!)` starts the `:local` system (`GALT_ENV` names another one)
 4. Open http://localhost:8081
 5. Edit code, then `(go!)` to reload namespaces (via `clj-reload`)
 6. Optional browser REPL: `(require '[sci.nrepl.browser-server :as nrepl]) (nrepl/start! {:nrepl-port 1339 :websocket-port 1340})`
@@ -451,9 +461,9 @@ Connect search is `galt.connect.domain.use-cases.search/search`, called from `ga
 `galt.main` exposes `before-ns-unload` (calls `stop-system!`) and `after-ns-reload` (calls `start-system!`) so `clj-reload` brings the system down/up automatically between reloads.
 
 ### Environment Variables
-- `GALT_ENV` - No-arg `(start-system!)` becomes `(start-system! (keyword GALT_ENV))`. `:dev` / `:staging` / `:prod` each load `config/<env>-galt.edn`. Hot reload calls the no-arg version, so it follows `GALT_ENV`, not a keyword passed earlier.
-- `GALT_CONFIG` - Only the no-arg `(get-config)` (assets export, ad-hoc reads). Default `config/default-config.edn`. The running server does not use this; it uses the named-system file.
-- `MIGRATUS_DATABASE`, `MIGRATUS_USER`, `MIGRATUS_PASSWORD` - DB credentials
+- `GALT_ENV` - No-arg `(start-system!)` starts `(keyword GALT_ENV)`; `:dev` / `:staging` / `:prod` each load `config/<env>-galt.edn`. Unset (or empty) starts `:local`, which loads `config/default-config.edn`. Hot reload calls the no-arg version, so it follows `GALT_ENV`, not a keyword passed earlier.
+- `GALT_CONFIG` - The no-arg `(get-config)`: assets export, ad-hoc reads and the `:local` system. Default `config/default-config.edn`. The `:dev` / `:staging` / `:prod` systems do not use it; they load their named-system file.
+- `MIGRATUS_DATABASE`, `MIGRATUS_USER`, `MIGRATUS_PASSWORD` - DB credentials. Default `galt_dev` / `galt` / `galtpass`, same as `scripts/dev.sh` and the `:clj-contain` alias. Process env only, not `.env`.
 - `DB_HOST`, `DB_PORT` - Postgres host/port (default `localhost:5432`)
 - `APP_PORT` - Overrides `:web-server-port`. Process env only, not `.env`.
 - `APP_HOST_PORT`, `GALT_ROOT_URL` - Override `:galt-root-url` (`APP_HOST_PORT` becomes `http://127.0.0.1:<port>`). `GALT_ROOT_URL` also overrides `[:asset-store :root-url]` (used for private asset links)
@@ -461,11 +471,11 @@ Connect search is `galt.connect.domain.use-cases.search/search`, called from `ga
 - `BTCPAY_URL`, `BTCPAY_API_KEY`, `BTCPAY_STORE_ID`, `BTCPAY_WEBHOOK_SECRET` - Override BTCPay config
 - `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` - S3/R2 credentials when config keys are nil
 - `GALT_GEOIP_MMDB` - MMDB path. Process env only; else config `:geoip-mmdb`, else `data/geoip/dbip-city-lite.mmdb`.
-- `GALT_CITIES_COUNTRIES_SQL_PATH` - Path to world.sql for geodata import
-- `.env` - Override file. Precedence is process env, then `.env`, then EDN. Do not print it or `config/*.edn`.
+- `GALT_CITIES_COUNTRIES_SQL_PATH` - Full `world.sql` pg_dump for the geodata migration. Unset: the bundled sample `resources/geodata/cities-countries-sample.sql` is imported. Process env only.
+- `.env` - Read by `get-config` for the BTCPay settings, `APP_HOST_PORT`, `GALT_ROOT_URL` and `GALT_ASSET_STORE_*` (precedence: process env, then `.env`, then EDN). clj-contain also loads the whole file into the container environment. Template: `.env.example`. Do not print it or `config/*.edn`.
 
 ### Config Files
-- `config/default-config.edn` - Fallback for no-arg `(get-config)` only. `:asset-store :type :disk`.
+- `config/default-config.edn` - Loaded by the `:local` system (the no-arg `(get-config)`). `:asset-store :type :disk`, no BTCPay settings.
 - `config/dev-galt.edn` - Loaded by the `:dev` named system
 - `config/staging-galt.edn` - Loaded by the `:staging` named system
 - `config/prod-galt.edn` - Loaded by the `:prod` named system
@@ -474,7 +484,7 @@ Connect search is `galt.connect.domain.use-cases.search/search`, called from `ga
 - `:geoip-mmdb` - Path to the city MMDB
 
 ### Testing
-There is no `:test` alias. Test sources and `matcher-combinators` / `ring-mock` / `http-kit.fake` are on the `:dev` classpath. Run tests from the REPL (`clojure -M:dev:repl` or `clojure -M:nrepl`).
+`clojure -M:test [namespace ...]` runs every `*_test.clj` under `test/` through `test/galt/test_runner.clj` and exits 1 on failure. Test sources and `matcher-combinators` / `ring-mock` / `http-kit.fake` are on the `:dev` and `:test` classpaths. The suite needs no database. GitHub Actions runs it on every pull request (`.github/workflows/test.yml`).
 
 ---
 

@@ -1,0 +1,114 @@
+From: Madis Nõmme <me@mad.is>
+Date: Tue, 24 Nov 2026 19:10:00 -0300
+Subject: [PATCH] Pick the chrome-devtools MCP transport from the environment
+
+AGENTS.md documents both setups, and scripts/chrome-devtools-mcp.sh decides
+between the SSH bridge (container, browser on host) and a local Chrome.
+
+---
+ AGENTS.md                      | 13 +++++++++----
+ opencode.json                  | 18 +++++-------------
+ scripts/chrome-devtools-mcp.sh | 38 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 52 insertions(+), 17 deletions(-)
+
+diff --git a/AGENTS.md b/AGENTS.md
+index 6f6b84f..4cb3745 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -14,14 +14,19 @@ Also follow `LLM_CODE_STYLE.md` at the repo root when present; it matches the gl
+ 
+ ## Addresses
+ 
+-When the project is developed in a container, the container exposes ports on localhost on the host machine on port 13003.
+-This is relevant for the chrome-devtools MCP server as it is controlled by the OpenCode instance inside the container but accesses chrome on the host machine. Therefore:
+-1. When accessing Galt web page through chrome-devtools MCP use http://127.0.0.1:13003/ as base URL
++How Galt is reached depends on where OpenCode runs:
++
++- **Inside the `clj-contain` container**: the host publishes the app on port 13003, and the browser runs on the host, so the chrome-devtools MCP must use http://127.0.0.1:13003/. Command-line tools inside the container talk to the app directly at http://localhost:8081/.
++- **Natively (plain checkout, agent sandbox)**: everything runs on one machine, so both the chrome-devtools MCP and command-line tools use http://localhost:8081/.
++
++`scripts/chrome-devtools-mcp.sh` picks the transport: the SSH bridge when `/run/cdp-key` and `host.containers.internal` exist (the container case), otherwise a local `chrome-devtools-mcp` against the installed Chrome (`CHROME_BIN`, `CHROME_HEADED=1` to run headed).
++
++1. When accessing Galt web page through chrome-devtools MCP use the base URL for the environment above
+ 2. When accessing Galt web page through curl or other command line tools use http://localhost:8081/ as base URL
+ 
+ ## Login and payment workflows for programmatic testing
+ 
+-1. If logged in user session is needed, log in fom http://localhost:13003/members/login using `bb scripts/lnurl-login.bb <script-username> <LNURL-string>`
++1. If logged in user session is needed, log in fom http://localhost:13003/members/login (container) or http://localhost:8081/members/login (native) using `bb scripts/lnurl-login.bb <script-username> <LNURL-string>`
+   - the LNURL string is in the text input on the /members/login page if the user is not logged in
+   - the available usernames are `alice`, `bob` and `charlie` (listed in `scripts/lnurl-login.edn`)
+ 
+diff --git a/opencode.json b/opencode.json
+index 4238657..58fca5d 100644
+--- a/opencode.json
++++ b/opencode.json
+@@ -10,19 +10,11 @@
+     "servers": {
+       "chrome-devtools": {
+         "type": "local",
+-        "command": [
+-          "ssh",
+-          "-T",
+-          "-o", "BatchMode=yes",
+-          "-o", "StrictHostKeyChecking=yes",
+-          "-o", "CheckHostIP=no",
+-          "-o", "UpdateHostKeys=no",
+-          "-o", "LogLevel=ERROR",
+-          "-o", "IdentitiesOnly=yes",
+-          "-o", "UserKnownHostsFile=/run/cdp-key/known_hosts",
+-          "-i", "/run/cdp-key/id_ed25519",
+-          "madis@host.containers.internal"
+-        ],
++        "command": ["bash", "scripts/chrome-devtools-mcp.sh"],
++        "cwd": ".",
++        "environment": {
++          "CHROME_DEVTOOLS_MCP_NO_USAGE_STATISTICS": "1"
++        },
+         "timeout": {
+           "startup": 60000
+         }
+diff --git a/scripts/chrome-devtools-mcp.sh b/scripts/chrome-devtools-mcp.sh
+new file mode 100755
+index 0000000..8b59e95
+--- /dev/null
++++ b/scripts/chrome-devtools-mcp.sh
+@@ -0,0 +1,38 @@
++#!/usr/bin/env bash
++# Entry point for the chrome-devtools MCP server.
++#
++# Inside the clj-contain container the browser lives on the host: the key mount
++# (/run/cdp-key, see the :clj-contain alias in deps.edn) and podman's
++# host.containers.internal are available, so bridge over SSH.
++#
++# Anywhere else (agent sandbox, plain dev checkout) run chrome-devtools-mcp
++# locally against the installed Chrome. CHROME_BIN overrides the browser path,
++# CHROME_HEADED=1 disables headless mode.
++set -euo pipefail
++
++KEY=/run/cdp-key/id_ed25519
++if [[ -r "$KEY" ]] && getent hosts host.containers.internal >/dev/null 2>&1; then
++  exec ssh -T -o BatchMode=yes -o StrictHostKeyChecking=yes -o CheckHostIP=no \
++    -o UpdateHostKeys=no -o LogLevel=ERROR -o IdentitiesOnly=yes \
++    -o UserKnownHostsFile=/run/cdp-key/known_hosts -i "$KEY" \
++    madis@host.containers.internal
++fi
++
++args=(--no-usage-statistics --allow-unrestricted-paths --chrome-arg=--no-sandbox)
++[[ "${CHROME_HEADED:-0}" == "1" ]] || args+=(--headless)
++
++CHROME="${CHROME_BIN:-/opt/chrome-for-testing/chrome-linux64/chrome}"
++[[ -x "$CHROME" ]] && args+=(--executablePath "$CHROME")
++
++# chrome-devtools-mcp defaults to one shared profile dir, so two OpenCode
++# connections for the same project (or a leftover server) fight over the same
++# Chrome instance and the connection dies with "Target closed". Use a temporary
++# profile per server process; log in again after a reconnect if a session was
++# needed. Set CHROME_USER_DATA_DIR to keep a persistent profile instead.
++if [[ -n "${CHROME_USER_DATA_DIR:-}" ]]; then
++  args+=(--userDataDir "$CHROME_USER_DATA_DIR")
++else
++  args+=(--isolated)
++fi
++
++exec npx -y chrome-devtools-mcp@latest "${args[@]}"

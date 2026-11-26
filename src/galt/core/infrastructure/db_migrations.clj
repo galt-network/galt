@@ -3,9 +3,9 @@
     [next.jdbc :as jdbc]
     [migratus.core :as migratus]))
 
-(def database-name (System/getenv "MIGRATUS_DATABASE"))
-(def database-user (System/getenv "MIGRATUS_USER"))
-(def database-pass (System/getenv "MIGRATUS_PASSWORD"))
+(def database-name (or (System/getenv "MIGRATUS_DATABASE") "galt_dev"))
+(def database-user (or (System/getenv "MIGRATUS_USER") "galt"))
+(def database-pass (or (System/getenv "MIGRATUS_PASSWORD") "galtpass"))
 
 (defn datasource-config
   ([] (datasource-config database-name))
@@ -24,7 +24,9 @@
              :migration-dir        "migrations/"
              :init-script          "init.sql" ;script should be located in the :migration-dir path
              :init-in-transaction? false
-             :properties {}
+             ;init.sql placeholders; migratus fills them from the environment only
+             :properties           {:map {:migratus {:database database-name
+                                                     :user      database-user}}}
              :db {:datasource (get-datasource (datasource-config))}})
 
 (def init-config (assoc-in config [:db :datasource] (get-datasource (datasource-config "postgres"))))

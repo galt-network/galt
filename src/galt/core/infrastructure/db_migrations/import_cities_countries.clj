@@ -1,35 +1,48 @@
 (ns galt.core.infrastructure.db-migrations.import-cities-countries
   (:require
     [clojure.java.io :as io]
-    [clojure.java.shell :as sh]
+    [clojure.string :as str]
     [next.jdbc :as jdbc]))
 
-(defn count-lines [filepath]
-  (with-open [rdr (io/reader filepath)]
-    (count (line-seq rdr))))
+(def sample "geodata/cities-countries-sample.sql")
+
+(defn psql-only?
+  [line]
+  (boolean (re-matches #"\\(?:un)?restrict.*|ALTER TABLE \S+ OWNER TO \S+;\s*" line)))
+
+(defn- statements
+  "Groups lines into complete statements; pg_dump ends every statement with `;`."
+  [lines]
+  (lazy-seq
+    (when (seq lines)
+      (let [[body end] (split-with #(not (str/ends-with? % ";")) lines)]
+        (cons (concat body (take 1 end)) (statements (rest end)))))))
+
+(defn statement-chunks
+  "Groups SQL lines into lazy sequences of `n` statements."
+  [n lines]
+  (->> (statements lines)
+       (partition-all n)
+       (map #(apply concat %))))
+
+(defn import-dump!
+  "Imports a pg_dump file in bounded memory. Runs on its own connection: the dump
+  clears the session search_path, which would break the caller's connection."
+  [db source]
+  (with-open [conn (jdbc/get-connection db)
+              lines (io/reader source)]
+    (doseq [chunk (->> (line-seq lines)
+                       (remove psql-only?)
+                       (statement-chunks 5000))]
+      (jdbc/execute! conn [(str/join "\n" chunk)]))))
 
 (defn migrate-up
-  [{:keys [db conn] :as config} sql-path-env-var]
-  (println "import-cities-countries UP" [config sql-path-env-var])
-  (let [world-path (System/getenv sql-path-env-var)
-        world-file (io/file world-path)]
-    (when (not (.exists world-file))
-      (throw (ex-info "world.sql file not found" {:path world-path})))
-    (println (str "Importing "
-                  world-path
-                  " Might take some time. Lines of SQL to process: " (count-lines world-path)))
-    ; (jdbc/execute! db [(slurp world-path)])
-    (let [db-user (System/getenv "MIGRATUS_USER")
-          db-password (System/getenv "MIGRATUS_PASSWORD")
-          db-name (System/getenv "MIGRATUS_DATABASE")
-          db-url (str "postgresql://" db-user ":" db-password "@"
-                      (or (System/getenv "DB_HOST") "localhost") ":"
-                      (or (System/getenv "DB_PORT") "5432") "/" db-name)
-          result (sh/sh "psql" "-d" db-url "-f" world-path)]
-      (if (not (zero? (:exit result)))
-        (throw (ex-info "Error importing world geodata" result))
-        (println "Done importing " world-path))))
-  [config sql-path-env-var])
+  [{:keys [db]} sql-path-env-var]
+  (let [source (or (System/getenv sql-path-env-var)
+                   (io/resource sample)
+                   (throw (ex-info "geodata sample not found on the classpath" {})))]
+    (println "import-cities-countries UP" (str source))
+    (import-dump! db source)))
 
 (defn migrate-down
   [{:keys [db]}]

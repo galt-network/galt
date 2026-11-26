@@ -5,11 +5,21 @@ Before non-trivial Clojure work, read `PROJECT_SUMMARY.md` at the repo root and 
 
 Also follow `LLM_CODE_STYLE.md` at the repo root when present; it matches the global Clojure style rules.
 
+## From a clean checkout
+Needs only a JDK, the Clojure CLI, git and docker or podman on the machine. No `.env` and no other setup.
+
+- `./scripts/dev.sh up` starts a Postgres container and runs the migrations. The first run imports the bundled geodata sample; `./scripts/dev.sh geodata` switches to the full dataset, `./scripts/dev.sh geoip` downloads the GeoIP database.
+- `./scripts/dev.sh run` serves http://localhost:8081. With `GALT_ENV` unset it runs the `:local` system (`config/default-config.edn`, files stored on disk).
+- `clojure -M:nrepl` starts a REPL, `clojure -M:test` runs every test.
+- `./scripts/dev.sh down` stops Postgres and keeps the data, `./scripts/dev.sh reset` drops the data and starts again.
+
+Agents work this way by default. Start clj-contain only when asked: it is the manual containerized workflow, which sets `GALT_ENV=dev` and stores files in the shared dev R2 bucket.
+
 ## Clojure workflow
 - Use clojure-mcp tools for all Clojure work: `clojure_eval`, `clojure_edit` / `clojure_edit_replace_sexp`, `scratch_pad`. Prefer structural editing over raw file edits.
 - REPL-driven: prototype in `clojure_eval`, test edge cases, then save code.
 - Reload namespaces with `(user/go!)` (need to evaluate the namespace `dev.user` in the REPL before the first time); switch into the namespace you're working on.
-- Dev loop: `(galt.main/start-system! :dev)` to start, `(go!)` to hot-reload
+- Dev loop: `(galt.main/start-system!)` to start (`:local` in a plain checkout, `:dev` under clj-contain), `(go!)` to hot-reload
   (reloads changed namespaces, restarts HTTP server, after calling it the running system reflects the code saved in the project directory, including dependencies (local or remote))
 
 ## Addresses
