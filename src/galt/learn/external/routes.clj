@@ -9,4 +9,7 @@
     (rr/router
       [["/learn" {:id :learn :name :learn :get (with-deps-layout learn/show-learn)}]
        ["/learn/:module-slug/:lesson-slug"
-        {:id :learn :name :learn/lesson :get (with-deps-layout learn/show-lesson)}]])))
+        {:id :learn
+         :name :learn/lesson
+         :conflicting true
+         :get (with-deps-layout learn/show-lesson)}]])))
