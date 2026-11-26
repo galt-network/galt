@@ -1,6 +1,6 @@
 -- Sample of the countries-states-cities database, for development and tests.
 -- Source: https://raw.githubusercontent.com/dr5hn/countries-states-cities-database/3f1f31dda8d758704b0ed900aaeb64268514cfce/psql/world.sql
--- sha256 of the source file: ab48de1a6131ac7e578796f0e016fd176d11571f3ee080e2ee7ee0b3386796a7 (extracted 2026-11-25)
+-- sha256 of the source file: ab48de1a6131ac7e578796f0e016fd176d11571f3ee080e2ee7ee0b3386796a7 (extracted 2026-11-26)
 -- Same schema and ids as the full dump: every region, subregion and country, the states
 -- of the selected cities, and all cities of EE, LV, LT, FI, SE, NO, DK, IS, SV (2933 cities, 147 states).
 -- The psql-only \restrict and \unrestrict lines were removed, nothing else.
