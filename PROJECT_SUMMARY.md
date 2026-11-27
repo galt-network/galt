@@ -69,6 +69,7 @@ Each module follows the pattern: `adapters/`, `domain/` (with `entities/` and `u
 - `src/galt/connect/` - Mixed search feed at `/connect`. Hits are Members, Groups, Events, and Posts, ranked in `domain/rank.clj`. `domain/use_cases/search.clj` is called from the handler with route deps (`:search-repo`, `:infer-location`); it is **not** a Donut `:use-cases` component and returns `[:ok hits]`, not the usual 3-tuple. Repo: `adapters/db_search_repository.clj` (wired as `:storage :search`). `adapters/memory_search_repository.clj` is the in-memory stand-in for tests.
 - `src/galt/design/` - UI/design routes (only `handlers.clj` + `routes.clj`, no full module structure)
 - `src/galt/world_map/` - World map page (full-bleed Globo 3D map, SSE connection, session-tied identity, sliding auto-hide navbar; mounted under `:globo-mount-path`). Files: `adapters/handlers.clj`, `adapters/placeables.clj` (member pins on map), `adapters/presentation.clj`, `domain/use_cases/publish_placeables.clj`, `domain/use_cases/send_globo_message.clj`, `external/routes.clj`. Routes: page, `/connection`, `/send-message`, `/assets/*path`.
+- `src/galt/learn/` - Learn pages. `adapters/curriculum.clj` reads the static `resources/learn/curriculum.edn` and finds lessons; `adapters/presentation/learn.clj` is the curriculum page, `adapters/presentation/lesson.clj` and `articles/` the lesson page; `external/routes.clj` has `/learn` and `/learn/:module-slug/:lesson-slug` (public). Both pages use `galt.core.views.new-layout`, not the Bulma layout.
 - `src/galt/shared/` - Shared cross-cutting presentation helpers (`presentation/translations.clj` for i18n strings; strings live in `resources/translations/en.edn`)
 
 ### Domain Layer Pattern (per module)
@@ -99,6 +100,8 @@ Each module follows the pattern: `adapters/`, `domain/` (with `entities/` and `u
 - `src/galt/core/adapters/view-models.clj` - Shared view model helpers
 - `src/galt/core/seed.clj` - Dev/test DB seeding
 - `src/galt/core/views/layout.clj` - Base HTML layout
+- `src/galt/core/views/new_layout.clj` - Tailwind layout for new-design pages, wired as `:with-new-layout`
+- `resources/css/tailwind.css` - Tailwind v4 tokens, compiled to the uncommitted `resources/public/css/tailwind.css` with `npm run css`
 - `src/galt/core/views/components.clj` & `components/` - Reusable Hiccup view components
 - `src/galt/core/views/datastar_helpers.clj` - Datastar signal helpers
 - `src/galt/core/views/landing_page.clj` - Landing page view
@@ -140,6 +143,7 @@ Each module follows the pattern: `adapters/`, `domain/` (with `entities/` and `u
 - `docs/btcpay.md` - Local regtest BTCPay + payer CLN (not started by clj-contain). Its opening line ("Galt does not talk to BTCPay yet") is stale: the app has a Greenfield gateway and a webhook.
 - `docs/integration-with-cloudflare.md` - R2 bucket + custom domain setup. Do not print `config/*.edn` or `.env` (credentials).
 - `docs/ideas.md` - Roadmap / ideas scratchpad (untracked)
+- `docs/design/learn/` - Exported Stitch screens, design tokens and `DESIGN.md` for the new design
 
 ---
 
@@ -165,6 +169,7 @@ Versions reflect the current `deps.edn`.
 | `dev.data-star.clojure/http-kit` | 1.0.0-RC11 | Datastar http-kit adapter |
 | `hiccup/hiccup` | 2.0.0 | HTML templating (Clojure vectors -> HTML) |
 | `markdown-clj/markdown-clj` | 1.12.8 | Markdown parsing |
+| `@tailwindcss/cli` + `tailwindcss` | 4.3.5 | Tailwind CSS v4 build (npm dev dependencies, `package.json`) |
 | `is.mad/globo` | git dependency (alias `:globo-local` swaps in the checkout `../globo`) | 3D world map UI (Globo) - served under `:globo-mount-path`; not from Maven |
 
 ### System & Architecture

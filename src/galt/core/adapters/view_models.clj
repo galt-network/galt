@@ -15,12 +15,14 @@
         logged-in? (not (nil? user))
         login-user {:name name
                     :avatar avatar
+                    :placeholder? (nil? (:avatar member))
                     :href (if logged-in? "/members/profile/me" "/members/login")}
         login-item {:id :login :title "Log in" :href "/members/login"}
         logout-item {:id :logout :title "Log out" :data-on:click "@post('/members/logout')"}
         session-item (if logged-in? logout-item login-item)]
      {:user login-user
       :items [{:title "Connect" :href "/connect" :selected? (= :connect route-id)}
+              {:title "Learn" :href "/learn" :selected? (= :learn route-id)}
               {:title "Members" :href "/members" :selected? (= :members route-id)}
               {:title "Groups" :href "/groups" :selected? (= :groups route-id)}
               {:title "Posts" :href "/posts" :selected? (= :posts route-id)}

@@ -56,6 +56,18 @@ Before ending a session or handing off:
 
 Keep the file concise. Prefer editing current-status sections over pure append-only growth.
 
+## Tailwind (new design)
+
+The Learn pages use Tailwind CSS v4 with the layout in `src/galt/core/views/new_layout.clj`. Reference markup and tokens are in `docs/design/learn/`.
+
+- Tailwind classes go in `:class` as a vector of strings: `[:div {:class ["flex" "gap-2"]}]`.
+- Write complete static class names only. Never build class names at runtime; the Tailwind scanner must see them.
+- Move long or repeated class lists into named constants or small component functions.
+- Prefer `@theme` tokens over arbitrary values.
+- Keep the class order: layout, spacing, typography, colors, effects, states, responsive.
+- Use semantic, accessible markup. Avoid `@apply`.
+- Run `npm run css` after adding classes. The generated CSS is not committed.
+
 ## Agent skills
 
 ### Issue tracker

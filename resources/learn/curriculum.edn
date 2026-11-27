@@ -1,0 +1,47 @@
+{:modules
+ [{:slug "sound-architecture" :number 1 :track "Sound Architecture" :domain "Bitcoin Basics"
+   :title "Bitcoin Basics & Absolute Scarcity" :obj 800 :obj-earned 800 :image "bitcoin-lattice"
+   :lessons
+   [{:slug "sound-money" :number 1 :topic "Sound Money"
+     :title "Sound Money vs. Fiat Inflation" :status :completed
+     :summary "Tracing monetary history from commodity standards to debt debasement, and how algorithmic predictability restores uncounterfeitable scarcity."
+     :minutes 8 :clip-minutes 4 :score 100 :questions 5 :obj 200}
+    {:slug "proof-of-work" :number 2 :topic "Proof of Work"
+     :title "Proof of Work & Absolute Scarcity" :status :completed
+     :summary "Connecting thermodynamic energy expenditure to unforgeable digital real estate: why SHA-256 anchors digital truth to physical reality."
+     :minutes 11 :clip-minutes 6 :score 80 :questions 5 :obj 200}
+    {:slug "supply-inelasticity" :number 3 :topic "Monetary Inelasticity"
+     :title "The Halving & Supply Inelasticity" :status :completed
+     :summary "Analyzing stock-to-flow ratios and the algorithmic quadrennial halving that enforces programmatic supply schedule regardless of price spikes."
+     :minutes 14 :clip-minutes 8 :score 100 :questions 5 :obj 200}]}
+  {:slug "praxeology" :number 2 :track "Praxeology" :domain "Austrian Econ"
+   :title "Intermediate Austrian Economics" :obj 1150 :obj-earned 450 :image "menger-manuscripts"
+   :lessons
+   [{:slug "value-theory" :number 1 :topic "Value Theory"
+     :title "The Subjective Theory of Value & Marginal Utility" :status :in-progress
+     :summary "Deconstructing the classical labor theory of value through Carl Menger's prism of subjective satisfaction and marginal increments."
+     :minutes 12 :progress 80 :section 4 :sections 5 :exam-prompts 5 :obj 350
+     :kind "Lecture Clip (Audio/Visual)"}
+    {:slug "economic-calculation" :number 2 :topic "Epistemology of Markets"
+     :title "The Economic Calculation Problem" :status :available
+     :summary "Why central planners inevitably fail: Ludwig von Mises' devastating critique demonstrating that without private property in capital goods, rational resource allocation is impossible."
+     :minutes 18 :questions 4}
+    {:slug "capital-structure" :number 3 :topic "Capital Structure"
+     :title "Time Preference & Capital Structure" :status :locked :requires "2.2"
+     :summary "Böhm-Bawerk's roundabout production structure: how artificial credit expansion distorts intertemporal prices and induces business cycles."
+     :minutes 15 :questions 5}]}
+  {:slug "legal-theory" :number 3 :track "Legal Theory" :domain "Natural Rights"
+   :title "Natural Rights & Non-Aggression" :obj 900 :obj-earned 0 :image "scales-of-justice"
+   :lessons
+   [{:slug "self-ownership" :number 1 :topic "Jurisprudence"
+     :title "Self-Ownership & Homesteading" :status :available
+     :summary "The ethical axiomatic bedrock: deriving unalienable property titles from self-ownership and the transformation of unowned physical resources."
+     :minutes 10 :questions 4 :obj 300 :kind "Audio Essay"}
+    {:slug "nap" :number 2 :topic "Legal Ethics"
+     :title "The Non-Aggression Axiom (NAP)" :status :locked :requires "3.1"
+     :summary "Defining aggression versus legitimate defense, boundary enforcement, and proportional rectification in natural law tradition."
+     :minutes 8 :questions 3 :obj 250}
+    {:slug "polycentric-law" :number 3 :topic "Dispute Resolution"
+     :title "Polycentric Law & Private Arbitration" :status :locked :requires "3.2"
+     :summary "Historical precedent and game-theoretic mechanisms for competitive legal orders, insurance guarantors, and merchant law."
+     :minutes 16 :questions 5 :obj 350}]}]}

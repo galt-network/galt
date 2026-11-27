@@ -12,3 +12,4 @@ data/countries-states-cities-database/
 .btcpay/
 node_modules
 .cpcache
+resources/public/css/tailwind.css

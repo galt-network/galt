@@ -34,6 +34,13 @@ gh issue create --repo galt-network/galt --label agent-ready \
 ```
 This will be worked on by an agent and if all succeeds a new pull request with the implementation will be added.
 
+## Tailwind (new design)
+
+Tailwind CSS v4 compiles `resources/css/tailwind.css` to `resources/public/css/tailwind.css`. The generated file is not committed. Design reference: `docs/design/learn/`.
+
+- Build once: `npm install && npm run css`
+- Rebuild on change: `npm run css:watch`
+
 ## Release & deployment
 
 A push to `master` or `production` runs `.github/workflows/deploy.yml`: it builds the Docker image (`Dockerfile`: uberjar, the pinned `world.sql` and a GeoIP database), pushes it to GHCR and tells Coolify to deploy it. `docker-entrypoint.sh` waits for Postgres, runs the migrations and starts the server. Set `GALT_ENV` (`staging` or `prod`) and `GALT_CITIES_COUNTRIES_SQL_PATH` (the full `world.sql`); it refuses to start without them. `MIGRATUS_*` and `DB_HOST` point it at the database.
