@@ -22,18 +22,6 @@ For a REPL run `./scripts/dev.sh up`, then `clojure -M:nrepl`, evaluate `(galt.m
 
 `clj-contain up` starts the `galt-dev` container from the `:clj-contain` alias in `deps.edn`, with its own Postgres, the full `data/countries-states-cities-database/world.sql` and the `:dev` configuration (`config/dev-galt.edn`, files stored in the shared dev R2 bucket). The host publishes the app on port 13003.
 
-## AI agent workflow
-
-Use `@writing-plans` skill by Superpowers if you already have a plan or `@brainstorming` when just starting work on the specifications for a new feature. In the end both write to `docs/superpowers/{specs,plans}/...` in a format that the `.opencode/skills/work-queue` can work on.
-
-Then commit and push the plan and create an issue:
-```shell
-gh issue create --repo galt-network/galt --label agent-ready \
-  --title "Implement plan: <name>" \
-  --body "Execute docs/superpowers/plans/<file>. Spec: docs/superpowers/specs/<file>. Done when: all task boxes ticked, final check green, PR opened."
-```
-This will be worked on by an agent and if all succeeds a new pull request with the implementation will be added.
-
 ## Tailwind (new design)
 
 Tailwind CSS v4 compiles `resources/css/tailwind.css` to `resources/public/css/tailwind.css`. The generated file is not committed. Design reference: `docs/design/learn/`.
