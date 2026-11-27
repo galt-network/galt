@@ -76,8 +76,8 @@
 
 (deftest learn-page-has-mobile-and-desktop-markup
   (let [body (:body (page "/learn"))]
-    (is (str/includes? body "<div class=\"md:hidden\">"))
-    (is (str/includes? body "<div class=\"hidden md:block\">"))
+    (is (str/includes? body "<div class=\"md:hidden space-y-4\">"))
+    (is (str/includes? body "<div class=\"hidden md:block space-y-4\">"))
     (is (str/includes? body "Curriculum Ledger"))))
 
 (deftest lesson-page-renders-the-article

@@ -115,6 +115,30 @@
   --text-headline-lg--font-weight: 600;
 }
 
+/* Light theme: utilities read var(--color-*), so overriding the tokens
+   flips the whole app. Values come from the Stitch light screen. */
+html.light {
+  --color-canvas-base: #faf9f5;
+  --color-background: #faf9f5;
+  --color-surface: #faf9f5;
+  --color-surface-dim: #faf9f5;
+  --color-surface-container-lowest: #faf9f5;
+  --color-surface-container-low: #ffffff;
+  --color-surface-container: #f4f4f0;
+  --color-surface-container-high: #eeeeea;
+  --color-surface-container-highest: #eeeeea;
+  --color-text-primary: #1a1a1e;
+  --color-on-surface: #1a1a1e;
+  --color-text-muted: #78767b;
+  --color-on-surface-variant: #44444a;
+  --color-primary: #7c5800;
+  --color-primary-container: #b58110;
+  --color-secondary: #8c6200;
+  --color-border-gold: #e2e0d8;
+  --color-border-subtle: #dcdad2;
+  --color-outline-variant: #e2e0d8;
+}
+
 @layer base {
   body {
     overscroll-behavior: none;
@@ -138,4 +162,13 @@
 
 @utility pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Horizontal pill carousels scroll without a visible scrollbar, as designed. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }

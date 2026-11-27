@@ -57,16 +57,18 @@
 
 (defn- pill
   [text active?]
-  [:span {:class (into ["shrink-0" "flex" "items-center" "gap-1.5" "px-3" "py-1.5" "rounded-full" "transition-all"]
-                       (if active?
-                         ["bg-primary-container" "text-on-primary" "shadow-[0_0_12px_rgba(245,194,66,0.3)]"]
-                         ["bg-surface-container" "text-on-surface" "border" "border-border-gold/40"]))}
+  [:button {:type "button"
+            :class (into ["shrink-0" "flex" "items-center" "gap-1.5" "px-3" "py-1.5" "rounded-full" "cursor-pointer" "transition-colors"]
+                         (if active?
+                           ["bg-primary-container" "text-on-primary" "shadow-[0_0_12px_rgba(245,194,66,0.3)]"]
+                           ["bg-surface-container" "text-on-surface" "border" "border-border-gold/40"
+                            "hover:bg-surface-container-highest" "hover:text-text-primary"]))}
    [:span {:class ["font-label-sm" "text-label-sm" "tracking-wider" "uppercase"]} text]])
 
 (defn- pill-row
   [pills]
-  [:div {:class ["flex" "items-center" "gap-2" "overflow-x-auto" "no-scrollbar" "-mx-margin-mobile" "px-margin-mobile" "py-1"]}
-   (into [:<>] pills)])
+  (into [:div {:class ["flex" "flex-wrap" "items-center" "gap-2" "py-1"]}]
+        pills))
 
 (defn- domain-pills
   [curriculum]
@@ -254,8 +256,8 @@
        [:p {:class ["font-body-md" "text-body-md" "line-clamp-2"
                     (if locked? "text-text-muted" "text-on-surface-variant")]}
         (:summary lesson)]]
-      [:div {:class ["flex" "flex-wrap" "items-center" "gap-2" "pt-0.5"]}
-       (into [:<>] (lesson-meta lesson))]
+      (into [:div {:class ["flex" "flex-wrap" "items-center" "gap-2" "pt-0.5"]}]
+            (lesson-meta lesson))
       (lesson-action lesson (data/lesson-href (:slug module) (:slug lesson)))]]))
 
 (defn- module-section
@@ -291,7 +293,7 @@
 
 (defn curriculum-list
   [curriculum]
-  (into [:section {:class ["flex" "flex-col" "space-y-6" "pt-2"]}]
+  (into [:section {:class ["flex" "flex-col" "space-y-6"]}]
         (map module-section (:modules curriculum))))
 
 (defn- desktop-hero
@@ -304,7 +306,7 @@
                  (layout/icon ["text-[20px]"] icon-name)
                  [:span {:class ["font-label-sm" "text-label-sm" "uppercase" "tracking-wider" "text-text-muted" "font-medium"]} label]]
                 [:span {:class ["font-headline-md" "text-headline-md" "text-text-primary" "font-semibold" "mt-2"]} value]])]
-    [:section {:class ["relative" "overflow-hidden" "rounded-xl" "bg-surface-container-low" "shadow-[0_4px_24px_rgba(0,0,0,0.6)]" "border" "border-border-gold/30" "p-6" "md:p-8"]}
+    [:section#curriculum-header {:class ["relative" "overflow-hidden" "rounded-xl" "bg-surface-container-low" "shadow-[0_4px_24px_rgba(0,0,0,0.6)]" "border" "border-border-gold/30" "p-6" "md:p-8"]}
      [:div {:class ["absolute" "-top-16" "-right-16" "w-80" "h-80" "rounded-full" "bg-primary-container/10" "blur-3xl" "pointer-events-none"]}]
      [:div {:class ["absolute" "bottom-0" "left-1/3" "w-64" "h-32" "bg-secondary/5" "blur-3xl" "pointer-events-none"]}]
      [:div {:class ["relative" "z-10" "grid" "grid-cols-1" "lg:grid-cols-12" "gap-8" "items-center"]}
@@ -347,21 +349,19 @@
 
 (defn- desktop-filters
   [curriculum]
-  [:section {:class ["flex" "flex-col" "md:flex-row" "md:items-center" "justify-between" "gap-4" "p-4" "rounded-xl" "bg-surface-container-low" "border" "border-border-gold/20"]}
-   [:div {:class ["flex" "items-center" "gap-2" "overflow-x-auto" "no-scrollbar" "py-0.5"]}
-    [:span {:class ["font-label-sm" "text-label-sm" "uppercase" "tracking-wider" "text-text-muted" "mr-2" "font-medium" "shrink-0"]}
-     "Domains:"]
-    (into [:<>]
-          (cons (pill (str "All Domains (" (count (mapcat :lessons (:modules curriculum))) ")") true)
-                (for [{:keys [domain lessons]} (:modules curriculum)]
-                  (pill (str domain " (" (count lessons) ")") false))))]
-   [:div {:class ["flex" "items-center" "gap-2" "shrink-0"]}
-    [:span {:class ["font-label-sm" "text-label-sm" "uppercase" "tracking-wider" "text-text-muted" "mr-1" "font-medium"]}
-     "Status:"]
-    (into [:<>]
-          [(pill "All" true)
-           (pill (str "In Progress (" (status-count curriculum :in-progress) ")") false)
-           (pill (str "Completed (" (status-count curriculum :completed) ")") false)])]])
+  [:section#filter-pills {:class ["flex" "flex-col" "md:flex-row" "md:flex-wrap" "md:items-center" "justify-between" "gap-4" "p-4" "rounded-xl" "bg-surface-container-low" "border" "border-border-gold/20"]}
+   (into [:div {:class ["flex" "flex-wrap" "items-center" "gap-2" "py-0.5"]}
+          [:span {:class ["font-label-sm" "text-label-sm" "uppercase" "tracking-wider" "text-text-muted" "mr-2" "font-medium" "shrink-0"]}
+           "Domains:"]]
+         (cons (pill (str "All Domains (" (count (mapcat :lessons (:modules curriculum))) ")") true)
+               (for [{:keys [domain lessons]} (:modules curriculum)]
+                 (pill (str domain " (" (count lessons) ")") false))))
+   (into [:div {:class ["flex" "flex-wrap" "items-center" "gap-2"]}
+          [:span {:class ["font-label-sm" "text-label-sm" "uppercase" "tracking-wider" "text-text-muted" "mr-1" "font-medium"]}
+           "Status:"]]
+         [(pill "All" true)
+          (pill (str "In Progress (" (status-count curriculum :in-progress) ")") false)
+          (pill (str "Completed (" (status-count curriculum :completed) ")") false)])])
 
 (defn- desktop-module-section
   [module]
@@ -397,19 +397,19 @@
 
 (defn- desktop-modules
   [curriculum]
-  (into [:section {:class ["flex" "flex-col" "space-y-8" "pt-4"]}]
+  (into [:section {:class ["flex" "flex-col" "space-y-8"]}]
         (map desktop-module-section (:modules curriculum))))
 
 (defn present
   [curriculum]
   {:content [:div
-             [:div {:class ["md:hidden"]}
+             [:div {:class ["md:hidden" "space-y-4"]}
               (hero)
               (domain-pills curriculum)
               (status-filter curriculum)
               (active-session curriculum)
               (curriculum-list curriculum)]
-             [:div {:class ["hidden" "md:block"]}
+             [:div {:class ["hidden" "md:block" "space-y-4"]}
               (desktop-hero)
               (desktop-filters curriculum)
               (desktop-modules curriculum)]]})

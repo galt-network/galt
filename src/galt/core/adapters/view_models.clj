@@ -15,6 +15,7 @@
         logged-in? (not (nil? user))
         login-user {:name name
                     :avatar avatar
+                    :placeholder? (nil? (:avatar member))
                     :href (if logged-in? "/members/profile/me" "/members/login")}
         login-item {:id :login :title "Log in" :href "/members/login"}
         logout-item {:id :logout :title "Log out" :data-on:click "@post('/members/logout')"}
