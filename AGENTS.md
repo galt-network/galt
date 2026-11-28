@@ -40,22 +40,6 @@ How Galt is reached depends on where OpenCode runs:
   - the LNURL string is in the text input on the /members/login page if the user is not logged in
   - the available usernames are `alice`, `bob` and `charlie` (listed in `scripts/lnurl-login.edn`)
 
-## Progress tracking (PROGRESS.md)
-
-Before non-trivial work:
-1. Read `PROGRESS.md` (create it from the template if missing).
-2. Read `PROJECT_SUMMARY.md` for architecture (already required).
-
-Before ending a session or handing off:
-1. Update `PROGRESS.md`:
-   - Refresh Current Verified State
-   - Move finished items to Completed (include evidence: commit, test, or REPL result)
-   - Update In Progress / Next Steps / Blocker
-   - Append a short Session Log entry
-2. Do not mark anything done without verification.
-
-Keep the file concise. Prefer editing current-status sections over pure append-only growth.
-
 ## Tailwind (new design)
 
 The Learn pages use Tailwind CSS v4 with the layout in `src/galt/core/views/new_layout.clj`. Reference markup and tokens are in `docs/design/learn/`.
@@ -67,16 +51,6 @@ The Learn pages use Tailwind CSS v4 with the layout in `src/galt/core/views/new_
 - Keep the class order: layout, spacing, typography, colors, effects, states, responsive.
 - Use semantic, accessible markup. Avoid `@apply`.
 - Run `npm run css` after adding classes. The generated CSS is not committed.
-
-## Agent skills
-
-### Issue tracker
-
-Issues and specs live as markdown files in `.scratch/<feature-slug>/`. See `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-Five canonical labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 

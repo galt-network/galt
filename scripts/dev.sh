@@ -4,6 +4,7 @@
 #
 #   up       start Postgres, create the database, run the migrations
 #   run      start the app at http://localhost:8081 (system :local when GALT_ENV is unset)
+#   dev      start the nREPL server (system :local when GALT_ENV is unset). (user/start-system!) to start the app
 #   down     stop Postgres (the data volume is kept)
 #   reset    drop the data, then up
 #   geodata  download the full world.sql, then reset
@@ -63,6 +64,7 @@ reset() {
 case "${1:-}" in
   up) up ;;
   run) exec clojure -M -m galt.main ;;
+  dev) clojure -M:dev:repl -m nrepl.cmdline ;;
   down) "$runtime" rm -f galt-postgres 2>/dev/null || true ;;
   reset) reset ;;
   geodata)
