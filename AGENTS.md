@@ -52,6 +52,16 @@ The Learn pages use Tailwind CSS v4 with the layout in `src/galt/core/views/new_
 - Use semantic, accessible markup. Avoid `@apply`.
 - Run `npm run css` after adding classes. The generated CSS is not committed.
 
+## Agent skills
+
+### Issue tracker
+
+Issues live in this repo's GitHub Issues, driven by the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default names: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
 ### Domain docs
 
 Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
